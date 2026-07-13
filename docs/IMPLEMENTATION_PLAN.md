@@ -98,9 +98,9 @@ Exit gate: all required checks pass from a clean install. Exact results belong i
 
 - [x] CI workflow covers clean install, lint, type checking, unit tests, build, and Playwright smoke tests
 - [x] Pages workflow uses the official artifact/deployment flow after successful validation on `main`
-- [ ] Repository Pages source is set to **GitHub Actions**
-- [ ] Successful `main` validation and Pages deployment observed in GitHub Actions
-- [ ] Published site tested at `https://<owner>.github.io/AURA/`
+- [x] Repository Pages source is set to **GitHub Actions**
+- [x] Successful `main` validation and Pages deployment observed in GitHub Actions
+- [x] Published site tested at `https://evoryder8-collab.github.io/AURA/`
 - [ ] Supabase redirect allowlist includes local and deployed HashRouter callback URLs
 - [ ] Production-readiness review completed before any non-synthetic data is introduced
 

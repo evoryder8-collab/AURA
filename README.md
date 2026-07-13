@@ -4,6 +4,8 @@ AURA is a single-practice treatment-workflow test application with therapist and
 
 > **Synthetic-data test build:** this repository is not approved for real client or health data. Outside an explicitly approved production configuration, the interface displays `TEST BUILD — SYNTHETIC DATA ONLY` and uses clearly fictional records.
 
+Published demo: [https://evoryder8-collab.github.io/AURA/](https://evoryder8-collab.github.io/AURA/)
+
 This is an implementation repository, not a pricing, marketing, billing, investor, legal-contract, shared multi-tenant, or separate-frontend project.
 
 ## Core principles
@@ -176,13 +178,13 @@ CI runs clean install, lint, type checking, unit/component tests, production bui
 The actual repository name is uppercase `AURA`, so the default is case-sensitive:
 
 ```text
-URL:  https://<owner>.github.io/AURA/
+URL:  https://evoryder8-collab.github.io/AURA/
 Base: VITE_BASE_PATH=/AURA/
 ```
 
 The brief's `/Aura/` form is an example and is not the correct path for this repository.
 
-One administrator action may be required: **Repository → Settings → Pages → Build and deployment → Source → GitHub Actions**. Do not select a branch folder.
+This repository's Pages source is configured as **GitHub Actions**. Do not change it to a branch folder.
 
 For a custom domain, configure/verify it in repository Pages settings, set `VITE_BASE_PATH=/`, update Supabase redirects and the Edge Function `APP_ORIGIN` plus `APP_BASE_URL`, redeploy, and test auth/assets/PWA scope. A `CNAME` file alone does not configure the domain.
 

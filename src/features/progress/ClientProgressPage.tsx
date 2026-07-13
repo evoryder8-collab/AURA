@@ -3,6 +3,7 @@ import { Badge } from '@/components/design-system/Badge'
 import { Card } from '@/components/design-system/Card'
 import { PageHeader } from '@/components/design-system/PageHeader'
 import { ProgressRing } from '@/components/design-system/ProgressRing'
+import { TherapistPortrait } from '@/components/identity/TherapistPortrait'
 import { useDemoStore } from '@/data/demo/store'
 import { deriveClientMetrics } from '@/data/demo/derive'
 import { useAuth } from '@/features/auth/auth-context'
@@ -73,7 +74,7 @@ export function ClientProgressPage() {
         <div className="care-continuity__team" aria-label="Your assigned care team">
           {continuityTeam.map((therapist) => (
             <span key={therapist.id} title={therapist.displayName}>
-              <i aria-hidden="true">{therapist.preferredName[0]}</i>
+              <TherapistPortrait therapist={therapist} className="care-continuity__portrait" />
               {therapist.preferredName}
             </span>
           ))}

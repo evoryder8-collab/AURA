@@ -73,6 +73,8 @@ export const createDemoTherapists = (): DemoTherapist[] => [
     displayName: 'Sora Bell — fictional demo',
     dateOfBirth: '1984-06-27',
     professionalTitle: 'Therapeutic massage practitioner',
+    portraitUrl: 'wassana%20therapist%20transparent.webp',
+    portraitScale: 1.5,
     specialties: ['Progress reviews', 'Back & whole-body recovery'],
     assignedClientIds: ['demo-client-mira', 'demo-client-sage'],
     availability: {

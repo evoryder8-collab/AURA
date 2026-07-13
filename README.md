@@ -56,13 +56,14 @@ To reset local demo state, use the in-application reset action. `npm run seed:de
 
 ### Adding transparent demo portraits
 
-The identity reveal and therapist booking cards already support transparent `.webp` portraits and fall back to polished monograms when no image is configured. Put synthetic/demo-only images under `public/portraits/`, then add the public URL to the matching therapist or client in `src/data/demo/fixtures.ts`, for example:
+The identity reveal, secure credential card, signed-in therapist identity, appointment views, care-team strip, and booking cards support transparent `.webp` portraits and fall back to polished monograms when no image is configured. Put synthetic/demo-only images under `public/portraits/`, then add the base-relative public path to the matching therapist or client in `src/data/demo/fixtures.ts`, for example:
 
 ```ts
-portraitUrl: `${import.meta.env.BASE_URL}portraits/amara-vale.webp`,
+portraitUrl: 'portraits/amara-vale.webp',
+portraitScale: 1.4,
 ```
 
-Use a tightly cropped transparent portrait with comfortable space above the head and around the shoulders; roughly `1200 × 1500` pixels works well. Do not commit a real client photograph or identifying filename. Connected client portraits remain protected and are never looked up from the pre-auth name-and-age presentation step.
+Use a tightly cropped transparent portrait with comfortable space above the head and around the shoulders; roughly `1200 × 1500` pixels works well. Tune `portraitScale` per source image rather than assuming every transparent canvas has the same crop. Paths with spaces must be percent encoded. Do not commit a real client photograph or identifying filename. Connected client portraits remain protected and are never looked up from the pre-auth name-and-age presentation step.
 
 ## Environment variables
 

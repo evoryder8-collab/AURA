@@ -16,6 +16,7 @@ import { Badge } from '@/components/design-system/Badge'
 import { Button } from '@/components/design-system/Button'
 import { Card } from '@/components/design-system/Card'
 import { StatusStrip } from '@/components/feedback/StatusStrip'
+import { TherapistPortrait } from '@/components/identity/TherapistPortrait'
 import { useDemoStore } from '@/data/demo/store'
 import { deriveClientMetrics } from '@/data/demo/derive'
 import { useAuth } from '@/features/auth/auth-context'
@@ -29,6 +30,7 @@ export function ClientHomePage() {
     state.clients.find((item) => item.id === auth.demoClientId),
   )
   const allAppointments = useDemoStore((state) => state.appointments)
+  const therapists = useDemoStore((state) => state.therapists)
   const appointments = allAppointments.filter((item) => item.clientId === auth.demoClientId)
   const navigate = useNavigate()
   const [followupOpen, setFollowupOpen] = useState(false)
@@ -50,6 +52,7 @@ export function ClientHomePage() {
     .find((item) => item.status === 'completed' && item.session && !client.lastFollowUpAt)
   const goal = client.goals[0]
   const derived = deriveClientMetrics(client)
+  const upcomingTherapist = therapists.find((therapist) => therapist.id === upcoming?.therapistId)
 
   return (
     <div className="client-home">
@@ -107,6 +110,20 @@ export function ClientHomePage() {
                   {upcoming.durationMinutes} minutes · {upcoming.sessionType}
                 </span>
               </div>
+              {upcomingTherapist && (
+                <div className="next-visit-provider">
+                  <TherapistPortrait
+                    therapist={upcomingTherapist}
+                    className="next-visit-provider__portrait"
+                  />
+                  <span>
+                    <small>Your therapist</small>
+                    <strong>
+                      {upcomingTherapist.displayName.replace(' — fictional demo', '')}
+                    </strong>
+                  </span>
+                </div>
+              )}
               {upcoming.intakeStatus === 'complete' ? (
                 <Button
                   variant="gold"

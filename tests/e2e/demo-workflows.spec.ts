@@ -84,13 +84,94 @@ test('switching portal routes clears an unsubmitted identity reveal', async ({ p
   await expect(page.getByRole('region', { name: /amara vale/i })).toHaveCount(0)
 })
 
+test('second therapist portrait loads through reveal, credentials, and portal identity', async ({
+  page,
+}) => {
+  const sora = createDemoTherapists().find((therapist) => therapist.id === DEMO_THERAPIST_IDS.sora)!
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await page.goto('/AURA/#/login/therapist')
+  await page
+    .getByRole('textbox', { name: 'Your full name' })
+    .fill(sora.displayName.replace(' — fictional demo', ''))
+  await page.getByRole('spinbutton', { name: 'Your age' }).fill(demoAge(sora.dateOfBirth))
+  await page.getByRole('button', { name: /reveal my portal/i }).click()
+
+  const revealPortrait = page.getByRole('img', { name: /sora bell profile portrait/i })
+  await expect(revealPortrait).toHaveAttribute('src', /wassana%20therapist%20transparent\.webp/)
+  await expect
+    .poll(() => revealPortrait.evaluate((image) => (image as HTMLImageElement).naturalWidth))
+    .toBeGreaterThan(0)
+
+  await page.getByRole('button', { name: /continue to secure sign in/i }).click()
+  const credentialPortrait = page.locator('.credential-identity__portrait img')
+  await expect(credentialPortrait).toHaveAttribute('src', /wassana%20therapist%20transparent\.webp/)
+  await expect
+    .poll(() => credentialPortrait.evaluate((image) => (image as HTMLImageElement).naturalWidth))
+    .toBeGreaterThan(0)
+
+  await page.getByRole('button', { name: /enter sora.*team demo/i }).click()
+  const portalPortrait = page.locator('.portal-sidebar__portrait img')
+  await expect(portalPortrait).toHaveAttribute('src', /wassana%20therapist%20transparent\.webp/)
+  await expect
+    .poll(() => portalPortrait.evaluate((image) => (image as HTMLImageElement).naturalWidth))
+    .toBeGreaterThan(0)
+})
+
+test('portrait reveal and team chooser stay usable on a phone viewport', async ({ page }) => {
+  const sora = createDemoTherapists().find((therapist) => therapist.id === DEMO_THERAPIST_IDS.sora)!
+  const noa = createDemoClients().find((client) => client.preferredName === 'Noa')!
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await page.goto('/AURA/#/login/therapist')
+  await page
+    .getByRole('textbox', { name: 'Your full name' })
+    .fill(sora.displayName.replace(' — fictional demo', ''))
+  await page.getByRole('spinbutton', { name: 'Your age' }).fill(demoAge(sora.dateOfBirth))
+  await page.getByRole('button', { name: /reveal my portal/i }).click()
+
+  const revealPortrait = page.getByRole('img', { name: /sora bell profile portrait/i })
+  await expect(revealPortrait).toBeVisible()
+  await expect(revealPortrait).toBeInViewport()
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(
+    true,
+  )
+
+  await page.goto('/AURA/#/login/client')
+  await page.getByRole('textbox', { name: 'Your full name' }).fill(noa.preferredName)
+  await page.getByRole('spinbutton', { name: 'Your age' }).fill(demoAge(noa.dateOfBirth))
+  await page.getByRole('button', { name: /reveal my portal/i }).click()
+  await page.getByRole('button', { name: /continue to secure sign in/i }).click()
+  await page.getByRole('button', { name: /enter noa.*client demo/i }).click()
+  await page.getByRole('link', { name: 'Appointments' }).click()
+  await page.getByRole('button', { name: /request appointment/i }).click()
+
+  const soraChoice = page.locator('label.therapist-choice').filter({ hasText: 'Sora Bell' })
+  await soraChoice.scrollIntoViewIfNeeded()
+  await expect(soraChoice.locator('img')).toBeVisible()
+  await expect(soraChoice).toBeInViewport()
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(
+    true,
+  )
+})
+
 test('client chooses a therapist while progress remains one continuous record', async ({
   page,
 }) => {
   await enterClient(page, 'Noa')
   await page.getByRole('link', { name: 'Appointments' }).click()
   await page.getByRole('button', { name: /request appointment/i }).click()
+  const amaraChoice = page.locator('label.therapist-choice').filter({ hasText: 'Amara Vale' })
   const soraChoice = page.locator('label.therapist-choice').filter({ hasText: 'Sora Bell' })
+  const amaraPortrait = amaraChoice.locator('img')
+  const soraPortrait = soraChoice.locator('img')
+  await expect(amaraPortrait).toHaveAttribute('src', /Pratana%20Transp%20V2\.webp/)
+  await expect(soraPortrait).toHaveAttribute('src', /wassana%20therapist%20transparent\.webp/)
+  await expect
+    .poll(() => amaraPortrait.evaluate((image) => (image as HTMLImageElement).naturalWidth))
+    .toBeGreaterThan(0)
+  await expect
+    .poll(() => soraPortrait.evaluate((image) => (image as HTMLImageElement).naturalWidth))
+    .toBeGreaterThan(0)
   await soraChoice.click()
   await expect(page.getByLabel(/Sora Bell.*Therapeutic massage practitioner/i)).toBeChecked()
   await page.getByRole('button', { name: /send request/i }).click()
@@ -100,6 +181,7 @@ test('client chooses a therapist while progress remains one continuous record', 
   await expect(page.getByRole('heading', { name: /your progress stays with you/i })).toBeVisible()
   await expect(page.getByLabel(/your assigned care team/i)).toContainText('Amara')
   await expect(page.getByLabel(/your assigned care team/i)).toContainText('Sora')
+  await expect(page.getByLabel(/your assigned care team/i).locator('img')).toHaveCount(2)
 })
 
 test('each therapist account sees only its assigned client list', async ({ page }) => {

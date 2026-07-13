@@ -12,6 +12,7 @@ import {
   UsersRound,
 } from 'lucide-react'
 import { env } from '@/config/env'
+import { TherapistPortrait } from '@/components/identity/TherapistPortrait'
 import { useDemoStore } from '@/data/demo/store'
 import { useAuth } from '@/features/auth/auth-context'
 import type { AuraRole } from '@/features/auth/auth-context'
@@ -137,7 +138,11 @@ export function PortalNav({ role }: { role: AuraRole }) {
           ))}
         </nav>
         <div className="portal-sidebar__footer">
-          <CircleUserRound size={19} />
+          {env.demoMode && role === 'therapist' && demoTherapist ? (
+            <TherapistPortrait therapist={demoTherapist} className="portal-sidebar__portrait" />
+          ) : (
+            <CircleUserRound size={19} />
+          )}
           <div>
             <strong>{accountLabel}</strong>
             <span>{sessionLabel}</span>

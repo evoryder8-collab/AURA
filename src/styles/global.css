@@ -769,6 +769,43 @@ h3 {
   border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
 
+.therapist-portrait {
+  position: relative;
+  display: grid;
+  flex: 0 0 auto;
+  overflow: hidden;
+  place-items: center;
+  color: rgba(255, 255, 255, 0.94);
+  background:
+    radial-gradient(circle at 56% 28%, rgba(226, 217, 185, 0.88), transparent 25%),
+    linear-gradient(155deg, #56766b, #1a3028);
+  font-family: var(--font-editorial);
+  font-style: normal;
+}
+.therapist-portrait > span {
+  position: relative;
+  z-index: 0;
+}
+.therapist-portrait img {
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center bottom;
+  transform-origin: center 43%;
+  filter: drop-shadow(0 6px 7px rgba(9, 31, 24, 0.25));
+}
+.portal-sidebar__portrait {
+  width: 40px;
+  height: 40px;
+  border: 1px solid rgba(222, 244, 236, 0.24);
+  border-radius: 16px;
+  box-shadow: 0 5px 16px rgba(3, 16, 12, 0.25);
+  font-size: 0.78rem;
+}
+
 .portal-sidebar__footer div {
   min-width: 0;
   display: grid;
@@ -780,7 +817,7 @@ h3 {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.portal-sidebar__footer span {
+.portal-sidebar__footer > div span {
   color: rgba(255, 255, 255, 0.38);
   font-size: 0.68rem;
 }
@@ -4220,6 +4257,43 @@ h3 {
   color: rgba(255, 255, 255, 0.45);
   font-size: 0.68rem;
 }
+.next-visit-provider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: -8px 0 20px;
+  padding: 9px 11px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 15px;
+}
+.next-visit-provider__portrait {
+  width: 42px;
+  height: 42px;
+  border: 1px solid rgba(222, 244, 236, 0.24);
+  border-radius: 15px;
+  font-size: 0.78rem;
+}
+.next-visit-provider > span {
+  min-width: 0;
+  display: grid;
+}
+.next-visit-provider small {
+  color: rgba(255, 255, 255, 0.46);
+  font-size: 0.58rem;
+  font-weight: 750;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.next-visit-provider strong {
+  overflow: hidden;
+  color: rgba(255, 255, 255, 0.94);
+  font-family: var(--font-editorial);
+  font-size: 1rem;
+  font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .client-goal-card > svg {
   margin-bottom: 18px;
 }
@@ -4572,17 +4646,12 @@ h3 {
   font-size: 0.66rem;
   font-weight: 700;
 }
-.care-continuity__team i {
+.care-continuity__portrait {
   width: 23px;
   height: 23px;
-  display: grid;
-  place-items: center;
-  color: white;
-  background: var(--sage);
+  border: 1px solid rgba(55, 116, 90, 0.18);
   border-radius: 50%;
-  font-family: var(--font-editorial);
   font-size: 0.75rem;
-  font-style: normal;
 }
 .client-insight {
   display: flex;
@@ -4662,6 +4731,14 @@ h3 {
   margin-top: 6px;
   color: var(--forest);
   font-weight: 700;
+}
+.client-appointment__portrait {
+  width: 27px;
+  height: 27px;
+  border: 1px solid rgba(55, 116, 90, 0.2);
+  border-radius: 10px;
+  font-size: 0.62rem;
+  box-shadow: 0 3px 9px rgba(25, 51, 42, 0.12);
 }
 .booking-therapists {
   display: grid;

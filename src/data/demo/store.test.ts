@@ -148,7 +148,7 @@ describe('demo team continuity', () => {
   it('adds newly configured demo portraits to an already persisted therapist roster', () => {
     const fixture = createDemoState()
     const therapistsWithoutPortraits = fixture.therapists.map(
-      ({ portraitUrl: _portrait, ...therapist }) => therapist,
+      ({ portraitUrl: _portrait, portraitScale: _scale, ...therapist }) => therapist,
     )
     const merged = mergePersistedDemoState(
       { therapists: therapistsWithoutPortraits },
@@ -162,5 +162,12 @@ describe('demo team continuity', () => {
       merged.therapists.find((therapist) => therapist.id === DEMO_THERAPIST_IDS.amara)
         ?.portraitScale,
     ).toBe(2.15)
+    expect(
+      merged.therapists.find((therapist) => therapist.id === DEMO_THERAPIST_IDS.sora)?.portraitUrl,
+    ).toContain('wassana%20therapist%20transparent.webp')
+    expect(
+      merged.therapists.find((therapist) => therapist.id === DEMO_THERAPIST_IDS.sora)
+        ?.portraitScale,
+    ).toBe(1.5)
   })
 })

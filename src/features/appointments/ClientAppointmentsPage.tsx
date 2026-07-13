@@ -7,6 +7,7 @@ import { Card } from '@/components/design-system/Card'
 import { Field, Input, Select, Textarea } from '@/components/design-system/FormField'
 import { Modal } from '@/components/design-system/Modal'
 import { PageHeader } from '@/components/design-system/PageHeader'
+import { TherapistPortrait } from '@/components/identity/TherapistPortrait'
 import { env } from '@/config/env'
 import { useDemoStore } from '@/data/demo/store'
 import { useAuth } from '@/features/auth/auth-context'
@@ -84,40 +85,52 @@ function DemoClientAppointmentsPage() {
         }
       />
       <div className="appointment-list">
-        {appointments.map((appointment) => (
-          <Card key={appointment.id} className="client-appointment-row">
-            <div className="client-appointment-date">
-              <span>{format(new Date(appointment.startsAt), 'MMM')}</span>
-              <strong>{format(new Date(appointment.startsAt), 'd')}</strong>
-              <small>{format(new Date(appointment.startsAt), 'EEE')}</small>
-            </div>
-            <div>
-              <Badge
-                tone={
-                  appointment.status === 'confirmed'
-                    ? 'favourable'
-                    : appointment.status === 'requested'
-                      ? 'pending'
-                      : 'neutral'
-                }
-              >
-                {appointment.status}
-              </Badge>
-              <h2>{appointment.sessionType}</h2>
-              <p>
-                <Clock3 size={14} /> {format(new Date(appointment.startsAt), 'HH:mm')} ·{' '}
-                {appointment.durationMinutes} minutes
-              </p>
-              <p className="client-appointment-therapist">
-                <UserRound size={14} /> With{' '}
-                {therapists
-                  .find((therapist) => therapist.id === appointment.therapistId)
-                  ?.displayName.replace(' — fictional demo', '') ?? 'your AURA team'}
-              </p>
-            </div>
-            <CalendarCheck size={22} />
-          </Card>
-        ))}
+        {appointments.map((appointment) => {
+          const appointmentTherapist = therapists.find(
+            (therapist) => therapist.id === appointment.therapistId,
+          )
+          return (
+            <Card key={appointment.id} className="client-appointment-row">
+              <div className="client-appointment-date">
+                <span>{format(new Date(appointment.startsAt), 'MMM')}</span>
+                <strong>{format(new Date(appointment.startsAt), 'd')}</strong>
+                <small>{format(new Date(appointment.startsAt), 'EEE')}</small>
+              </div>
+              <div>
+                <Badge
+                  tone={
+                    appointment.status === 'confirmed'
+                      ? 'favourable'
+                      : appointment.status === 'requested'
+                        ? 'pending'
+                        : 'neutral'
+                  }
+                >
+                  {appointment.status}
+                </Badge>
+                <h2>{appointment.sessionType}</h2>
+                <p>
+                  <Clock3 size={14} /> {format(new Date(appointment.startsAt), 'HH:mm')} ·{' '}
+                  {appointment.durationMinutes} minutes
+                </p>
+                <p className="client-appointment-therapist">
+                  {appointmentTherapist ? (
+                    <TherapistPortrait
+                      therapist={appointmentTherapist}
+                      className="client-appointment__portrait"
+                    />
+                  ) : (
+                    <UserRound size={14} />
+                  )}{' '}
+                  With{' '}
+                  {appointmentTherapist?.displayName.replace(' — fictional demo', '') ??
+                    'your AURA team'}
+                </p>
+              </div>
+              <CalendarCheck size={22} />
+            </Card>
+          )
+        })}
       </div>
       <Modal
         open={open}
@@ -166,11 +179,6 @@ function DemoClientAppointmentsPage() {
               <div className="therapist-choice-grid">
                 {availableTherapists.map((therapist) => {
                   const selected = therapist.id === therapistId
-                  const initials = therapist.displayName
-                    .split(' —')[0]
-                    ?.split(' ')
-                    .map((part) => part[0])
-                    .join('')
                   return (
                     <label
                       key={therapist.id}
@@ -184,19 +192,10 @@ function DemoClientAppointmentsPage() {
                         checked={selected}
                         onChange={() => setTherapistId(therapist.id)}
                       />
-                      <span className="therapist-choice__portrait" aria-hidden="true">
-                        <span>{initials}</span>
-                        {therapist.portraitUrl ? (
-                          <img
-                            src={therapist.portraitUrl}
-                            alt=""
-                            style={{ transform: `scale(${therapist.portraitScale ?? 1})` }}
-                            onError={(event) => {
-                              event.currentTarget.style.display = 'none'
-                            }}
-                          />
-                        ) : null}
-                      </span>
+                      <TherapistPortrait
+                        therapist={therapist}
+                        className="therapist-choice__portrait"
+                      />
                       <span className="therapist-choice__detail">
                         <span className="therapist-choice__topline">
                           <strong>{therapist.displayName.replace(' — fictional demo', '')}</strong>

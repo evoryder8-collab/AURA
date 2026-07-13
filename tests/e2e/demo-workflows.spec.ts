@@ -1,5 +1,9 @@
 import { expect, test } from '@playwright/test'
-import { createDemoClients, createDemoTherapists } from '../../src/data/demo/fixtures'
+import {
+  createDemoClients,
+  createDemoTherapists,
+  DEMO_THERAPIST_IDS,
+} from '../../src/data/demo/fixtures'
 import { getIdentityAge } from '../../src/features/auth/identity'
 
 function demoAge(dateOfBirth: string) {
@@ -60,6 +64,24 @@ test('returning client completes the fast unchanged check-in', async ({ page }) 
   await expect(page.getByText(/about 20 seconds/i)).toBeVisible()
   await page.getByRole('button', { name: /confirm unchanged/i }).click()
   await expect(page.getByRole('heading', { name: /you’re ready.*for today/i })).toBeVisible()
+})
+
+test('switching portal routes clears an unsubmitted identity reveal', async ({ page }) => {
+  await page.goto('/AURA/#/login/therapist')
+  const amara = createDemoTherapists().find(
+    (therapist) => therapist.id === DEMO_THERAPIST_IDS.amara,
+  )!
+  await page
+    .getByRole('textbox', { name: 'Your full name' })
+    .fill(amara.displayName.replace(' — fictional demo', ''))
+  await page.getByRole('spinbutton', { name: 'Your age' }).fill(demoAge(amara.dateOfBirth))
+  await page.getByRole('button', { name: /reveal my portal/i }).click()
+  await expect(page.getByRole('region', { name: /amara vale/i })).toBeVisible()
+
+  await page.goto('/AURA/#/login/client')
+
+  await expect(page.getByRole('heading', { name: /let your aura take shape/i })).toBeVisible()
+  await expect(page.getByRole('region', { name: /amara vale/i })).toHaveCount(0)
 })
 
 test('client chooses a therapist while progress remains one continuous record', async ({

@@ -131,6 +131,7 @@ export function LoginPage() {
           {identityStage ? (
             <>
               <IdentityReveal
+                key={role}
                 candidates={identityCandidates}
                 allowUnmatchedPreview={!env.demoMode}
                 eyebrow={role === 'therapist' ? 'Team identity' : 'Personal identity'}

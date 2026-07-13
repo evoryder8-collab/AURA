@@ -1,0 +1,24 @@
+import type { ReactNode } from 'react'
+
+export function PageHeader({
+  eyebrow,
+  title,
+  lead,
+  actions,
+}: {
+  eyebrow?: string
+  title: ReactNode
+  lead?: ReactNode
+  actions?: ReactNode
+}) {
+  return (
+    <header className="page-header">
+      <div>
+        {eyebrow && <p className="eyebrow">{eyebrow}</p>}
+        <h1>{title}</h1>
+        {lead && <p className="page-header__lead">{lead}</p>}
+      </div>
+      {actions && <div className="page-header__actions">{actions}</div>}
+    </header>
+  )
+}

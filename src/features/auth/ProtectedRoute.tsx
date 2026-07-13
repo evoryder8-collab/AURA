@@ -1,5 +1,6 @@
 import { Navigate, Outlet, useLocation } from 'react-router-dom'
 import { Spinner } from '@/components/design-system/Spinner'
+import { env } from '@/config/env'
 import { useAuth, type AuraRole } from './auth-context'
 
 export function ProtectedRoute({ role }: { role: AuraRole }) {
@@ -11,7 +12,18 @@ export function ProtectedRoute({ role }: { role: AuraRole }) {
     return <Navigate to={`/login/${role}`} replace state={{ from: location.pathname }} />
   }
   if (auth.role !== role) {
-    return <Navigate to={auth.role === 'therapist' ? '/therapist/today' : '/client/home'} replace />
+    return (
+      <Navigate
+        to={
+          auth.role === 'therapist'
+            ? '/therapist/today'
+            : env.demoMode
+              ? '/client/home'
+              : '/client/appointments'
+        }
+        replace
+      />
+    )
   }
   return <Outlet />
 }

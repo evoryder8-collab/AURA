@@ -41,12 +41,26 @@ const clientItems: NavItem[] = [
   { to: '/client/settings', label: 'Settings', icon: Settings },
 ]
 
+const connectedClientItems: NavItem[] = [
+  { to: '/client/appointments', label: 'Appointments', icon: CalendarDays, primary: true },
+  { to: '/client/settings', label: 'Settings', icon: Settings, primary: true },
+]
+
 export function PortalNav({ role }: { role: AuraRole }) {
   const auth = useAuth()
+  const demoTherapist = useDemoStore((state) =>
+    state.therapists.find((therapist) => therapist.id === auth.demoTherapistId),
+  )
+  const demoClient = useDemoStore((state) =>
+    state.clients.find((client) => client.id === auth.demoClientId),
+  )
   const activeDemoSessionId = useDemoStore(
     (state) =>
       state.appointments.find(
-        (appointment) => appointment.status === 'confirmed' && !appointment.session?.finishedAt,
+        (appointment) =>
+          appointment.status === 'confirmed' &&
+          !appointment.session?.finishedAt &&
+          appointment.therapistId === auth.demoTherapistId,
       )?.id,
   )
   const therapistItems: NavItem[] = [
@@ -63,16 +77,29 @@ export function PortalNav({ role }: { role: AuraRole }) {
       : []),
     ...therapistItemsAfterSession,
   ]
-  const items = role === 'therapist' ? therapistItems : clientItems
+  const connectedTherapistItems: NavItem[] = [
+    ...therapistItemsBeforeSession,
+    { to: '/therapist/settings', label: 'Settings', icon: Settings, primary: true },
+  ]
+  const items =
+    role === 'therapist'
+      ? env.demoMode
+        ? therapistItems
+        : connectedTherapistItems
+      : env.demoMode
+        ? clientItems
+        : connectedClientItems
   const accountLabel = env.demoMode
     ? role === 'therapist'
-      ? 'Demo Therapist'
-      : 'Demo Client'
+      ? (demoTherapist?.displayName.replace(' — fictional demo', '') ?? 'Demo Therapist')
+      : (demoClient?.preferredName ?? 'Demo Client')
     : role === 'therapist'
       ? 'Authenticated therapist'
       : 'Authenticated client'
   const sessionLabel = env.demoMode
-    ? 'Synthetic session'
+    ? role === 'therapist'
+      ? (demoTherapist?.professionalTitle ?? 'Synthetic team account')
+      : 'Synthetic client account'
     : auth.user
       ? 'Protected session'
       : 'Session unavailable'
@@ -80,7 +107,13 @@ export function PortalNav({ role }: { role: AuraRole }) {
     <>
       <aside className="portal-sidebar" aria-label={`${role} navigation`}>
         <NavLink
-          to={role === 'therapist' ? '/therapist/today' : '/client/home'}
+          to={
+            role === 'therapist'
+              ? '/therapist/today'
+              : env.demoMode
+                ? '/client/home'
+                : '/client/appointments'
+          }
           className="wordmark"
         >
           <span className="wordmark__halo">
@@ -96,6 +129,7 @@ export function PortalNav({ role }: { role: AuraRole }) {
             <NavLink
               key={to}
               to={to}
+              aria-label={label}
               className={({ isActive }) => `portal-nav__item${isActive ? ' is-active' : ''}`}
             >
               <Icon size={19} /> <span>{label}</span>

@@ -43,6 +43,22 @@ export const actorProfileSchema = z.object({
   role: z.enum(['therapist', 'client']),
 })
 
+export const publicTherapistDirectoryRowSchema = z.object({
+  practice_name: boundedText(120),
+  directory_slug: z.string().regex(/^[a-z][a-z0-9-]{2,63}$/u),
+  professional_name: boundedText(160),
+  professional_title: nullableText(120),
+  public_portrait_path: z.string().max(512).nullable(),
+})
+
+export const bookableTherapistRowSchema = z.object({
+  user_id: z.string().uuid(),
+  directory_slug: z.string().regex(/^[a-z][a-z0-9-]{2,63}$/u),
+  professional_name: boundedText(160),
+  professional_title: nullableText(120),
+  public_portrait_path: z.string().max(512).nullable(),
+})
+
 export const createClientSchema = z.object({
   preferredName: boundedText(120),
   legalName: nullableText(180).optional(),

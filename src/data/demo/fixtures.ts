@@ -1,5 +1,5 @@
 import { addDays, formatISO, setHours, setMinutes, subDays } from 'date-fns'
-import type { DemoAppointment, DemoClient, DemoState, MetricPoint } from './model'
+import type { DemoAppointment, DemoClient, DemoState, DemoTherapist, MetricPoint } from './model'
 
 const now = new Date()
 
@@ -28,6 +28,62 @@ const metricSeries = (
     ...(events[index] ? { events: events[index] } : {}),
   }))
 
+export const DEMO_THERAPIST_IDS = {
+  amara: 'demo-therapist-amara',
+  elias: 'demo-therapist-elias',
+  sora: 'demo-therapist-sora',
+} as const
+
+export const createDemoTherapists = (): DemoTherapist[] => [
+  {
+    id: DEMO_THERAPIST_IDS.amara,
+    preferredName: 'Amara',
+    displayName: 'Amara Vale — fictional demo',
+    dateOfBirth: '1988-02-14',
+    professionalTitle: 'Massage therapist · team lead',
+    portraitUrl: 'Pratana%20Transp%20V2.webp',
+    portraitScale: 2.15,
+    specialties: ['Restorative massage', 'Hip & lower-body mobility'],
+    assignedClientIds: ['demo-client-mira', 'demo-client-noa', 'demo-client-sage'],
+    availability: {
+      status: 'available',
+      label: 'Available this week',
+      nextAvailableAt: at(2, 10, 30),
+    },
+    synthetic: true,
+  },
+  {
+    id: DEMO_THERAPIST_IDS.elias,
+    preferredName: 'Elias',
+    displayName: 'Elias Rowan — fictional demo',
+    dateOfBirth: '1991-11-06',
+    professionalTitle: 'Sports massage therapist',
+    specialties: ['Focused sessions', 'Shoulder & upper-body care'],
+    assignedClientIds: ['demo-client-noa', 'demo-client-sage'],
+    availability: {
+      status: 'limited',
+      label: 'Two openings this week',
+      nextAvailableAt: at(3, 13),
+    },
+    synthetic: true,
+  },
+  {
+    id: DEMO_THERAPIST_IDS.sora,
+    preferredName: 'Sora',
+    displayName: 'Sora Bell — fictional demo',
+    dateOfBirth: '1984-06-27',
+    professionalTitle: 'Therapeutic massage practitioner',
+    specialties: ['Progress reviews', 'Back & whole-body recovery'],
+    assignedClientIds: ['demo-client-mira', 'demo-client-sage'],
+    availability: {
+      status: 'available',
+      label: 'Available this week',
+      nextAvailableAt: at(1, 15),
+    },
+    synthetic: true,
+  },
+]
+
 export const createDemoClients = (): DemoClient[] => [
   {
     id: 'demo-client-mira',
@@ -43,6 +99,7 @@ export const createDemoClients = (): DemoClient[] => [
     recoveryIndex: 78,
     intakeStatus: 'complete',
     active: true,
+    assignedTherapistIds: [DEMO_THERAPIST_IDS.amara, DEMO_THERAPIST_IDS.sora],
     reviewProgress: false,
     goals: [
       {
@@ -100,6 +157,7 @@ export const createDemoClients = (): DemoClient[] => [
     recoveryIndex: 61,
     intakeStatus: 'pending',
     active: true,
+    assignedTherapistIds: [DEMO_THERAPIST_IDS.amara, DEMO_THERAPIST_IDS.elias],
     reviewProgress: false,
     caution: {
       label: 'Clearance to confirm',
@@ -160,6 +218,11 @@ export const createDemoClients = (): DemoClient[] => [
     recoveryIndex: 34,
     intakeStatus: 'complete',
     active: true,
+    assignedTherapistIds: [
+      DEMO_THERAPIST_IDS.amara,
+      DEMO_THERAPIST_IDS.elias,
+      DEMO_THERAPIST_IDS.sora,
+    ],
     reviewProgress: true,
     caution: {
       label: 'Review before treatment',
@@ -214,6 +277,7 @@ export const createDemoAppointments = (): DemoAppointment[] => [
   {
     id: 'appointment-mira-today',
     clientId: 'demo-client-mira',
+    therapistId: DEMO_THERAPIST_IDS.amara,
     startsAt: at(0, 9, 30),
     durationMinutes: 60,
     sessionType: 'Restorative massage',
@@ -224,6 +288,7 @@ export const createDemoAppointments = (): DemoAppointment[] => [
   {
     id: 'appointment-noa-today',
     clientId: 'demo-client-noa',
+    therapistId: DEMO_THERAPIST_IDS.elias,
     startsAt: at(0, 11, 15),
     durationMinutes: 75,
     sessionType: 'First visit',
@@ -234,6 +299,7 @@ export const createDemoAppointments = (): DemoAppointment[] => [
   {
     id: 'appointment-sage-today',
     clientId: 'demo-client-sage',
+    therapistId: DEMO_THERAPIST_IDS.sora,
     startsAt: at(0, 15),
     durationMinutes: 45,
     sessionType: 'Progress review',
@@ -244,6 +310,7 @@ export const createDemoAppointments = (): DemoAppointment[] => [
   {
     id: 'appointment-mira-followup',
     clientId: 'demo-client-mira',
+    therapistId: DEMO_THERAPIST_IDS.sora,
     startsAt: at(-1, 10),
     durationMinutes: 60,
     sessionType: 'Restorative massage',
@@ -263,6 +330,7 @@ export const createDemoAppointments = (): DemoAppointment[] => [
   {
     id: 'appointment-mira-next',
     clientId: 'demo-client-mira',
+    therapistId: DEMO_THERAPIST_IDS.amara,
     startsAt: at(2, 10, 30),
     durationMinutes: 60,
     sessionType: 'Restorative massage',
@@ -273,6 +341,7 @@ export const createDemoAppointments = (): DemoAppointment[] => [
   {
     id: 'appointment-request-demo',
     clientId: 'demo-client-noa',
+    therapistId: DEMO_THERAPIST_IDS.elias,
     startsAt: at(3, 13),
     durationMinutes: 60,
     sessionType: 'Client requested session',
@@ -284,6 +353,7 @@ export const createDemoAppointments = (): DemoAppointment[] => [
 ]
 
 export const createDemoState = (): DemoState => ({
+  therapists: createDemoTherapists(),
   clients: createDemoClients(),
   appointments: createDemoAppointments(),
   events: [

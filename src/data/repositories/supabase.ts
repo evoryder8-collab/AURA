@@ -3,19 +3,23 @@ import type {
   AppointmentListOptions,
   AppointmentRecord,
   AuraRepositories,
+  BookableTherapistRecord,
   ClientListOptions,
   ClientRecord,
   CreateAppointmentInput,
   CreateClientInput,
+  PublicTherapistDirectoryRecord,
   UpdateAppointmentInput,
 } from './contracts'
 import { asRepositoryError, repositoryError } from './errors'
 import {
   actorProfileSchema,
   appointmentRowSchema,
+  bookableTherapistRowSchema,
   clientRowSchema,
   createAppointmentSchema,
   createClientSchema,
+  publicTherapistDirectoryRowSchema,
   updateAppointmentSchema,
 } from './validation'
 
@@ -49,6 +53,22 @@ const APPOINTMENT_COLUMNS = [
   'room',
   'created_at',
   'updated_at',
+].join(',')
+
+const PUBLIC_THERAPIST_COLUMNS = [
+  'practice_name',
+  'directory_slug',
+  'professional_name',
+  'professional_title',
+  'public_portrait_path',
+].join(',')
+
+const BOOKABLE_THERAPIST_COLUMNS = [
+  'user_id',
+  'directory_slug',
+  'professional_name',
+  'professional_title',
+  'public_portrait_path',
 ].join(',')
 
 type ActorContext = {
@@ -101,6 +121,34 @@ function mapAppointment(value: unknown, operation: string): AppointmentRecord {
   }
 }
 
+function mapPublicTherapist(value: unknown, operation: string): PublicTherapistDirectoryRecord {
+  const parsed = publicTherapistDirectoryRowSchema.safeParse(value)
+  if (!parsed.success) throw repositoryError('invalid_response', operation)
+  const row = parsed.data
+  return {
+    source: 'supabase',
+    practiceName: row.practice_name,
+    directorySlug: row.directory_slug,
+    professionalName: row.professional_name,
+    professionalTitle: row.professional_title,
+    publicPortraitPath: row.public_portrait_path,
+  }
+}
+
+function mapBookableTherapist(value: unknown, operation: string): BookableTherapistRecord {
+  const parsed = bookableTherapistRowSchema.safeParse(value)
+  if (!parsed.success) throw repositoryError('invalid_response', operation)
+  const row = parsed.data
+  return {
+    source: 'supabase',
+    userId: row.user_id,
+    directorySlug: row.directory_slug,
+    professionalName: row.professional_name,
+    professionalTitle: row.professional_title,
+    publicPortraitPath: row.public_portrait_path,
+  }
+}
+
 function mapClientList(value: unknown, operation: string) {
   if (!Array.isArray(value)) throw repositoryError('invalid_response', operation)
   return value.map((row) => mapClient(row, operation))
@@ -131,6 +179,39 @@ async function loadActor(client: SupabaseClient, operation: string): Promise<Act
 }
 
 export function createSupabaseRepositories(client: SupabaseClient): AuraRepositories {
+  const therapists = {
+    async listPublic() {
+      const operation = 'therapists.listPublic'
+      try {
+        const response = await client
+          .from('public_therapist_directory')
+          .select(PUBLIC_THERAPIST_COLUMNS)
+          .order('professional_name')
+        if (response.error || !Array.isArray(response.data)) {
+          throw repositoryError('read_failed', operation)
+        }
+        return response.data.map((row) => mapPublicTherapist(row, operation))
+      } catch (error) {
+        throw asRepositoryError(error, 'read_failed', operation)
+      }
+    },
+    async listBookable() {
+      const operation = 'therapists.listBookable'
+      try {
+        const response = await client
+          .from('client_therapist_directory')
+          .select(BOOKABLE_THERAPIST_COLUMNS)
+          .order('professional_name')
+        if (response.error || !Array.isArray(response.data)) {
+          throw repositoryError('read_failed', operation)
+        }
+        return response.data.map((row) => mapBookableTherapist(row, operation))
+      } catch (error) {
+        throw asRepositoryError(error, 'read_failed', operation)
+      }
+    },
+  }
+
   const clients = {
     async list(options?: ClientListOptions) {
       const operation = 'clients.list'
@@ -307,6 +388,7 @@ export function createSupabaseRepositories(client: SupabaseClient): AuraReposito
 
   return {
     mode: 'supabase',
+    therapists,
     clients,
     appointments,
     async readSnapshot() {

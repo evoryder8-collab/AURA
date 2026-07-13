@@ -48,7 +48,13 @@ Normalize usernames consistently, constrain the accepted format, and enforce cas
 
 ### `therapist_profiles`
 
-One-to-one therapist detail: `user_id`, `practice_id`, `professional_name`, contact fields, settings, and reminder preferences. `user_id` references a therapist `profiles` row. Contact and settings are authenticated data, not public brand content.
+One-to-one therapist detail: `user_id`, `practice_id`, `professional_name`, contact fields, settings, reminder preferences, public directory fields, and booking flags. `user_id` references a therapist `profiles` row. Contact and settings remain self-scoped authenticated data. `directory_opt_in` explicitly controls the narrow public projection; `accepting_online_bookings` additionally controls authenticated client selection. A server-generated, immutable, practice-unique portrait resource ID owns a therapist-specific namespace in `brand-assets-public`; the public portrait is a validated same-practice raster path inside that namespace, never an auth ID or signed/private URL.
+
+### `therapist_client_assignments`
+
+The care-team authorization ledger: `practice_id`, `client_id`, `therapist_user_id`, immutable assignment provenance, nullable `assigned_by`, `assigned_at`, `ended_at`, and timestamps. Only one active row per client/therapist pair is allowed. An active row grants that therapist access to the client aggregate; an ended historical row does not.
+
+Authenticated application users cannot browse or mutate this base table. Narrow server workflows create assignments when a therapist creates a client or when a client deliberately books an eligible therapist. Other assignment/end-date changes require a trusted service operation until a practice owner/admin role and governance rules are designed. Ending is monotonic: an ended row cannot be reactivated or deleted, and a later care relationship creates a new assignment row. The migration backfills only relationships evidenced by an existing client creator or appointment—not every therapist in a practice.
 
 ### `brand_config`
 
@@ -56,7 +62,9 @@ One row per practice: `practice_id`, `logo_path`, `portrait_path`, accent values
 
 ### Safe views
 
-`public_brand_config` is the sole anonymous application-data view. Its explicit column list contains practice name, a public-bucket logo path, visual configuration, bonus label, and locale; it omits private assets, feature flags, quote configuration, and practice JSON. `client_therapist_directory` gives authenticated users a same-practice explicit projection of professional name and contact fields. Both views use security barriers and deliberate grants.
+`public_brand_config` contains the deliberately public installation presentation fields. `public_therapist_directory` contains only an explicitly opted-in practice name, non-auth directory slug, professional name/title, and public portrait path; it omits auth IDs, username, contact data, settings, and booking state. `client_therapist_directory` is same-practice and authenticated, adds the therapist user ID required by the booking RPC, filters to therapists accepting online bookings, and still omits contact/settings data. These views use security barriers, explicit columns, and deliberate grants.
+
+There is intentionally no public client directory, name-and-age matcher, client portrait view, or pre-auth client lookup RPC. A name plus age/date of birth is not authentication and must not reveal whether a client exists or summon private imagery.
 
 ## Client and care records
 
@@ -68,7 +76,9 @@ The stable client aggregate root: `id`, `practice_id`, nullable `auth_user_id`, 
 
 Links a client and therapist to scheduled work: `practice_id`, `client_id`, `therapist_user_id`, `starts_at`, constrained positive `duration_minutes`, `session_type`, status, intake-status snapshot, `requested_by`, room, and timestamps. Shared calendar projections contain no clinical detail.
 
-Clients do not receive direct insert/update permission on this table. `request_appointment` derives client, practice, requester, intake snapshot, room, and requested status from the authenticated account; `cancel_appointment` can only cancel the caller's own request/pending/confirmed row. Therapist scheduling changes use the therapist-only table policies.
+Clients do not receive direct insert/update permission on this table. `request_appointment` derives client, practice, requester, intake snapshot, room, and requested status from the authenticated account, verifies that the selected therapist is an opted-in bookable therapist in the same practice, and creates the active care-team assignment in the same transaction. `cancel_appointment` can only cancel the caller's own request/pending/confirmed row. A therapist may create or update only appointments attributed to their own account for an assigned client. Client, therapist, requester, practice, and creation attribution are immutable; application users receive no direct delete policy, so cancellation/decline remains a status transition and the longitudinal record is retained.
+
+Pain, functional-goal, response, and other outcome rows remain rooted by `client_id` and, where applicable, attributed to `appointment_id`. `appointments.therapist_user_id` preserves who delivered each session, but progress queries aggregate by client rather than fragmenting the longitudinal record by provider.
 
 Recommended indexes include `(practice_id, starts_at)`, `(client_id, starts_at desc)`, `(therapist_user_id, starts_at)`, and status/time combinations used by Today.
 
@@ -186,6 +196,8 @@ erDiagram
     PRACTICES ||--o{ CLIENTS : owns
     PROFILES ||--o| THERAPIST_PROFILES : extends
     PROFILES ||--o| CLIENTS : "may link auth identity"
+    PROFILES ||--o{ THERAPIST_CLIENT_ASSIGNMENTS : receives
+    CLIENTS ||--o{ THERAPIST_CLIENT_ASSIGNMENTS : authorizes
     CLIENTS ||--o{ APPOINTMENTS : schedules
     CLIENTS ||--o{ CONSENTS : decides
     CLIENTS ||--o{ HEALTH_CONDITIONS : records
@@ -221,7 +233,8 @@ RLS policies should reuse small database functions such as:
 - `current_user_role()` — protected role from `profiles`;
 - `current_client_id()` — client linked to `auth.uid()`;
 - `is_therapist()` — role and dedicated-practice membership;
-- `can_access_client(target_client_id)` — therapist practice access or exact linked client;
+- `is_assigned_therapist(target_client_id)` — current therapist has an active care-team assignment;
+- `can_access_client(target_client_id)` — active assigned therapist or exact linked client;
 - `has_active_consent(target_client_id, requested_consent)` — current unrevoked consent.
 
 Any `SECURITY DEFINER` helper must pin `search_path`, fully qualify objects, avoid dynamic SQL, receive the smallest necessary grants, and not expose private lookup behavior to anonymous callers.
@@ -230,14 +243,15 @@ Any `SECURITY DEFINER` helper must pin `search_path`, fully qualify objects, avo
 
 | Data group                             | Therapist                                  | Owning client                               | Other client / anonymous                  |
 | -------------------------------------- | ------------------------------------------ | ------------------------------------------- | ----------------------------------------- |
-| Client identity/intake                 | Manage within dedicated practice           | Read/update permitted own fields            | Denied                                    |
-| Appointments                           | Manage                                     | Read own; request permitted slots           | Denied                                    |
-| Pain, goal entries, context, follow-up | Read/manage                                | Read and create own allowed rows            | Denied                                    |
-| Therapist assessments/private notes    | Manage                                     | Denied; use approved safe presentation      | Denied                                    |
-| Insights                               | Create/review/approve                      | Approved client narration only              | Denied                                    |
-| Photos                                 | Consent-aware manage                       | Own, consented, fresh-auth application flow | Denied                                    |
-| Handoffs                               | Therapist workflow only                    | Consent/status appropriate to own handoff   | Token endpoint exposes only scoped output |
+| Client identity/intake                 | Assigned clients only                      | Read/update permitted own fields            | Denied                                    |
+| Appointments                           | Assigned clients only                      | Read own; select an eligible therapist      | Denied                                    |
+| Pain, goal entries, context, follow-up | Assigned client aggregate across providers | Read and create own allowed rows            | Denied                                    |
+| Therapist assessments/private notes    | Assigned clients only                      | Denied; use approved safe presentation      | Denied                                    |
+| Insights                               | Assigned clients: create/review/approve    | Approved client narration only              | Denied                                    |
+| Photos                                 | Assigned + consent-aware manage            | Own, consented, fresh-auth application flow | Denied                                    |
+| Handoffs                               | Assigned-client therapist workflow         | Consent/status appropriate to own handoff   | Token endpoint exposes only scoped output |
 | Audit                                  | Controlled append/read appropriate to role | No raw audit access                         | Denied                                    |
 | Public brand projection                | Read                                       | Read                                        | Read only deliberately public fields      |
+| Public therapist directory             | Opted-in professional fields only          | Opted-in professional fields only           | Read only deliberately public fields      |
 
 See [SECURITY.md](./SECURITY.md) for enforcement and required negative tests.

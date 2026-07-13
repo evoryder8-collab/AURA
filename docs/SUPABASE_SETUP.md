@@ -85,7 +85,7 @@ After `db reset`, create an ignored bootstrap environment and choose your own lo
 cp supabase/scripts/.env.example supabase/scripts/.env.local
 ```
 
-Fill the local `SUPABASE_URL`, local service-role key from `npx supabase status`, and the four 14-or-more-character synthetic passwords. The project shortcut loads that exact ignored file:
+Fill the local `SUPABASE_URL`, local service-role key from `npx supabase status`, and the five 14-or-more-character synthetic passwords (two therapists and three clients). The project shortcut loads that exact ignored file:
 
 ```sh
 npm run seed:demo
@@ -101,7 +101,17 @@ deno run \
   supabase/scripts/bootstrap-demo-users.ts
 ```
 
-The script hard-refuses any target except `localhost`, `127.0.0.1`, or `::1`; never logs passwords/service credentials; and updates only the fixed synthetic auth IDs created by `seed.sql`. The linked `profiles`/`clients` are relational seed data. Use the passwords you supplied locally, then remove the ignored environment when it is no longer needed. Do not improvise an insecure public therapist signup.
+The script hard-refuses any target except `localhost`, `127.0.0.1`, or `::1`; never logs passwords/service credentials; and updates only the fixed synthetic auth IDs created by `seed.sql`. The linked profiles, clients, and care-team assignments are relational seed data. The second therapist shares only the Iris fixture, and two Iris appointments are attributed to that therapist so cross-provider client aggregation can be tested. Use the passwords you supplied locally, then remove the ignored environment when it is no longer needed. Do not improvise an insecure public therapist signup.
+
+## Team assignments and therapist directory
+
+`therapist_client_assignments` is the RLS authorization boundary for client records. Therapists do not gain access merely by sharing a practice. A client booking an opted-in, online-bookable therapist creates the assignment and appointment atomically; therapist-created clients are assigned to their creator. Ordinary appointment scheduling never grants a teammate access. Cancellation does not automatically end a care relationship.
+
+There is no owner/admin role yet. Do not add a UI that lets ordinary therapist accounts browse or mutate the assignment ledger. Until ownership/delegation governance is implemented, other assignment or revocation changes are controlled service-role operations with an external authorization decision and an audit event. Review migration backfill results before hosted rollout: only relationships evidenced by `clients.created_by` or existing appointments are preserved.
+
+Public therapist discovery is opt-in. Set a unique lowercase `directory_slug`, an optional professional title, `directory_opt_in=true`, and optionally `accepting_online_bookings=true`. Each therapist receives a server-generated, immutable, practice-unique `public_portrait_resource_id`; a `public_portrait_path`, when present, must point to that therapist-owned same-practice raster namespace in `brand-assets-public` using `<practice_id>/<opaque_resource_id>/<opaque_filename>`. App-authenticated inserts cannot choose this resource ID. The opaque resource must never be an auth user ID. Only that therapist can mutate objects in the claimed portrait namespace. Upload and review the deliberately public asset separately, and never place a private/signed URL or a client image in this field.
+
+The unauthenticated app may read only `public_therapist_directory`, which omits auth IDs, contacts, usernames, settings, and booking state. After client authentication, `client_therapist_directory` supplies the therapist user ID needed by `request_appointment`. Name plus age/date of birth must never call a client lookup or reveal a client portrait before authentication; it is not an authentication factor.
 
 ## Local Edge Functions
 
@@ -136,6 +146,8 @@ Functions that do not have a provider key must use their documented deterministi
 ## Redirect URLs
 
 Supabase Auth must allow each exact application origin/path used by the login callback. With HashRouter, construct redirects from the current origin and Vite base, ending in `#/auth/callback`; do not hard-code an account name in application code.
+
+The browser client must use the PKCE flow with URL session detection enabled. PKCE returns a short-lived authorization code in URL query parameters, leaving the hash fragment available to the router; the implicit flow also uses the fragment and is incompatible with this callback shape.
 
 Typical development entries:
 
@@ -248,6 +260,9 @@ Also run the SQL authorization/storage suite described in [TESTING.md](./TESTING
 
 - backend profile role overrides the entrance choice;
 - Client A cannot access Client B;
+- a therapist can access only actively assigned clients and loses access when an assignment ends;
+- client-selected booking accepts only same-practice, opted-in therapists accepting online bookings and creates the care-team assignment atomically;
+- public directory queries expose no therapist auth ID/contact/settings, and no public client identity/photo lookup exists;
 - client-safe responses contain no private therapist fields;
 - photo and handoff access follow current consent;
 - all private buckets reject anonymous listing/download;

@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import { createDemoState } from './fixtures'
+import { createDemoState, DEMO_THERAPIST_IDS } from './fixtures'
 import type { IntakeDraft } from './model'
-import { useDemoStore } from './store'
+import { getClientProgressAcrossTherapists, mergePersistedDemoState, useDemoStore } from './store'
 
 const draft: IntakeDraft = {
   step: 4,
@@ -65,5 +65,102 @@ describe('demo intake persistence', () => {
       },
       caution: { label: 'Clearance to confirm', region: 'right_shoulder' },
     })
+  })
+})
+
+describe('demo team continuity', () => {
+  beforeEach(() => {
+    useDemoStore.setState({ ...createDemoState(), hydrated: true })
+  })
+
+  it('seeds overlapping therapist assignments and keeps Amara available to every client', () => {
+    const state = createDemoState()
+
+    expect(state.therapists).toHaveLength(3)
+    expect(
+      state.clients.every((client) =>
+        client.assignedTherapistIds.includes(DEMO_THERAPIST_IDS.amara),
+      ),
+    ).toBe(true)
+    expect(
+      new Set(
+        state.appointments
+          .filter((appointment) => appointment.clientId === 'demo-client-mira')
+          .map((appointment) => appointment.therapistId),
+      ).size,
+    ).toBeGreaterThan(1)
+  })
+
+  it('aggregates metrics and goals by client even when care crosses therapists', () => {
+    const state = createDemoState()
+    const before = getClientProgressAcrossTherapists(state, 'demo-client-mira')
+
+    state.appointments = state.appointments.map((appointment) =>
+      appointment.clientId === 'demo-client-mira'
+        ? { ...appointment, therapistId: DEMO_THERAPIST_IDS.elias }
+        : appointment,
+    )
+
+    expect(getClientProgressAcrossTherapists(state, 'demo-client-mira')).toEqual(before)
+    expect(before.metrics).toHaveLength(6)
+    expect(before.goals).toHaveLength(1)
+  })
+
+  it('assigns a new client to the creating therapist', () => {
+    const id = useDemoStore.getState().addClient({
+      preferredName: 'River',
+      email: 'river@example.invalid',
+      phone: '+00 000 000 0404',
+      therapistId: DEMO_THERAPIST_IDS.sora,
+    })
+    const state = useDemoStore.getState()
+
+    expect(state.clients.find((client) => client.id === id)?.assignedTherapistIds).toEqual([
+      DEMO_THERAPIST_IDS.sora,
+    ])
+    expect(
+      state.therapists
+        .find((therapist) => therapist.id === DEMO_THERAPIST_IDS.sora)
+        ?.assignedClientIds.includes(id),
+    ).toBe(true)
+  })
+
+  it('backfills team assignments and a required therapist when hydrating legacy state', () => {
+    const fixture = createDemoState()
+    const legacyClients = fixture.clients.map(
+      ({ assignedTherapistIds: _assigned, ...client }) => client,
+    )
+    const legacyAppointments = fixture.appointments.map(
+      ({ therapistId: _therapist, ...item }) => item,
+    )
+    const merged = mergePersistedDemoState(
+      { clients: legacyClients, appointments: legacyAppointments },
+      useDemoStore.getState(),
+    )
+
+    expect(merged.therapists).toHaveLength(3)
+    expect(merged.clients.every((client) => client.assignedTherapistIds.length > 0)).toBe(true)
+    expect(merged.appointments.every((appointment) => appointment.therapistId.length > 0)).toBe(
+      true,
+    )
+  })
+
+  it('adds newly configured demo portraits to an already persisted therapist roster', () => {
+    const fixture = createDemoState()
+    const therapistsWithoutPortraits = fixture.therapists.map(
+      ({ portraitUrl: _portrait, ...therapist }) => therapist,
+    )
+    const merged = mergePersistedDemoState(
+      { therapists: therapistsWithoutPortraits },
+      useDemoStore.getState(),
+    )
+
+    expect(
+      merged.therapists.find((therapist) => therapist.id === DEMO_THERAPIST_IDS.amara)?.portraitUrl,
+    ).toContain('Pratana%20Transp%20V2.webp')
+    expect(
+      merged.therapists.find((therapist) => therapist.id === DEMO_THERAPIST_IDS.amara)
+        ?.portraitScale,
+    ).toBe(2.15)
   })
 })

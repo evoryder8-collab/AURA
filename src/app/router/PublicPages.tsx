@@ -8,7 +8,7 @@ import {
   ShieldCheck,
 } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, Navigate, useParams } from 'react-router-dom'
 import { Button } from '@/components/design-system/Button'
 import { Card } from '@/components/design-system/Card'
 import { Field, Input, Select, Textarea } from '@/components/design-system/FormField'
@@ -20,14 +20,31 @@ import {
   respondToSecureHandoff,
   type SecureHandoffInspection,
 } from '@/data/supabase/secureHandoff'
+import { useAuth } from '@/features/auth/auth-context'
 
 export function AuthCallbackPage() {
+  const auth = useAuth()
+
+  if (auth.loading) return <Spinner label="Verifying secure session" fullPage />
+
+  if (auth.role) {
+    const destination = auth.mfaChallengeRequired
+      ? `/login/${auth.role}`
+      : auth.role === 'therapist'
+        ? '/therapist/today'
+        : '/client/appointments'
+    return <Navigate to={destination} replace />
+  }
+
   return (
     <main id="main-content" className="public-state">
       <Card>
         <ShieldCheck size={28} />
-        <h1>Completing secure sign-in…</h1>
-        <p>The authenticated session is being verified before role-based routing.</p>
+        <h1>Secure sign-in could not be completed</h1>
+        <p>
+          The link may be invalid or expired. Return to the entrance and request a new sign-in link.
+          No account information has been shown.
+        </p>
         <Link className="button button--primary button--md" to="/">
           Return to entrance
         </Link>

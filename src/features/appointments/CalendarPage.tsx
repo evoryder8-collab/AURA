@@ -6,13 +6,22 @@ import { Button } from '@/components/design-system/Button'
 import { Field, Input, Select } from '@/components/design-system/FormField'
 import { Modal } from '@/components/design-system/Modal'
 import { PageHeader } from '@/components/design-system/PageHeader'
+import { env } from '@/config/env'
 import { useDemoStore } from '@/data/demo/store'
 import type { DemoAppointment } from '@/data/demo/model'
+import { appointmentsForTherapist } from '@/data/demo/team'
+import { useAuth } from '@/features/auth/auth-context'
 import { QuickAppointmentModal } from './QuickAppointmentModal'
 
 export function CalendarPage() {
-  const appointments = useDemoStore((state) => state.appointments)
+  const auth = useAuth()
+  const allAppointments = useDemoStore((state) => state.appointments)
   const clients = useDemoStore((state) => state.clients)
+  const therapists = useDemoStore((state) => state.therapists)
+  const therapist = therapists.find((item) => item.id === auth.demoTherapistId)
+  const appointments = env.demoMode
+    ? appointmentsForTherapist({ appointments: allAppointments }, auth.demoTherapistId)
+    : allAppointments
   const updateAppointment = useDemoStore((state) => state.updateAppointment)
   const [anchor, setAnchor] = useState(new Date())
   const [view, setView] = useState<'day' | 'week'>('week')
@@ -41,7 +50,7 @@ export function CalendarPage() {
   return (
     <div>
       <PageHeader
-        eyebrow="Practice calendar · Europe/Zurich"
+        eyebrow={`${therapist?.preferredName ?? 'Practice'} calendar · Europe/Zurich`}
         title={
           <>
             Time, with room

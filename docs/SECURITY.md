@@ -41,9 +41,12 @@ Before a release, inspect the built bundle for protected key names and known cre
 - The animated therapist/client choice is presentation only. It may remember a preferred login view, never a privilege.
 - After login, routing loads `profiles.role` through protected backend access. User-editable metadata is not trusted for role decisions.
 - Therapist signup is closed. Development bootstrap uses an uncommitted local service credential; later administration uses a protected function.
+- Client magic-link sign-in is also sign-in-only: `shouldCreateUser` stays false so unknown emails cannot create or reserve orphan Auth accounts.
 - The first hosted therapist is created through a trusted out-of-band operation. `admin-users` requires an existing fresh-auth therapist, and inviting another therapist additionally requires AAL2.
 - Client accounts are linked by therapist invitation, secure intake invitation, or existing-client linking.
 - Login errors are generic and do not confirm whether an email or username exists.
+- A pre-auth name-and-age prompt is presentation, not identity proof. Connected mode must not query a client record or client portrait from those values, because that would disclose account membership and private imagery before authentication. A client-specific portrait may load only after credential authentication and authorization; a generic/local synthetic reveal may be used before login.
+- Public therapist imagery is different: only professionals who explicitly opt into `public_therapist_directory` expose a professional name/title and raster portrait path. The view omits auth IDs, usernames, contact fields, settings, and booking state.
 - Username-to-email resolution is a protected, rate-limited Edge Function. Without it, email login remains operational.
 - Passwords are passed only to the authentication provider, never logged or stored by application code.
 - Therapist access supports TOTP enrollment/challenge. Passkeys are unavailable unless explicitly enabled and backed by an implemented secure flow.
@@ -59,11 +62,16 @@ Policy rules:
 
 - clients may access only the `clients` row linked to `auth.uid()` and records owned by that client;
 - clients may create only allowed self-service entries and cannot choose another owner/actor;
-- therapists may work only with records in this dedicated practice and do not bypass photography or handoff consent;
+- therapists may work only with actively assigned clients and do not bypass photography or handoff consent;
+- assignment membership is not directly readable or writable by application users; narrow client-booking and client-creation workflows create justified memberships server-side;
+- assignment history is append/close-only, assignment audit rows are service-only, and ordinary scheduling cannot grant a teammate access;
+- client outcome data remains client-owned and appointment-attributed, so an assigned care team can see one longitudinal client aggregate while the appointment records which therapist delivered each session;
 - therapist assessments, private scheduling notes, private session summaries, draft insights, and raw audit data are never selected through client-facing relations;
-- anonymous access is denied except for a documented, narrow, non-sensitive public brand projection;
+- anonymous access is denied except for documented, narrow, non-sensitive brand and opted-in therapist-directory projections;
 - audit events are append-only for application users;
 - role changes and administrative/bootstrap operations are performed through protected paths, never direct client updates.
+
+The current role model has `therapist` and `client`, but no practice owner/administrator. This migration does not silently treat every therapist as an owner. Practice-level configuration retains the pre-existing team-wide therapist semantics, while arbitrary assignment creation/revocation remains a trusted service operation. A production team deployment must design the owner/admin role, delegation rules, audit events, and recovery path before exposing assignment administration in the UI.
 
 Prefer separate private tables and client-safe views/RPCs over column hiding in the UI. A malicious client can call the API without the React application.
 
@@ -81,6 +89,10 @@ Authorization helpers using `SECURITY DEFINER` must:
 Local SQL/security tests must prove denial for:
 
 - Client A reading or modifying Client B;
+- an unassigned therapist reading any Client B identity, progress, assessment, private note, photo metadata, handoff, notification, or storage object;
+- a therapist directly self-assigning an arbitrary client or reactivating an ended assignment;
+- a client booking a non-therapist, another-practice therapist, or therapist who has not enabled online booking;
+- an ended assignment continuing to authorize reads;
 - a client creating/modifying a therapist assessment;
 - a client reading a therapist-private note or scheduling note;
 - a client reading or approving a draft/unapproved insight;
@@ -103,7 +115,7 @@ Private buckets:
 - `handoff-documents`;
 - `practice-assets-private`.
 
-An optional public bucket contains only deliberately public brand assets. Object paths use non-guessable IDs, for example `<practice_id>/<client_id>/<resource_id>/<opaque-filename>`. Never put a client name, diagnosis, health detail, email, or bearer token in a path.
+An optional public bucket contains only deliberately public brand assets and opted-in professional therapist portraits. Therapist directory paths use the established `<practice_id>/<opaque_resource_id>/<opaque_filename>` raster-only convention; they must not encode an auth user ID or private contact detail. Sensitive object paths use non-guessable IDs, for example `<practice_id>/<client_id>/<resource_id>/<opaque-filename>`. Never put a client name, diagnosis, health detail, email, or bearer token in a path.
 
 Storage policy and related database metadata both enforce ownership. Photo access additionally checks active photography consent; handoff access checks the handoff authorization and status. Buckets are not publicly listable and private resources use authenticated downloads or short-lived signed URLs. Permanent object URLs are never placed in handoff links, logs, or client-visible records.
 

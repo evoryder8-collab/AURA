@@ -25,6 +25,7 @@ import { Button } from '@/components/design-system/Button'
 import { Card } from '@/components/design-system/Card'
 import { Field, Input, Select, Textarea } from '@/components/design-system/FormField'
 import { StatusStrip } from '@/components/feedback/StatusStrip'
+import { env } from '@/config/env'
 import { useDemoStore } from '@/data/demo/store'
 import { selectNextQuote, suggestBonusCareMinutes } from '@/domain/rules'
 import { QuickAppointmentModal } from '@/features/appointments/QuickAppointmentModal'
@@ -86,15 +87,16 @@ export function SessionPage() {
     appointment?.session?.assessment?.region ?? client?.goals[0]?.region ?? 'lower_back',
   )
 
-  if (!appointment || !client)
+  if (!appointment || !client || (env.demoMode && appointment.therapistId !== auth.demoTherapistId))
     return (
       <Card>
-        <h1>Session not found</h1>
+        <h1>Session not available</h1>
+        <p>This appointment belongs to another therapist’s schedule.</p>
         <Button onClick={() => navigate('/therapist/today')}>Return to Today</Button>
       </Card>
     )
 
-  const offlineOwnerKey = auth.user?.id ?? 'demo-therapist'
+  const offlineOwnerKey = auth.user?.id ?? auth.demoTherapistId ?? 'demo-therapist'
 
   const begin = () => {
     const startedAt = new Date().toISOString()

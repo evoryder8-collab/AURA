@@ -5,6 +5,7 @@
 //
 // Required environment variables (keep in an uncommitted local env file):
 // SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, DEMO_THERAPIST_PASSWORD,
+// DEMO_THERAPIST_TWO_PASSWORD,
 // DEMO_IRIS_PASSWORD, DEMO_MIKA_PASSWORD, DEMO_SOL_PASSWORD.
 
 import { createClient } from 'npm:@supabase/supabase-js@2.110.3'
@@ -34,6 +35,11 @@ const users = [
     id: '20000000-0000-4000-8000-000000000001',
     label: 'synthetic therapist',
     password: password('DEMO_THERAPIST_PASSWORD'),
+  },
+  {
+    id: '20000000-0000-4000-8000-000000000002',
+    label: 'second synthetic therapist',
+    password: password('DEMO_THERAPIST_TWO_PASSWORD'),
   },
   {
     id: '30000000-0000-4000-8000-000000000001',

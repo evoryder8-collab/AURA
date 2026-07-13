@@ -53,6 +53,26 @@ export interface AppointmentRecord {
   readonly updatedAt: string | null
 }
 
+/** Anonymous-safe, explicitly opted-in professional identity. Never contains an auth user ID. */
+export interface PublicTherapistDirectoryRecord {
+  readonly source: RepositoryMode
+  readonly practiceName: string
+  readonly directorySlug: string
+  readonly professionalName: string
+  readonly professionalTitle: string | null
+  readonly publicPortraitPath: string | null
+}
+
+/** Authenticated client booking option. The user ID is accepted only by the narrow booking RPC. */
+export interface BookableTherapistRecord {
+  readonly source: RepositoryMode
+  readonly userId: string
+  readonly directorySlug: string
+  readonly professionalName: string
+  readonly professionalTitle: string | null
+  readonly publicPortraitPath: string | null
+}
+
 export interface ClientListOptions {
   readonly active?: boolean
   readonly intakeStatuses?: readonly IntakeStatus[]
@@ -107,6 +127,11 @@ export interface AppointmentRepository {
   update(appointmentId: string, patch: UpdateAppointmentInput): Promise<AppointmentRecord>
 }
 
+export interface TherapistDirectoryRepository {
+  listPublic(): Promise<readonly PublicTherapistDirectoryRecord[]>
+  listBookable(): Promise<readonly BookableTherapistRecord[]>
+}
+
 export interface RepositorySnapshot {
   readonly mode: RepositoryMode
   readonly clients: readonly ClientRecord[]
@@ -118,5 +143,7 @@ export interface AuraRepositories {
   readonly mode: RepositoryMode
   readonly clients: ClientRepository
   readonly appointments: AppointmentRepository
+  /** Present in connected mode; demo UI may use its own explicitly synthetic team fixtures. */
+  readonly therapists?: TherapistDirectoryRepository
   readSnapshot(): Promise<RepositorySnapshot>
 }

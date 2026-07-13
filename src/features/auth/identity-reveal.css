@@ -1,0 +1,465 @@
+.identity-reveal {
+  --identity-aqua: #8ee8d5;
+  --identity-emerald: #4cae8b;
+  --identity-gold: #e7c77d;
+  position: relative;
+  isolation: isolate;
+  width: min(100%, 35rem);
+  min-height: 34rem;
+  overflow: hidden;
+  border: 1px solid rgba(96, 121, 107, 0.2);
+  border-radius: clamp(1.5rem, 4vw, 2.25rem);
+  background:
+    linear-gradient(145deg, rgba(255, 253, 249, 0.96), rgba(237, 244, 239, 0.9)),
+    var(--surface-solid);
+  box-shadow:
+    0 30px 80px rgba(20, 37, 30, 0.14),
+    inset 0 1px rgba(255, 255, 255, 0.84);
+}
+
+.identity-reveal::before {
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(69, 139, 112, 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(69, 139, 112, 0.045) 1px, transparent 1px);
+  background-size: 2.25rem 2.25rem;
+  mask-image: linear-gradient(to bottom, black, transparent 72%);
+  content: '';
+}
+
+.identity-reveal__aurora {
+  position: absolute;
+  z-index: -1;
+  width: 20rem;
+  height: 20rem;
+  top: -10rem;
+  right: -7rem;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(107, 208, 178, 0.24), transparent 66%);
+  filter: blur(8px);
+}
+
+.identity-reveal__content {
+  position: relative;
+  display: flex;
+  min-height: 34rem;
+  padding: clamp(1.6rem, 5vw, 3rem);
+}
+
+.identity-reveal__content--form {
+  flex-direction: column;
+  justify-content: center;
+}
+
+.identity-reveal__eyebrow,
+.identity-reveal__signal {
+  margin: 0 0 0.75rem;
+  color: var(--green);
+  font: 700 0.75rem/1.2 var(--font-ui);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.identity-reveal h2 {
+  margin: 0;
+  color: var(--ink);
+  font: 500 clamp(2rem, 7vw, 3.15rem)/0.98 var(--font-editorial);
+  letter-spacing: -0.04em;
+}
+
+.identity-reveal__description {
+  max-width: 28rem;
+  margin: 1rem 0 0;
+  color: var(--ink-muted);
+  font: 400 1rem/1.65 var(--font-ui);
+}
+
+.identity-reveal__form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 7.5rem;
+  gap: 1rem;
+  margin-top: 2rem;
+}
+
+.identity-reveal__field {
+  display: grid;
+  align-content: start;
+  gap: 0.45rem;
+}
+
+.identity-reveal__field label {
+  color: var(--ink);
+  font: 650 0.84rem/1.2 var(--font-ui);
+}
+
+.identity-reveal__field input {
+  width: 100%;
+  min-height: 3.35rem;
+  box-sizing: border-box;
+  border: 1px solid rgba(25, 39, 34, 0.18);
+  border-radius: 1rem;
+  outline: none;
+  background: rgba(255, 255, 255, 0.72);
+  color: var(--ink);
+  padding: 0.75rem 1rem;
+  font: 500 1rem/1.2 var(--font-ui);
+  transition:
+    border-color 180ms ease,
+    box-shadow 180ms ease,
+    background 180ms ease;
+}
+
+.identity-reveal__field input:hover {
+  border-color: rgba(55, 116, 90, 0.38);
+  background: rgba(255, 255, 255, 0.92);
+}
+
+.identity-reveal__field input:focus-visible {
+  border-color: var(--green);
+  box-shadow: var(--focus);
+  background: white;
+}
+
+.identity-reveal__field input[aria-invalid='true'] {
+  border-color: var(--red);
+}
+
+.identity-reveal__field-error {
+  color: var(--red);
+  font: 500 0.78rem/1.35 var(--font-ui);
+}
+
+.identity-reveal__match-error {
+  grid-column: 1 / -1;
+  margin: -0.25rem 0 0;
+  border-radius: 0.75rem;
+  background: var(--red-soft);
+  color: var(--red);
+  padding: 0.7rem 0.85rem;
+  font: 550 0.82rem/1.4 var(--font-ui);
+}
+
+.identity-reveal__form > .button,
+.identity-reveal__privacy-note {
+  grid-column: 1 / -1;
+}
+
+.identity-reveal__privacy-note {
+  margin: -0.2rem 0 0;
+  color: var(--ink-faint);
+  text-align: center;
+  font: 400 0.76rem/1.45 var(--font-ui);
+}
+
+.identity-reveal__content--portrait {
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.identity-reveal__signal {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin-bottom: 0.9rem;
+}
+
+.identity-reveal__signal svg {
+  filter: drop-shadow(0 0 6px rgba(76, 174, 139, 0.64));
+}
+
+.identity-reveal__figure {
+  display: grid;
+  justify-items: center;
+  margin: 0;
+}
+
+.identity-reveal__hologram {
+  position: relative;
+  display: grid;
+  width: clamp(13.5rem, 48vw, 18.5rem);
+  aspect-ratio: 1;
+  place-items: center;
+  transform-origin: 50% 78%;
+  animation: identity-materialize 1.15s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.identity-reveal__portrait-frame {
+  position: relative;
+  z-index: 3;
+  display: grid;
+  width: 70%;
+  height: 82%;
+  overflow: hidden;
+  place-items: center;
+  border: 1px solid rgba(142, 232, 213, 0.48);
+  border-radius: 48% 48% 42% 42% / 42% 42% 54% 54%;
+  background:
+    radial-gradient(
+      circle at 50% 32%,
+      rgba(255, 255, 255, 0.9),
+      rgba(151, 212, 191, 0.22) 58%,
+      transparent 70%
+    ),
+    linear-gradient(165deg, rgba(221, 247, 238, 0.78), rgba(27, 66, 53, 0.14));
+  box-shadow:
+    inset 0 0 1.7rem rgba(142, 232, 213, 0.28),
+    0 0 2.8rem rgba(76, 174, 139, 0.2);
+  clip-path: polygon(12% 2%, 88% 2%, 100% 16%, 96% 82%, 76% 99%, 24% 99%, 4% 82%, 0 16%);
+}
+
+.identity-reveal__portrait-frame::after {
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    to bottom,
+    transparent 0,
+    transparent 4px,
+    rgba(211, 255, 244, 0.14) 5px,
+    transparent 6px
+  );
+  mix-blend-mode: screen;
+  pointer-events: none;
+  content: '';
+}
+
+.identity-reveal__portrait-frame img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center bottom;
+  transform-origin: center 43%;
+  filter: saturate(0.92) contrast(1.03) drop-shadow(0 14px 18px rgba(20, 55, 43, 0.22));
+}
+
+.identity-reveal__initials {
+  display: grid;
+  width: 100%;
+  height: 100%;
+  place-items: center;
+  background:
+    radial-gradient(circle at 45% 30%, rgba(255, 255, 255, 0.44), transparent 24%),
+    linear-gradient(145deg, rgba(96, 121, 107, 0.74), rgba(28, 61, 50, 0.96));
+  color: rgba(242, 255, 250, 0.92);
+  font: 500 clamp(3rem, 12vw, 5.25rem)/1 var(--font-editorial);
+  letter-spacing: -0.05em;
+  text-shadow: 0 0 1.5rem rgba(142, 232, 213, 0.65);
+}
+
+.identity-reveal__orbit,
+.identity-reveal__halo,
+.identity-reveal__scan,
+.identity-reveal__particle {
+  position: absolute;
+  pointer-events: none;
+}
+
+.identity-reveal__orbit {
+  z-index: 2;
+  border-radius: 50%;
+}
+
+.identity-reveal__orbit--outer {
+  inset: 2%;
+  border: 1px solid rgba(76, 174, 139, 0.34);
+  background: conic-gradient(
+    from 30deg,
+    transparent 0 18%,
+    rgba(142, 232, 213, 0.86) 22%,
+    transparent 28% 67%,
+    rgba(231, 199, 125, 0.74) 71%,
+    transparent 77%
+  );
+  mask: radial-gradient(transparent 68%, black 69% 71%, transparent 72%);
+  animation: identity-orbit 9s linear infinite;
+}
+
+.identity-reveal__orbit--inner {
+  inset: 12%;
+  border: 1px dashed rgba(142, 232, 213, 0.34);
+  animation: identity-orbit 14s linear infinite reverse;
+}
+
+.identity-reveal__halo {
+  z-index: 1;
+  width: 70%;
+  height: 22%;
+  bottom: 5%;
+  border: 1px solid rgba(142, 232, 213, 0.66);
+  border-radius: 50%;
+  background: radial-gradient(ellipse, rgba(142, 232, 213, 0.2), transparent 68%);
+  box-shadow: 0 0 2.2rem rgba(76, 174, 139, 0.36);
+  animation: identity-halo 2.8s ease-in-out infinite;
+}
+
+.identity-reveal__scan {
+  z-index: 4;
+  width: 66%;
+  height: 2px;
+  top: 14%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, transparent, rgba(230, 255, 249, 0.9), transparent);
+  box-shadow: 0 0 0.8rem rgba(142, 232, 213, 0.8);
+  opacity: 0.72;
+  animation: identity-scan 2.6s ease-in-out infinite;
+}
+
+.identity-reveal__particle {
+  z-index: 5;
+  width: 0.35rem;
+  height: 0.35rem;
+  border-radius: 50%;
+  background: var(--identity-aqua);
+  box-shadow: 0 0 0.8rem rgba(142, 232, 213, 0.92);
+  animation: identity-particle 3.4s ease-in-out infinite;
+}
+
+.identity-reveal__particle--one {
+  top: 23%;
+  left: 7%;
+}
+
+.identity-reveal__particle--two {
+  right: 5%;
+  bottom: 31%;
+  animation-delay: -1.2s;
+}
+
+.identity-reveal__particle--three {
+  right: 22%;
+  top: 4%;
+  width: 0.22rem;
+  height: 0.22rem;
+  background: var(--identity-gold);
+  animation-delay: -2.1s;
+}
+
+.identity-reveal__caption {
+  position: relative;
+  z-index: 6;
+  margin-top: -0.25rem;
+}
+
+.identity-reveal__caption h2 {
+  font-size: clamp(1.9rem, 7vw, 2.75rem);
+}
+
+.identity-reveal__caption p {
+  margin: 0.5rem 0 0;
+  color: var(--ink-muted);
+  font: 500 0.88rem/1.4 var(--font-ui);
+}
+
+.identity-reveal__actions {
+  display: grid;
+  width: min(100%, 24rem);
+  gap: 0.45rem;
+  margin-top: 1.3rem;
+  animation: identity-actions-in 400ms ease both;
+}
+
+@keyframes identity-materialize {
+  0% {
+    opacity: 0;
+    filter: blur(12px) brightness(1.5);
+    transform: perspective(700px) rotateX(14deg) scale(0.78) translateY(2.2rem);
+  }
+  42% {
+    opacity: 0.88;
+    filter: blur(2px) brightness(1.22);
+  }
+  72% {
+    transform: perspective(700px) rotateX(-2deg) scale(1.025) translateY(-0.15rem);
+  }
+  100% {
+    opacity: 1;
+    filter: none;
+    transform: perspective(700px) rotateX(0) scale(1) translateY(0);
+  }
+}
+
+@keyframes identity-orbit {
+  to {
+    transform: rotate(1turn);
+  }
+}
+
+@keyframes identity-scan {
+  0%,
+  100% {
+    opacity: 0.16;
+    transform: translateY(0);
+  }
+  50% {
+    opacity: 0.82;
+    transform: translateY(11rem);
+  }
+}
+
+@keyframes identity-halo {
+  50% {
+    opacity: 0.62;
+    transform: scale(0.93);
+  }
+}
+
+@keyframes identity-particle {
+  50% {
+    opacity: 0.28;
+    transform: translateY(-1.1rem) scale(0.68);
+  }
+}
+
+@keyframes identity-actions-in {
+  from {
+    opacity: 0;
+    transform: translateY(0.7rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 33rem) {
+  .identity-reveal {
+    min-height: 31rem;
+  }
+
+  .identity-reveal__content {
+    min-height: 31rem;
+  }
+
+  .identity-reveal__form {
+    grid-template-columns: 1fr;
+  }
+
+  .identity-reveal__field--age {
+    width: 100%;
+  }
+
+  .identity-reveal__form > .button,
+  .identity-reveal__privacy-note,
+  .identity-reveal__match-error {
+    grid-column: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .identity-reveal *,
+  .identity-reveal *::before,
+  .identity-reveal *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+
+  .identity-reveal__hologram {
+    filter: none;
+    transform: none;
+  }
+}

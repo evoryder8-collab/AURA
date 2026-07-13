@@ -3,7 +3,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path = public, extensions;
 
-select plan(12);
+select plan(19);
 
 select is(
   (
@@ -13,7 +13,8 @@ select is(
     where n.nspname = 'public'
       and c.relkind = 'r'
       and c.relname in (
-        'practices', 'profiles', 'therapist_profiles', 'clients', 'appointments',
+        'practices', 'profiles', 'therapist_profiles', 'therapist_client_assignments',
+        'clients', 'appointments',
         'appointment_private_notes', 'health_conditions', 'consents', 'pain_entries',
         'functional_goals', 'functional_goal_professional_notes', 'functional_goal_entries',
         'therapist_assessments', 'context_events', 'session_records', 'session_private_notes',
@@ -36,7 +37,8 @@ select is(
     where n.nspname = 'public'
       and c.relkind = 'r'
       and c.relname in (
-        'practices', 'profiles', 'therapist_profiles', 'clients', 'appointments',
+        'practices', 'profiles', 'therapist_profiles', 'therapist_client_assignments',
+        'clients', 'appointments',
         'appointment_private_notes', 'health_conditions', 'consents', 'pain_entries',
         'functional_goals', 'functional_goal_professional_notes', 'functional_goal_entries',
         'therapist_assessments', 'context_events', 'session_records', 'session_private_notes',
@@ -65,7 +67,27 @@ select ok(
 );
 select ok(
   has_table_privilege('anon', 'public.public_brand_config', 'SELECT'),
-  'anonymous can read only the deliberately public brand view'
+  'anonymous can read the deliberately public brand view'
+);
+select ok(
+  has_table_privilege('anon', 'public.public_therapist_directory', 'SELECT'),
+  'anonymous can read the deliberately narrow opted-in therapist directory'
+);
+select ok(
+  has_table_privilege('authenticated', 'public.public_therapist_directory', 'SELECT'),
+  'the same safe public therapist projection remains readable after login'
+);
+select ok(
+  not has_table_privilege('anon', 'public.therapist_profiles', 'SELECT'),
+  'anonymous cannot read therapist base profiles'
+);
+select ok(
+  not has_table_privilege('authenticated', 'public.therapist_client_assignments', 'INSERT'),
+  'authenticated users cannot directly forge therapist-client assignments'
+);
+select ok(
+  not has_table_privilege('authenticated', 'public.therapist_client_assignments', 'UPDATE'),
+  'authenticated users cannot directly reactivate or end assignments'
 );
 select is(
   (
@@ -106,10 +128,48 @@ select is(
     where schemaname = 'public'
       and tablename = 'appointments'
       and cmd in ('INSERT', 'UPDATE')
-      and policyname not in ('appointments_insert_therapist', 'appointments_update_therapist')
+      and policyname not in (
+        'appointments_insert_assigned_therapist',
+        'appointments_update_assigned_therapist'
+      )
   ),
   0,
   'appointment table mutations have no direct client RLS policy'
+);
+select is(
+  (
+    select count(*)::integer
+    from pg_policies
+    where schemaname = 'storage'
+      and tablename = 'objects'
+      and policyname in (
+        'progress_photos_update_therapist_consented',
+        'progress_photos_delete_therapist',
+        'voice_notes_update_therapist',
+        'voice_notes_delete_therapist',
+        'handoff_documents_update_therapist_consented',
+        'handoff_documents_delete_therapist'
+      )
+      and concat_ws(' ', qual, with_check) not like '%can_access_client%'
+  ),
+  0,
+  'private client-object update/delete policies enforce active assignment access'
+);
+select is(
+  (
+    select count(*)::integer
+    from pg_policies
+    where schemaname = 'storage'
+      and tablename = 'objects'
+      and policyname in (
+        'brand_assets_public_insert_therapist',
+        'brand_assets_public_update_therapist',
+        'brand_assets_public_delete_therapist'
+      )
+      and concat_ws(' ', qual, with_check) not like '%can_manage_public_brand_asset%'
+  ),
+  0,
+  'public brand mutations protect therapist-owned portrait namespaces'
 );
 
 select * from finish();

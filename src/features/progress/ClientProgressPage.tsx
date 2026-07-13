@@ -1,4 +1,4 @@
-import { LockKeyhole, Sparkles, Target } from 'lucide-react'
+import { LockKeyhole, Sparkles, Target, UsersRound } from 'lucide-react'
 import { Badge } from '@/components/design-system/Badge'
 import { Card } from '@/components/design-system/Card'
 import { PageHeader } from '@/components/design-system/PageHeader'
@@ -14,8 +14,17 @@ export function ClientProgressPage() {
   const client = useDemoStore((state) =>
     state.clients.find((item) => item.id === auth.demoClientId),
   )
+  const therapists = useDemoStore((state) => state.therapists)
+  const appointments = useDemoStore((state) => state.appointments)
   if (!client) return null
   const derived = deriveClientMetrics(client)
+  const therapistIds = new Set([
+    ...client.assignedTherapistIds,
+    ...appointments
+      .filter((appointment) => appointment.clientId === client.id)
+      .map((appointment) => appointment.therapistId),
+  ])
+  const continuityTeam = therapists.filter((therapist) => therapistIds.has(therapist.id))
   return (
     <div>
       <PageHeader
@@ -49,6 +58,27 @@ export function ClientProgressPage() {
           </p>
         </Card>
       </section>
+      <Card className="care-continuity">
+        <span className="care-continuity__icon" aria-hidden="true">
+          <UsersRound size={20} />
+        </span>
+        <div>
+          <p className="eyebrow">One continuous record</p>
+          <h2>Your progress stays with you.</h2>
+          <p>
+            Pain, goals, responses, and benefits add to this same journey across every AURA team
+            member you see.
+          </p>
+        </div>
+        <div className="care-continuity__team" aria-label="Your assigned care team">
+          {continuityTeam.map((therapist) => (
+            <span key={therapist.id} title={therapist.displayName}>
+              <i aria-hidden="true">{therapist.preferredName[0]}</i>
+              {therapist.preferredName}
+            </span>
+          ))}
+        </div>
+      </Card>
       {client.insight.status === 'approved' ? (
         <Card className="client-insight">
           <Sparkles size={20} />

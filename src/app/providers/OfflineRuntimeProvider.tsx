@@ -21,8 +21,10 @@ export function OfflineRuntimeProvider({
   const ownerKey = useMemo(() => {
     if (auth.role == null) return null
     if (auth.user != null) return auth.user.id
-    return auth.role === 'therapist' ? 'demo-therapist' : auth.demoClientId
-  }, [auth.demoClientId, auth.role, auth.user])
+    return auth.role === 'therapist'
+      ? (auth.demoTherapistId ?? 'demo-therapist-amara')
+      : auth.demoClientId
+  }, [auth.demoClientId, auth.demoTherapistId, auth.role, auth.user])
 
   useEffect(() => {
     runtime.start()

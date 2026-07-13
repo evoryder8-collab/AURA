@@ -4,7 +4,11 @@ import { useState } from 'react'
 import { Button } from '@/components/design-system/Button'
 import { Field, Input, Select } from '@/components/design-system/FormField'
 import { Modal } from '@/components/design-system/Modal'
+import { env } from '@/config/env'
+import { DEMO_THERAPIST_IDS } from '@/data/demo/fixtures'
 import { useDemoStore } from '@/data/demo/store'
+import { clientsAssignedToTherapist } from '@/data/demo/team'
+import { useAuth } from '@/features/auth/auth-context'
 
 export function QuickAppointmentModal({
   open,
@@ -13,7 +17,13 @@ export function QuickAppointmentModal({
   open: boolean
   onOpenChange: (open: boolean) => void
 }) {
-  const clients = useDemoStore((state) => state.clients)
+  const auth = useAuth()
+  const allClients = useDemoStore((state) => state.clients)
+  const therapists = useDemoStore((state) => state.therapists)
+  const activeTherapistId = auth.demoTherapistId ?? DEMO_THERAPIST_IDS.amara
+  const clients = env.demoMode
+    ? clientsAssignedToTherapist({ clients: allClients, therapists }, activeTherapistId)
+    : allClients
   const addClient = useDemoStore((state) => state.addClient)
   const addAppointment = useDemoStore((state) => state.addAppointment)
   const [path, setPath] = useState<'existing' | 'new'>('existing')
@@ -28,11 +38,17 @@ export function QuickAppointmentModal({
   const save = () => {
     const selectedId =
       path === 'new'
-        ? addClient({ preferredName: name || 'New demo client', email, phone })
+        ? addClient({
+            preferredName: name || 'New demo client',
+            email,
+            phone,
+            therapistId: activeTherapistId,
+          })
         : clientId
     if (!selectedId) return
     addAppointment({
       clientId: selectedId,
+      therapistId: activeTherapistId,
       startsAt: new Date(startsAt).toISOString(),
       durationMinutes: Number(duration),
       sessionType,

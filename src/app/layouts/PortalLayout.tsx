@@ -4,6 +4,7 @@ import { Outlet, useNavigate } from 'react-router-dom'
 import { Button } from '@/components/design-system/Button'
 import { PortalNav } from '@/components/navigation/PortalNav'
 import { env } from '@/config/env'
+import { useDemoStore } from '@/data/demo/store'
 import { useAuth, type AuraRole } from '@/features/auth/auth-context'
 
 export function PortalLayout({ role }: { role: AuraRole }) {
@@ -11,6 +12,16 @@ export function PortalLayout({ role }: { role: AuraRole }) {
   const navigate = useNavigate()
   const [menuOpen, setMenuOpen] = useState(false)
   const [notificationsOpen, setNotificationsOpen] = useState(false)
+  const demoRequestCount = useDemoStore(
+    (state) =>
+      state.appointments.filter(
+        (appointment) =>
+          appointment.status === 'requested' &&
+          (role === 'client'
+            ? appointment.clientId === auth.demoClientId
+            : appointment.therapistId === auth.demoTherapistId),
+      ).length,
+  )
 
   const signOut = async () => {
     await auth.signOut()
@@ -53,9 +64,17 @@ export function PortalLayout({ role }: { role: AuraRole }) {
           <div className="notification-popover" role="status">
             {env.demoMode ? (
               <>
-                <strong>Two synthetic reminders</strong>
+                <strong>
+                  {demoRequestCount > 0
+                    ? `${demoRequestCount} synthetic booking ${demoRequestCount === 1 ? 'notice' : 'notices'}`
+                    : 'Synthetic follow-up ready'}
+                </strong>
                 <span>Next-day follow-up is ready.</span>
-                <span>One appointment request awaits review.</span>
+                <span>
+                  {demoRequestCount > 0
+                    ? `${demoRequestCount} appointment request ${demoRequestCount === 1 ? 'awaits' : 'await'} review.`
+                    : 'No appointment requests are waiting.'}
+                </span>
               </>
             ) : (
               <>

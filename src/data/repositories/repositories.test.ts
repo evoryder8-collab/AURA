@@ -126,6 +126,58 @@ describe('demo repositories', () => {
 })
 
 describe('Supabase repositories', () => {
+  it('maps the anonymous-safe therapist projection without requesting auth identifiers', async () => {
+    const query = new FakeQuery({
+      data: [
+        {
+          practice_name: 'AURA Synthetic Practice',
+          directory_slug: 'aura-demo-therapist',
+          professional_name: 'Demo Therapist — Fictional',
+          professional_title: 'Massage therapist — synthetic profile',
+          public_portrait_path:
+            '10000000-0000-4000-8000-000000000001/99000000-0000-4000-8000-000000000001/demo.webp',
+        },
+      ],
+      error: null,
+    })
+    const repositories = createSupabaseRepositories(fakeSupabase(query))
+
+    const records = await repositories.therapists!.listPublic()
+    const selectedColumns = String(
+      query.calls.find((call) => call.method === 'select')?.arguments[0],
+    )
+
+    expect(records?.[0]).toMatchObject({
+      source: 'supabase',
+      directorySlug: 'aura-demo-therapist',
+      professionalName: 'Demo Therapist — Fictional',
+      publicPortraitPath:
+        '10000000-0000-4000-8000-000000000001/99000000-0000-4000-8000-000000000001/demo.webp',
+    })
+    expect(selectedColumns).not.toMatch(/user_id|contact|settings|username/u)
+  })
+
+  it('returns authenticated booking IDs only from the client-safe directory', async () => {
+    const therapistId = '20000000-0000-4000-8000-000000000002'
+    const query = new FakeQuery({
+      data: [
+        {
+          user_id: therapistId,
+          directory_slug: 'aura-demo-therapist-two',
+          professional_name: 'Demo Therapist Two — Fictional',
+          professional_title: null,
+          public_portrait_path: null,
+        },
+      ],
+      error: null,
+    })
+    const repositories = createSupabaseRepositories(fakeSupabase(query))
+
+    await expect(repositories.therapists!.listBookable()).resolves.toEqual([
+      expect.objectContaining({ userId: therapistId, source: 'supabase' }),
+    ])
+  })
+
   it('maps schema-shaped client rows and selects no therapist-private columns', async () => {
     const query = new FakeQuery({
       data: [

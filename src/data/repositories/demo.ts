@@ -44,7 +44,7 @@ function mapAppointment(appointment: DemoAppointment): AppointmentRecord {
     id: appointment.id,
     practiceId: null,
     clientId: appointment.clientId,
-    therapistUserId: null,
+    therapistUserId: appointment.therapistId,
     startsAt: appointment.startsAt,
     durationMinutes: appointment.durationMinutes,
     sessionType: appointment.sessionType,
@@ -127,8 +127,19 @@ export function createDemoRepositories(store: DemoStorePort = defaultStore): Aur
         if (!store.getState().clients.some((client) => client.id === parsed.data.clientId)) {
           throw repositoryError('not_found', operation)
         }
-        const id = store.getState().addAppointment({
+        const state = store.getState()
+        const client = state.clients.find((item) => item.id === parsed.data.clientId)
+        const therapistId =
+          parsed.data.therapistUserId ??
+          client?.assignedTherapistIds[0] ??
+          state.therapists.find((therapist) =>
+            therapist.assignedClientIds.includes(parsed.data.clientId),
+          )?.id ??
+          state.therapists[0]?.id
+        if (!therapistId) throw repositoryError('not_found', operation)
+        const id = state.addAppointment({
           clientId: parsed.data.clientId,
+          therapistId,
           startsAt: parsed.data.startsAt,
           durationMinutes: parsed.data.durationMinutes,
           sessionType: parsed.data.sessionType,

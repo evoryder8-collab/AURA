@@ -12,6 +12,7 @@ function auth(overrides: Partial<AuthState> = {}): AuthState {
     role: 'therapist',
     user: null,
     demoClientId: null,
+    demoTherapistId: 'demo-therapist-sora',
     mfaChallengeRequired: false,
     error: null,
     signIn: vi.fn(async () => true),
@@ -41,7 +42,7 @@ describe('OfflineRuntimeProvider', () => {
 
     await waitFor(() => {
       expect(runtime.start).toHaveBeenCalledOnce()
-      expect(runtime.activateOwner).toHaveBeenCalledWith('demo-therapist')
+      expect(runtime.activateOwner).toHaveBeenCalledWith('demo-therapist-sora')
     })
 
     view.rerender(
@@ -52,7 +53,7 @@ describe('OfflineRuntimeProvider', () => {
       </AuthContext.Provider>,
     )
     await waitFor(() => {
-      expect(runtime.clearOwner).toHaveBeenCalledWith('demo-therapist')
+      expect(runtime.clearOwner).toHaveBeenCalledWith('demo-therapist-sora')
     })
 
     view.unmount()

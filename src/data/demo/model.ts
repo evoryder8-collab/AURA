@@ -39,6 +39,24 @@ export type ConsentState = {
   aiProcessing: boolean
 }
 
+export type DemoTherapist = {
+  id: string
+  preferredName: string
+  displayName: string
+  dateOfBirth: string
+  professionalTitle: string
+  specialties: string[]
+  assignedClientIds: string[]
+  availability: {
+    status: 'available' | 'limited' | 'away'
+    label: string
+    nextAvailableAt?: string
+  }
+  portraitUrl?: string
+  portraitScale?: number
+  synthetic: true
+}
+
 export type IntakeDraft = {
   step: number
   preferredName: string
@@ -79,6 +97,8 @@ export type DemoClient = {
   email: string
   phone: string
   dateOfBirth: string
+  portraitUrl?: string
+  portraitScale?: number
   synthetic: true
   phase: string
   pattern: PatternType
@@ -86,6 +106,7 @@ export type DemoClient = {
   recoveryIndex: number
   intakeStatus: 'pending' | 'partial' | 'complete' | 'review_required'
   active: boolean
+  assignedTherapistIds: string[]
   reviewProgress: boolean
   caution?: {
     label: string
@@ -113,6 +134,7 @@ export type DemoClient = {
 export type DemoAppointment = {
   id: string
   clientId: string
+  therapistId: string
   startsAt: string
   durationMinutes: number
   sessionType: string
@@ -172,6 +194,7 @@ export type DemoHandoff = {
 }
 
 export type DemoState = {
+  therapists: DemoTherapist[]
   clients: DemoClient[]
   appointments: DemoAppointment[]
   events: ContextEvent[]

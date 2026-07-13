@@ -1,7 +1,7 @@
 import { openDB } from 'idb'
 import { create } from 'zustand'
 import { createJSONStorage, persist, type StateStorage } from 'zustand/middleware'
-import { createDemoState } from './fixtures'
+import { createDemoState, DEMO_THERAPIST_IDS } from './fixtures'
 import type {
   ConsentState,
   DemoAppointment,
@@ -57,7 +57,12 @@ type DemoActions = {
   hydrated: boolean
   setHydrated: (value: boolean) => void
   resetDemo: () => void
-  addClient: (input: { preferredName: string; email: string; phone: string }) => string
+  addClient: (input: {
+    preferredName: string
+    email: string
+    phone: string
+    therapistId?: string
+  }) => string
   addAppointment: (appointment: NewAppointment) => string
   updateAppointment: (id: string, patch: Partial<DemoAppointment>) => void
   saveIntakeDraft: (clientId: string, intake: IntakeDraft) => void
@@ -107,6 +112,72 @@ type DemoActions = {
 
 export type DemoStore = DemoState & DemoActions
 
+type LegacyClient = Omit<DemoClient, 'assignedTherapistIds'> & {
+  assignedTherapistIds?: string[]
+}
+
+type LegacyAppointment = Omit<DemoAppointment, 'therapistId'> & {
+  therapistId?: string
+}
+
+type PersistedDemoState = Partial<Omit<DemoState, 'clients' | 'appointments'>> & {
+  clients?: LegacyClient[]
+  appointments?: LegacyAppointment[]
+}
+
+export function mergePersistedDemoState(
+  persistedState: unknown,
+  currentState: DemoStore,
+): DemoStore {
+  const persisted = (persistedState ?? {}) as PersistedDemoState
+  const fixture = createDemoState()
+  const persistedTherapists = persisted.therapists?.length
+    ? persisted.therapists
+    : fixture.therapists
+  const therapists = persistedTherapists.map((therapist) => {
+    const fixtureTherapist = fixture.therapists.find((item) => item.id === therapist.id)
+    return fixtureTherapist?.portraitUrl
+      ? {
+          ...therapist,
+          portraitUrl: fixtureTherapist.portraitUrl,
+          ...(fixtureTherapist.portraitScale
+            ? { portraitScale: fixtureTherapist.portraitScale }
+            : {}),
+        }
+      : therapist
+  })
+  const clients = (persisted.clients ?? currentState.clients).map((client) => {
+    const fixtureClient = fixture.clients.find((item) => item.id === client.id)
+    return {
+      ...client,
+      assignedTherapistIds:
+        client.assignedTherapistIds?.length &&
+        client.assignedTherapistIds.some((id) => therapists.some((item) => item.id === id))
+          ? client.assignedTherapistIds
+          : (fixtureClient?.assignedTherapistIds ?? [DEMO_THERAPIST_IDS.amara]),
+    }
+  })
+  const appointments = (persisted.appointments ?? currentState.appointments).map((appointment) => {
+    const fixtureAppointment = fixture.appointments.find((item) => item.id === appointment.id)
+    const client = clients.find((item) => item.id === appointment.clientId)
+    const therapistId =
+      appointment.therapistId ??
+      fixtureAppointment?.therapistId ??
+      client?.assignedTherapistIds[0] ??
+      DEMO_THERAPIST_IDS.amara
+    return { ...appointment, therapistId }
+  })
+
+  return {
+    ...currentState,
+    therapists,
+    clients,
+    appointments,
+    events: persisted.events ?? currentState.events,
+    handoffs: persisted.handoffs ?? currentState.handoffs,
+  }
+}
+
 export const useDemoStore = create<DemoStore>()(
   persist(
     (set, get) => ({
@@ -116,6 +187,9 @@ export const useDemoStore = create<DemoStore>()(
       resetDemo: () => set({ ...createDemoState() }),
       addClient: (input) => {
         const id = createId('demo-client')
+        const therapistId =
+          get().therapists.find((therapist) => therapist.id === input.therapistId)?.id ??
+          DEMO_THERAPIST_IDS.amara
         const client: DemoClient = {
           id,
           preferredName: input.preferredName,
@@ -130,6 +204,7 @@ export const useDemoStore = create<DemoStore>()(
           recoveryIndex: 0,
           intakeStatus: 'pending',
           active: true,
+          assignedTherapistIds: [therapistId],
           reviewProgress: false,
           goals: [],
           metrics: [],
@@ -149,12 +224,39 @@ export const useDemoStore = create<DemoStore>()(
           bonusMinutesLifetime: 0,
           photos: [],
         }
-        set((state) => ({ clients: [...state.clients, client] }))
+        set((state) => ({
+          clients: [...state.clients, client],
+          therapists: state.therapists.map((therapist) =>
+            therapist.id === therapistId
+              ? { ...therapist, assignedClientIds: [...therapist.assignedClientIds, id] }
+              : therapist,
+          ),
+        }))
         return id
       },
       addAppointment: (appointment) => {
         const id = createId('appointment')
-        set((state) => ({ appointments: [...state.appointments, { ...appointment, id }] }))
+        set((state) => ({
+          appointments: [...state.appointments, { ...appointment, id }],
+          clients: state.clients.map((client) =>
+            client.id === appointment.clientId &&
+            !client.assignedTherapistIds.includes(appointment.therapistId)
+              ? {
+                  ...client,
+                  assignedTherapistIds: [...client.assignedTherapistIds, appointment.therapistId],
+                }
+              : client,
+          ),
+          therapists: state.therapists.map((therapist) =>
+            therapist.id === appointment.therapistId &&
+            !therapist.assignedClientIds.includes(appointment.clientId)
+              ? {
+                  ...therapist,
+                  assignedClientIds: [...therapist.assignedClientIds, appointment.clientId],
+                }
+              : therapist,
+          ),
+        }))
         return id
       },
       updateAppointment: (id, patch) =>
@@ -367,12 +469,14 @@ export const useDemoStore = create<DemoStore>()(
     {
       name: 'aura-demo-state-v1',
       storage: createJSONStorage(() => indexedDbStorage),
-      partialize: ({ clients, appointments, events, handoffs }) => ({
+      partialize: ({ therapists, clients, appointments, events, handoffs }) => ({
+        therapists,
         clients,
         appointments,
         events,
         handoffs,
       }),
+      merge: mergePersistedDemoState,
       onRehydrateStorage: () => (state) => state?.setHydrated(true),
     },
   ),
@@ -383,3 +487,13 @@ export const getClient = (state: DemoState, clientId: string | undefined) =>
 
 export const getAppointment = (state: DemoState, appointmentId: string | undefined) =>
   state.appointments.find((appointment) => appointment.id === appointmentId)
+
+/** Progress is intentionally owned by the client, independent of which therapist delivered care. */
+export const getClientProgressAcrossTherapists = (state: DemoState, clientId: string) => {
+  const client = getClient(state, clientId)
+  return {
+    metrics: client?.metrics ?? [],
+    goals: client?.goals ?? [],
+    recoveryIndex: client?.recoveryIndex ?? 0,
+  }
+}

@@ -17,15 +17,29 @@ import { Button } from '@/components/design-system/Button'
 import { Card } from '@/components/design-system/Card'
 import { PageHeader } from '@/components/design-system/PageHeader'
 import { StatusStrip } from '@/components/feedback/StatusStrip'
+import { env } from '@/config/env'
 import { useDemoStore } from '@/data/demo/store'
+import { appointmentsForTherapist, clientsAssignedToTherapist } from '@/data/demo/team'
 import { deriveClientMetrics } from '@/data/demo/derive'
 import { QuickAppointmentModal } from '@/features/appointments/QuickAppointmentModal'
+import { useAuth } from '@/features/auth/auth-context'
 import { IntakeFlow } from '@/features/intake/IntakeFlow'
 import { formatTime, patternLabel } from '@/lib/formatting/labels'
+import { ConnectedTodayPage } from './ConnectedTodayPage'
 
 export function TodayPage() {
-  const clients = useDemoStore((state) => state.clients)
-  const appointments = useDemoStore((state) => state.appointments)
+  return env.demoMode ? <DemoTodayPage /> : <ConnectedTodayPage />
+}
+
+function DemoTodayPage() {
+  const auth = useAuth()
+  const allClients = useDemoStore((state) => state.clients)
+  const allAppointments = useDemoStore((state) => state.appointments)
+  const therapists = useDemoStore((state) => state.therapists)
+  const teamState = { clients: allClients, appointments: allAppointments, therapists }
+  const therapist = therapists.find((item) => item.id === auth.demoTherapistId)
+  const clients = clientsAssignedToTherapist(teamState, auth.demoTherapistId)
+  const appointments = appointmentsForTherapist(teamState, auth.demoTherapistId)
   const updateAppointment = useDemoStore((state) => state.updateAppointment)
   const [createOpen, setCreateOpen] = useState(false)
   const [intakeClientId, setIntakeClientId] = useState<string | null>(null)
@@ -40,12 +54,15 @@ export function TodayPage() {
     [appointments, today],
   )
   const requested = appointments.filter((item) => item.status === 'requested')
+  const followUpClient = clients.find(
+    (client) => client.lastFollowUpAt || client.consents.reminders,
+  )
   const weekStart = startOfWeek(today, { weekStartsOn: 1 })
 
   return (
     <div className="today-page">
       <PageHeader
-        eyebrow={format(today, 'EEEE · d MMMM yyyy')}
+        eyebrow={`${therapist?.preferredName ?? 'Your'} · ${format(today, 'EEEE · d MMMM yyyy')}`}
         title={
           <>
             A clear view
@@ -107,7 +124,7 @@ export function TodayPage() {
                 <h2 id="timeline-heading">Appointments</h2>
               </div>
               <Badge tone="favourable" icon={<Sparkles size={13} />}>
-                Demo schedule
+                {therapist?.preferredName ?? 'Your'}’s schedule
               </Badge>
             </div>
             {dayAppointments.length === 0 && (
@@ -254,25 +271,27 @@ export function TodayPage() {
               })}
               {!requested.length && <p className="muted">All appointment requests are resolved.</p>}
             </Card>
-            <Card
-              tone="gold"
-              eyebrow="Follow-up due"
-              title="Mira’s next-day note"
-              action={<Clock3 size={20} />}
-            >
-              <p className="muted">
-                A gentle in-app follow-up is ready. Missing responses are never interpreted as
-                negative.
-              </p>
-              <Button
-                variant="secondary"
-                size="sm"
-                iconAfter={<ArrowRight size={15} />}
-                onClick={() => navigate('/therapist/clients/demo-client-mira')}
+            {followUpClient && (
+              <Card
+                tone="gold"
+                eyebrow="Follow-up due"
+                title={`${followUpClient.preferredName}’s next-day note`}
+                action={<Clock3 size={20} />}
               >
-                Review record
-              </Button>
-            </Card>
+                <p className="muted">
+                  A gentle in-app follow-up is ready. Missing responses are never interpreted as
+                  negative.
+                </p>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  iconAfter={<ArrowRight size={15} />}
+                  onClick={() => navigate(`/therapist/clients/${followUpClient.id}`)}
+                >
+                  Review record
+                </Button>
+              </Card>
+            )}
           </aside>
         </div>
       )}

@@ -20,6 +20,7 @@ on conflict (id) do update set
 with seed_users(id, email) as (
   values
     ('20000000-0000-4000-8000-000000000001'::uuid, 'therapist@aura-demo.invalid'),
+    ('20000000-0000-4000-8000-000000000002'::uuid, 'therapist-two@aura-demo.invalid'),
     ('30000000-0000-4000-8000-000000000001'::uuid, 'iris@aura-demo.invalid'),
     ('30000000-0000-4000-8000-000000000002'::uuid, 'mika@aura-demo.invalid'),
     ('30000000-0000-4000-8000-000000000003'::uuid, 'sol@aura-demo.invalid')
@@ -63,6 +64,7 @@ on conflict (id) do nothing;
 with seed_users(id, email) as (
   values
     ('20000000-0000-4000-8000-000000000001'::uuid, 'therapist@aura-demo.invalid'),
+    ('20000000-0000-4000-8000-000000000002'::uuid, 'therapist-two@aura-demo.invalid'),
     ('30000000-0000-4000-8000-000000000001'::uuid, 'iris@aura-demo.invalid'),
     ('30000000-0000-4000-8000-000000000002'::uuid, 'mika@aura-demo.invalid'),
     ('30000000-0000-4000-8000-000000000003'::uuid, 'sol@aura-demo.invalid')
@@ -95,6 +97,10 @@ values
     'therapist', 'aura.demo.therapist', 'Demo Therapist — Fictional'
   ),
   (
+    '20000000-0000-4000-8000-000000000002', '10000000-0000-4000-8000-000000000001',
+    'therapist', 'aura.demo.therapist.two', 'Demo Therapist Two — Fictional'
+  ),
+  (
     '30000000-0000-4000-8000-000000000001', '10000000-0000-4000-8000-000000000001',
     'client', 'aura.demo.iris', 'Demo Iris — Fictional'
   ),
@@ -113,21 +119,41 @@ on conflict (id) do update set
   display_name = excluded.display_name;
 
 insert into public.therapist_profiles (
-  user_id, practice_id, professional_name, contact_email, settings, reminder_preferences
+  user_id, practice_id, professional_name, contact_email, settings, reminder_preferences,
+  directory_slug, professional_title, public_portrait_resource_id, public_portrait_path,
+  directory_opt_in, accepting_online_bookings
 )
-values (
-  '20000000-0000-4000-8000-000000000001',
-  '10000000-0000-4000-8000-000000000001',
-  'Demo Therapist — Fictional',
-  'practice@aura-demo.invalid',
-  '{"defaultDuration":60,"bonusMinutesThreshold":3}'::jsonb,
-  '{"followUp":true,"appointmentRequests":true}'::jsonb
-)
+values
+  (
+    '20000000-0000-4000-8000-000000000001',
+    '10000000-0000-4000-8000-000000000001',
+    'Demo Therapist — Fictional',
+    'practice@aura-demo.invalid',
+    '{"defaultDuration":60,"bonusMinutesThreshold":3}'::jsonb,
+    '{"followUp":true,"appointmentRequests":true}'::jsonb,
+    'aura-demo-therapist', 'Massage therapist — synthetic profile',
+    '99000000-0000-4000-8000-000000000001', null, true, true
+  ),
+  (
+    '20000000-0000-4000-8000-000000000002',
+    '10000000-0000-4000-8000-000000000001',
+    'Demo Therapist Two — Fictional',
+    'practice-two@aura-demo.invalid',
+    '{"defaultDuration":60,"bonusMinutesThreshold":3}'::jsonb,
+    '{"followUp":true,"appointmentRequests":true}'::jsonb,
+    'aura-demo-therapist-two', 'Massage therapist — synthetic profile',
+    '99000000-0000-4000-8000-000000000002', null, true, true
+  )
 on conflict (user_id) do update set
   professional_name = excluded.professional_name,
   contact_email = excluded.contact_email,
   settings = excluded.settings,
-  reminder_preferences = excluded.reminder_preferences;
+  reminder_preferences = excluded.reminder_preferences,
+  directory_slug = excluded.directory_slug,
+  professional_title = excluded.professional_title,
+  public_portrait_path = excluded.public_portrait_path,
+  directory_opt_in = excluded.directory_opt_in,
+  accepting_online_bookings = excluded.accepting_online_bookings;
 
 insert into public.clients (
   id, practice_id, auth_user_id, preferred_name, legal_name, email, date_of_birth,
@@ -166,6 +192,39 @@ on conflict (id) do update set
   date_of_birth = excluded.date_of_birth,
   intake_status = excluded.intake_status,
   active = excluded.active;
+
+-- Explicit synthetic care-team memberships. Therapist One owns all four fixtures; Therapist Two
+-- shares Iris only, proving that client progress is aggregated by client rather than provider.
+insert into public.therapist_client_assignments (
+  id, practice_id, client_id, therapist_user_id, assignment_source, assigned_by
+)
+values
+  (
+    '41000000-0000-4000-8000-000000000001', '10000000-0000-4000-8000-000000000001',
+    '40000000-0000-4000-8000-000000000001', '20000000-0000-4000-8000-000000000001',
+    'trusted_administration', '20000000-0000-4000-8000-000000000001'
+  ),
+  (
+    '41000000-0000-4000-8000-000000000002', '10000000-0000-4000-8000-000000000001',
+    '40000000-0000-4000-8000-000000000002', '20000000-0000-4000-8000-000000000001',
+    'trusted_administration', '20000000-0000-4000-8000-000000000001'
+  ),
+  (
+    '41000000-0000-4000-8000-000000000003', '10000000-0000-4000-8000-000000000001',
+    '40000000-0000-4000-8000-000000000003', '20000000-0000-4000-8000-000000000001',
+    'trusted_administration', '20000000-0000-4000-8000-000000000001'
+  ),
+  (
+    '41000000-0000-4000-8000-000000000004', '10000000-0000-4000-8000-000000000001',
+    '40000000-0000-4000-8000-000000000004', '20000000-0000-4000-8000-000000000001',
+    'trusted_administration', '20000000-0000-4000-8000-000000000001'
+  ),
+  (
+    '41000000-0000-4000-8000-000000000005', '10000000-0000-4000-8000-000000000001',
+    '40000000-0000-4000-8000-000000000001', '20000000-0000-4000-8000-000000000002',
+    'trusted_administration', '20000000-0000-4000-8000-000000000001'
+  )
+on conflict (id) do nothing;
 
 insert into public.consents (
   id, practice_id, client_id, consent_type, version, granted, granted_at, metadata
@@ -233,7 +292,10 @@ select
   ('51000000-0000-4000-8000-' || lpad(n::text, 12, '0'))::uuid,
   '10000000-0000-4000-8000-000000000001',
   '40000000-0000-4000-8000-000000000001',
-  '20000000-0000-4000-8000-000000000001',
+  case when n in (2, 5)
+    then '20000000-0000-4000-8000-000000000002'::uuid
+    else '20000000-0000-4000-8000-000000000001'::uuid
+  end,
   date_trunc('day', now()) - ((6 - n) * interval '14 days') + interval '10 hours',
   60, 'Restorative session', 'completed', 'complete',
   '20000000-0000-4000-8000-000000000001', 'Studio One'

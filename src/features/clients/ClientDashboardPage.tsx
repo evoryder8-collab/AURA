@@ -22,8 +22,11 @@ import { Button } from '@/components/design-system/Button'
 import { Card } from '@/components/design-system/Card'
 import { ProgressRing } from '@/components/design-system/ProgressRing'
 import { StatusStrip } from '@/components/feedback/StatusStrip'
+import { env } from '@/config/env'
 import { useDemoStore } from '@/data/demo/store'
+import { therapistCanAccessClient } from '@/data/demo/team'
 import { deriveClientMetrics } from '@/data/demo/derive'
+import { useAuth } from '@/features/auth/auth-context'
 import { BodyMap } from '@/features/body-map/BodyMap'
 import { HandoffWorkflow } from '@/features/handoffs/HandoffWorkflow'
 import { PhotoCapture } from '@/features/photos/PhotoCapture'
@@ -32,7 +35,9 @@ import { formatDay, formatFullDate, patternLabel } from '@/lib/formatting/labels
 
 export function ClientDashboardPage() {
   const { clientId } = useParams()
+  const auth = useAuth()
   const client = useDemoStore((state) => state.clients.find((item) => item.id === clientId))
+  const therapists = useDemoStore((state) => state.therapists)
   const allAppointments = useDemoStore((state) => state.appointments)
   const appointments = useMemo(
     () => allAppointments.filter((item) => item.clientId === clientId),
@@ -51,10 +56,15 @@ export function ClientDashboardPage() {
     return deriveClientMetrics(client)
   }, [client])
 
-  if (!client)
+  const clientIsAssigned = client
+    ? !env.demoMode || therapistCanAccessClient({ therapists }, auth.demoTherapistId, client.id)
+    : false
+
+  if (!client || !clientIsAssigned)
     return (
       <Card tone="soft">
-        <h1>Client record not found</h1>
+        <h1>Client record not available</h1>
+        <p>This therapist account is not assigned to that client record.</p>
         <Button onClick={() => navigate('/therapist/clients')}>Return to Clients</Button>
       </Card>
     )

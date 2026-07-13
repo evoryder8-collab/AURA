@@ -8,6 +8,7 @@ export type AuthState = {
   role: AuraRole | null
   user: User | null
   demoClientId: string | null
+  demoTherapistId?: string | null
   mfaChallengeRequired: boolean
   error: string | null
   signIn: (input: {
@@ -17,7 +18,7 @@ export type AuthState = {
   }) => Promise<boolean>
   verifyMfa: (code: string) => Promise<boolean>
   signInWithMagicLink: (email: string) => Promise<boolean>
-  enterDemo: (role: AuraRole, clientId?: string) => void
+  enterDemo: (role: AuraRole, profileId?: string) => void
   signOut: () => Promise<void>
 }
 

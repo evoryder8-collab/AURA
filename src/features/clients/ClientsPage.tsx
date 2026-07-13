@@ -13,15 +13,30 @@ import { Button } from '@/components/design-system/Button'
 import { Card } from '@/components/design-system/Card'
 import { PageHeader } from '@/components/design-system/PageHeader'
 import { ProgressRing } from '@/components/design-system/ProgressRing'
+import { env } from '@/config/env'
 import { useDemoStore } from '@/data/demo/store'
+import { clientsAssignedToTherapist } from '@/data/demo/team'
 import { deriveClientMetrics } from '@/data/demo/derive'
+import { useAuth } from '@/features/auth/auth-context'
 import { formatDay, patternLabel } from '@/lib/formatting/labels'
+import { ConnectedClientsPage } from './ConnectedClientsPage'
 
 type Filter = 'all' | 'pending' | 'caution' | 'goal' | 'review'
 
 export function ClientsPage() {
-  const clients = useDemoStore((state) => state.clients)
+  return env.demoMode ? <DemoClientsPage /> : <ConnectedClientsPage />
+}
+
+function DemoClientsPage() {
+  const auth = useAuth()
+  const allClients = useDemoStore((state) => state.clients)
   const appointments = useDemoStore((state) => state.appointments)
+  const therapists = useDemoStore((state) => state.therapists)
+  const therapist = therapists.find((item) => item.id === auth.demoTherapistId)
+  const clients = clientsAssignedToTherapist(
+    { clients: allClients, therapists },
+    auth.demoTherapistId,
+  )
   const [query, setQuery] = useState('')
   const [filter, setFilter] = useState<Filter>('all')
   const [sort, setSort] = useState<'name' | 'recovery' | 'next'>('next')
@@ -51,7 +66,7 @@ export function ClientsPage() {
   return (
     <div>
       <PageHeader
-        eyebrow="Client records"
+        eyebrow={`${therapist?.preferredName ?? 'Your'} · assigned client records`}
         title={
           <>
             Every journey,

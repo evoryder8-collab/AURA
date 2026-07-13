@@ -54,6 +54,16 @@ The example environment already selects explicit demo mode. Open the local URL p
 
 To reset local demo state, use the in-application reset action. `npm run seed:demo` is for local Supabase auth/relational bootstrap, not browser-only demo fixtures.
 
+### Adding transparent demo portraits
+
+The identity reveal and therapist booking cards already support transparent `.webp` portraits and fall back to polished monograms when no image is configured. Put synthetic/demo-only images under `public/portraits/`, then add the public URL to the matching therapist or client in `src/data/demo/fixtures.ts`, for example:
+
+```ts
+portraitUrl: `${import.meta.env.BASE_URL}portraits/amara-vale.webp`,
+```
+
+Use a tightly cropped transparent portrait with comfortable space above the head and around the shoulders; roughly `1200 × 1500` pixels works well. Do not commit a real client photograph or identifying filename. Connected client portraits remain protected and are never looked up from the pre-auth name-and-age presentation step.
+
 ## Environment variables
 
 Every `VITE_` value is public at build time. Never put a service-role key, AI/transcription key, handoff pepper, provider credential, password, or deploy token in a Vite variable.
@@ -162,6 +172,8 @@ Provider-free deterministic/manual fallbacks remain usable when functions or pro
 
 HashRouter callbacks end in `#/auth/callback`. Allow local origins and the deployed site in **Supabase Dashboard → Authentication → URL Configuration**:
 
+The browser auth client uses PKCE so Supabase can return the short-lived code without competing with the HashRouter fragment. Keep PKCE and URL session detection enabled when changing auth configuration.
+
 ```text
 http://localhost:5173/**
 http://127.0.0.1:5173/**
@@ -209,7 +221,7 @@ supabase/
 docs/           engineering and operations references
 ```
 
-The connected auth boundary and core client/appointment data access use explicit adapters; domain code does not import React or Supabase, and view components do not scatter raw Supabase queries. The published synthetic feature screens use the IndexedDB-backed demo store. Before enabling a non-synthetic deployment, each remaining clinical workflow must be promoted through a connected repository adapter and independently security-reviewed rather than silently writing local state. See [Architecture](./docs/ARCHITECTURE.md) and [Data model](./docs/DATA_MODEL.md).
+The connected auth boundary and core client/appointment data access use explicit adapters; domain code does not import React or Supabase, and view components do not scatter raw Supabase queries. Connected therapist Today/Clients views and client appointment selection now consume those protected adapters, while the published synthetic experience continues to use the IndexedDB-backed demo store. Connected navigation deliberately hides clinical screens that have not yet been promoted. Before enabling a non-synthetic deployment, each remaining clinical workflow must receive a connected adapter and independent security review rather than silently writing local state. See [Architecture](./docs/ARCHITECTURE.md) and [Data model](./docs/DATA_MODEL.md).
 
 ## Feature flags and fallback behavior
 

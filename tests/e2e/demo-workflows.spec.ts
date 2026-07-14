@@ -132,6 +132,11 @@ test('portrait reveal and team chooser stay usable on a phone viewport', async (
   const revealPortrait = page.getByRole('img', { name: /sora bell profile portrait/i })
   await expect(revealPortrait).toBeVisible()
   await expect(revealPortrait).toBeInViewport()
+  const portraitStage = page.locator('.identity-reveal__hologram')
+  const portraitFrame = page.locator('.identity-reveal__portrait-frame')
+  expect((await portraitStage.boundingBox())?.width).toBeGreaterThan(280)
+  await expect(portraitFrame).toHaveCSS('border-style', 'none')
+  await expect(portraitFrame).toHaveCSS('overflow', 'visible')
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(
     true,
   )

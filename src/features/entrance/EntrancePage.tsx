@@ -70,9 +70,7 @@ export function EntrancePage() {
               <span className="role-choice__arrow" aria-hidden="true">
                 <ArrowRight size={20} />
               </span>
-              {selected === role && (
-                <span className="role-choice__remembered">Remembered on this device</span>
-              )}
+              {selected === role && <span className="role-choice__remembered">Last used</span>}
             </Link>
           ))}
         </div>

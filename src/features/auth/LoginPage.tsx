@@ -17,7 +17,6 @@ import { Button } from '@/components/design-system/Button'
 import { Field, Input } from '@/components/design-system/FormField'
 import { useDemoStore } from '@/data/demo/store'
 import { IdentityReveal, type IdentityCandidate } from './IdentityReveal'
-import { getIdentityAge } from './identity'
 import { useAuth, type AuraRole } from './auth-context'
 
 const schema = z.object({
@@ -129,35 +128,22 @@ export function LoginPage() {
         </Link>
         <div className={`login__form${identityStage ? ' login__form--identity' : ''}`}>
           {identityStage ? (
-            <>
-              <IdentityReveal
-                key={role}
-                candidates={identityCandidates}
-                allowUnmatchedPreview={!env.demoMode}
-                eyebrow={role === 'therapist' ? 'Team identity' : 'Personal identity'}
-                heading={
-                  role === 'therapist' ? 'Find your place on the team' : 'Let your AURA take shape'
-                }
-                description={
-                  role === 'therapist'
-                    ? 'Enter your name and age to reveal your individual practice entrance.'
-                    : 'Enter your name and age to reveal your personal portal before secure sign in.'
-                }
-                onContinue={setIdentified}
-              />
-              {env.demoMode && (
-                <div className="demo-identity-guide" aria-label="Fictional demo identities">
-                  <span>Fictional identities to try</span>
-                  <div>
-                    {identityCandidates.map((candidate) => (
-                      <span key={candidate.id}>
-                        <strong>{candidate.name}</strong> · age {getIdentityAge(candidate)}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </>
+            <IdentityReveal
+              key={role}
+              candidates={identityCandidates}
+              allowUnmatchedPreview={!env.demoMode}
+              showCandidateShortcuts={env.demoMode}
+              eyebrow={role === 'therapist' ? 'Team identity' : 'Personal identity'}
+              heading={
+                role === 'therapist' ? 'Find your place on the team' : 'Let your AURA take shape'
+              }
+              description={
+                role === 'therapist'
+                  ? 'Enter your name and age to reveal your individual practice entrance.'
+                  : 'Enter your name and age to reveal your personal portal before secure sign in.'
+              }
+              onContinue={setIdentified}
+            />
           ) : (
             <>
               {identified && !auth.mfaChallengeRequired && (
@@ -231,9 +217,6 @@ export function LoginPage() {
                   >
                     Enter {recognizedFirstName}’s {role === 'therapist' ? 'team' : 'client'} demo
                   </Button>
-                  <div className="demo-divider">
-                    <span>Connected account sign in</span>
-                  </div>
                 </div>
               ) : null}
               {auth.mfaChallengeRequired ? (
@@ -281,7 +264,7 @@ export function LoginPage() {
                     {mfaSubmitting ? 'Verifying…' : 'Verify & continue'}
                   </Button>
                 </form>
-              ) : (
+              ) : !env.demoMode ? (
                 <form className="form-stack" onSubmit={handleSubmit(connectedSignIn)} noValidate>
                   <Field label="Email or username" error={errors.identifier?.message}>
                     <div className="input-with-icon">
@@ -304,14 +287,14 @@ export function LoginPage() {
                       {auth.error}
                     </p>
                   )}
-                  <Button type="submit" fullWidth size="lg" disabled={env.demoMode || isSubmitting}>
+                  <Button type="submit" fullWidth size="lg" disabled={isSubmitting}>
                     {isSubmitting ? 'Verifying…' : 'Sign in securely'}
                   </Button>
                   {role === 'client' && (
                     <Button
                       variant="ghost"
                       fullWidth
-                      disabled={env.demoMode || magicSent}
+                      disabled={magicSent}
                       onClick={async () => {
                         const email = getValues('identifier')
                         if (!email.includes('@')) return
@@ -322,13 +305,7 @@ export function LoginPage() {
                     </Button>
                   )}
                 </form>
-              )}
-              {env.demoMode && (
-                <p className="microcopy login__disabled-note">
-                  Connected sign-in becomes available when Supabase public credentials are
-                  configured.
-                </p>
-              )}
+              ) : null}
             </>
           )}
         </div>

@@ -29,7 +29,7 @@ Repository-wide rules are in [AGENTS.md](./AGENTS.md).
 - Supabase Auth, Postgres, Row Level Security, Storage, Edge Functions, CLI migrations, and synthetic seed data
 - IndexedDB through `idb` for allowed demo/offline state
 - Vite PWA plugin for the installable application shell
-- Recharts with textual summaries for accessible progress views
+- Bespoke accessible SVG journey charts with textual progress summaries
 - Radix primitives and a small custom CSS-variable design system
 - date-fns, React PDF, and QR rendering
 - Vitest, React Testing Library, Playwright, and axe
@@ -56,10 +56,10 @@ To reset local demo state, use the in-application reset action. `npm run seed:de
 
 ### Adding transparent demo portraits
 
-The identity reveal, secure credential card, signed-in therapist identity, appointment views, care-team strip, and booking cards support transparent `.webp` portraits and fall back to polished monograms when no image is configured. Put synthetic/demo-only images under `public/portraits/`, then add the base-relative public path to the matching therapist or client in `src/data/demo/fixtures.ts`, for example:
+The identity reveal, secure credential card, signed-in therapist identity, appointment views, care-team strip, and booking cards support optimized transparent PNG/WebP portraits and fall back to polished monograms when no image is configured. Put synthetic/demo-only images under `public/portraits/`, then add the base-relative public path to the matching therapist or client in `src/data/demo/fixtures.ts`, for example:
 
 ```ts
-portraitUrl: 'portraits/amara-vale.webp',
+portraitUrl: 'portraits/demo-therapist.webp',
 portraitScale: 1.4,
 ```
 

@@ -73,7 +73,7 @@ describe('demo team continuity', () => {
     useDemoStore.setState({ ...createDemoState(), hydrated: true })
   })
 
-  it('seeds overlapping therapist assignments and keeps Amara available to every client', () => {
+  it('seeds overlapping therapist assignments and keeps Pratana available to every client', () => {
     const state = createDemoState()
 
     expect(state.therapists).toHaveLength(3)
@@ -148,7 +148,22 @@ describe('demo team continuity', () => {
   it('adds newly configured demo portraits to an already persisted therapist roster', () => {
     const fixture = createDemoState()
     const therapistsWithoutPortraits = fixture.therapists.map(
-      ({ portraitUrl: _portrait, portraitScale: _scale, ...therapist }) => therapist,
+      ({ portraitUrl: _portrait, portraitScale: _scale, ...therapist }) =>
+        therapist.id === DEMO_THERAPIST_IDS.amara
+          ? {
+              ...therapist,
+              preferredName: 'Amara',
+              displayName: 'Amara Vale — fictional demo',
+              dateOfBirth: '1988-02-10',
+            }
+          : therapist.id === DEMO_THERAPIST_IDS.sora
+            ? {
+                ...therapist,
+                preferredName: 'Sora',
+                displayName: 'Sora Bell — fictional demo',
+                dateOfBirth: '1984-05-18',
+              }
+            : therapist,
     )
     const merged = mergePersistedDemoState(
       { therapists: therapistsWithoutPortraits },
@@ -157,17 +172,31 @@ describe('demo team continuity', () => {
 
     expect(
       merged.therapists.find((therapist) => therapist.id === DEMO_THERAPIST_IDS.amara)?.portraitUrl,
-    ).toContain('Pratana%20Transp%20V2.webp')
+    ).toContain('pratana-halstrick-demo.png')
     expect(
       merged.therapists.find((therapist) => therapist.id === DEMO_THERAPIST_IDS.amara)
         ?.portraitScale,
     ).toBe(2.15)
     expect(
+      merged.therapists.find((therapist) => therapist.id === DEMO_THERAPIST_IDS.amara),
+    ).toMatchObject({
+      preferredName: 'Pratana',
+      displayName: 'Pratana Halstrick — fictional demo',
+      dateOfBirth: '1991-01-15',
+    })
+    expect(
       merged.therapists.find((therapist) => therapist.id === DEMO_THERAPIST_IDS.sora)?.portraitUrl,
-    ).toContain('wassana%20therapist%20transparent.webp')
+    ).toContain('wassana-schlaepfer-demo.png')
     expect(
       merged.therapists.find((therapist) => therapist.id === DEMO_THERAPIST_IDS.sora)
         ?.portraitScale,
     ).toBe(1.5)
+    expect(
+      merged.therapists.find((therapist) => therapist.id === DEMO_THERAPIST_IDS.sora),
+    ).toMatchObject({
+      preferredName: 'Wassana',
+      displayName: 'Wassana Schlaepfer — fictional demo',
+      dateOfBirth: '1971-01-15',
+    })
   })
 })

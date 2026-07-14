@@ -1,6 +1,19 @@
-import { Bell, LogOut, Menu, X } from 'lucide-react'
+import {
+  Bell,
+  CalendarDays,
+  History,
+  House,
+  LayoutList,
+  LogOut,
+  Menu,
+  Settings,
+  ShieldCheck,
+  TrendingUp,
+  UsersRound,
+  X,
+} from 'lucide-react'
 import { useState } from 'react'
-import { Outlet, useNavigate } from 'react-router-dom'
+import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { Button } from '@/components/design-system/Button'
 import { PortalNav } from '@/components/navigation/PortalNav'
 import { env } from '@/config/env'
@@ -28,6 +41,33 @@ export function PortalLayout({ role }: { role: AuraRole }) {
     navigate('/')
   }
 
+  const navigation =
+    role === 'therapist'
+      ? [
+          { to: '/therapist/today', label: 'Today', icon: LayoutList },
+          { to: '/therapist/clients', label: 'Clients', icon: UsersRound },
+          ...(env.demoMode
+            ? [{ to: '/therapist/calendar', label: 'Calendar', icon: CalendarDays }]
+            : []),
+          { to: '/therapist/settings', label: 'Settings', icon: Settings },
+        ]
+      : [
+          ...(env.demoMode
+            ? [
+                { to: '/client/home', label: 'Home', icon: House },
+                { to: '/client/progress', label: 'Progress', icon: TrendingUp },
+              ]
+            : []),
+          { to: '/client/appointments', label: 'Appointments', icon: CalendarDays },
+          ...(env.demoMode
+            ? [
+                { to: '/client/history', label: 'History', icon: History },
+                { to: '/client/consents', label: 'Consent', icon: ShieldCheck },
+              ]
+            : []),
+          { to: '/client/settings', label: 'Settings', icon: Settings },
+        ]
+
   return (
     <div className={`portal-shell portal-shell--${role}`}>
       <PortalNav role={role} />
@@ -35,7 +75,7 @@ export function PortalLayout({ role }: { role: AuraRole }) {
         <header className="topbar">
           <button
             className="icon-button topbar__menu"
-            aria-label="Open contextual menu"
+            aria-label="Open all navigation"
             onClick={() => setMenuOpen(true)}
           >
             <Menu size={20} />
@@ -94,7 +134,7 @@ export function PortalLayout({ role }: { role: AuraRole }) {
           className="context-menu"
           role="dialog"
           aria-modal="true"
-          aria-label="Contextual navigation"
+          aria-label="All portal navigation"
         >
           <button
             className="icon-button"
@@ -103,15 +143,23 @@ export function PortalLayout({ role }: { role: AuraRole }) {
           >
             <X size={20} />
           </button>
-          <Button
-            variant="secondary"
-            fullWidth
-            onClick={() =>
-              navigate(role === 'therapist' ? '/therapist/settings' : '/client/settings')
-            }
-          >
-            Open settings
-          </Button>
+          <div className="context-menu__heading">
+            <span>{role === 'therapist' ? 'Practice portal' : 'Personal portal'}</span>
+            <strong>Where would you like to go?</strong>
+          </div>
+          <nav className="context-menu__links" aria-label="Portal destinations">
+            {navigation.map(({ to, label, icon: Icon }) => (
+              <NavLink
+                key={to}
+                to={to}
+                onClick={() => setMenuOpen(false)}
+                className={({ isActive }) => `context-menu__link${isActive ? ' is-active' : ''}`}
+              >
+                <Icon size={18} />
+                <span>{label}</span>
+              </NavLink>
+            ))}
+          </nav>
           <Button
             variant="ghost"
             fullWidth

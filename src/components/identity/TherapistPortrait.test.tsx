@@ -2,9 +2,9 @@ import { fireEvent, render, screen } from '@testing-library/react'
 import { TherapistPortrait } from './TherapistPortrait'
 
 const therapist = {
-  preferredName: 'Sora',
-  displayName: 'Sora Bell — fictional demo',
-  portraitUrl: 'wassana%20therapist%20transparent.webp',
+  preferredName: 'Wassana',
+  displayName: 'Wassana Schlaepfer — fictional demo',
+  portraitUrl: 'wassana-schlaepfer-demo.png',
   portraitScale: 1.5,
 }
 
@@ -13,13 +13,13 @@ describe('TherapistPortrait', () => {
     const { container } = render(<TherapistPortrait therapist={therapist} />)
     const image = container.querySelector('img')
 
-    expect(image).toHaveAttribute('src', 'wassana%20therapist%20transparent.webp')
+    expect(image).toHaveAttribute('src', 'wassana-schlaepfer-demo.png')
     expect(image).toHaveStyle({ transform: 'scale(1.5)' })
-    expect(screen.getByText('SB')).toBeInTheDocument()
+    expect(screen.getByText('WS')).toBeInTheDocument()
 
     fireEvent.error(image!)
 
     expect(image).toHaveStyle({ display: 'none' })
-    expect(screen.getByText('SB')).toBeVisible()
+    expect(screen.getByText('WS')).toBeVisible()
   })
 })

@@ -16,6 +16,7 @@ export type IdentityRevealProps = {
   continueLabel?: string
   referenceDate?: Date
   className?: string
+  showCandidateShortcuts?: boolean
 }
 
 type RevealStage = 'form' | 'revealing' | 'revealed'
@@ -66,6 +67,7 @@ export function IdentityReveal({
   continueLabel = 'Continue to secure sign in',
   referenceDate,
   className = '',
+  showCandidateShortcuts = false,
 }: IdentityRevealProps) {
   const [name, setName] = useState('')
   const [age, setAge] = useState('')
@@ -83,6 +85,7 @@ export function IdentityReveal({
   const ageErrorId = useId()
   const matchErrorId = useId()
   const revealFallbackTimer = useRef<number | null>(null)
+  const rootRef = useRef<HTMLElement>(null)
   const nameInputRef = useRef<HTMLInputElement>(null)
   const continueButtonRef = useRef<HTMLButtonElement>(null)
 
@@ -94,6 +97,13 @@ export function IdentityReveal({
 
   useEffect(() => {
     if (stage !== 'revealing') return
+
+    if (typeof rootRef.current?.scrollIntoView === 'function') {
+      rootRef.current.scrollIntoView({
+        block: 'start',
+        behavior: reducedMotion ? 'auto' : 'smooth',
+      })
+    }
 
     if (reducedMotion) {
       completeReveal()
@@ -107,7 +117,7 @@ export function IdentityReveal({
   }, [completeReveal, reducedMotion, stage])
 
   useEffect(() => {
-    if (stage === 'revealed') continueButtonRef.current?.focus()
+    if (stage === 'revealed') continueButtonRef.current?.focus({ preventScroll: true })
   }, [stage])
 
   useEffect(() => {
@@ -119,6 +129,17 @@ export function IdentityReveal({
     setSelectedCandidate(null)
     setPortraitFailed(false)
     setMatchError('')
+  }
+
+  const revealCandidate = (candidate: IdentityCandidate) => {
+    setName(candidate.name)
+    setAge(String(getIdentityAge(candidate, today)))
+    setNameError('')
+    setAgeError('')
+    setMatchError('')
+    setSelectedCandidate(candidate)
+    setPortraitFailed(false)
+    setStage('revealing')
   }
 
   const submitIdentity = (event: FormEvent<HTMLFormElement>) => {
@@ -154,9 +175,7 @@ export function IdentityReveal({
       subtitle: 'Secure account verification comes next',
     }
 
-    setSelectedCandidate(match)
-    setPortraitFailed(false)
-    setStage('revealing')
+    revealCandidate(match)
   }
 
   const nameDescribedBy = [nameError ? nameErrorId : '', matchError ? matchErrorId : '']
@@ -168,6 +187,7 @@ export function IdentityReveal({
 
   return (
     <section
+      ref={rootRef}
       className={`identity-reveal identity-reveal--${stage} ${className}`.trim()}
       aria-labelledby={headingId}
     >
@@ -243,6 +263,23 @@ export function IdentityReveal({
               This recognition step does not sign you in. Your account credentials are still
               required next.
             </p>
+            {showCandidateShortcuts && candidates.length > 0 ? (
+              <div className="identity-reveal__shortcuts" aria-label="Fictional demo identities">
+                <span>Or enter the showcase instantly</span>
+                <div>
+                  {candidates.map((candidate) => (
+                    <button
+                      key={candidate.id}
+                      type="button"
+                      onClick={() => revealCandidate(candidate)}
+                    >
+                      <strong>{candidate.name}</strong>
+                      <small>Age {getIdentityAge(candidate, today)}</small>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ) : null}
           </form>
         </div>
       ) : selectedCandidate ? (

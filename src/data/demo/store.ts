@@ -136,10 +136,16 @@ export function mergePersistedDemoState(
     : fixture.therapists
   const therapists = persistedTherapists.map((therapist) => {
     const fixtureTherapist = fixture.therapists.find((item) => item.id === therapist.id)
-    return fixtureTherapist?.portraitUrl
+    return fixtureTherapist
       ? {
           ...therapist,
-          portraitUrl: fixtureTherapist.portraitUrl,
+          preferredName: fixtureTherapist.preferredName,
+          displayName: fixtureTherapist.displayName,
+          dateOfBirth: fixtureTherapist.dateOfBirth,
+          professionalTitle: fixtureTherapist.professionalTitle,
+          specialties: fixtureTherapist.specialties,
+          availability: fixtureTherapist.availability,
+          ...(fixtureTherapist.portraitUrl ? { portraitUrl: fixtureTherapist.portraitUrl } : {}),
           ...(fixtureTherapist.portraitScale
             ? { portraitScale: fixtureTherapist.portraitScale }
             : {}),

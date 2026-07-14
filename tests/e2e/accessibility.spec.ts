@@ -6,7 +6,7 @@ import { getIdentityAge } from '../../src/features/auth/identity'
 test('@a11y entrance and therapist Today have no serious axe violations', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' })
   await page.goto('/AURA/#/')
-  await expect(page.getByRole('heading', { name: /how are you.*entering today/i })).toBeVisible()
+  await expect(page.getByRole('heading', { name: /step into your aura/i })).toBeVisible()
   let results = await new AxeBuilder({ page }).analyze()
   expect(
     results.violations.filter((item) => item.impact === 'serious' || item.impact === 'critical'),
@@ -36,7 +36,7 @@ test('@a11y entrance and therapist Today have no serious axe violations', async 
     results.violations.filter((item) => item.impact === 'serious' || item.impact === 'critical'),
   ).toEqual([])
 
-  await page.getByRole('button', { name: /enter amara.*team demo/i }).click()
+  await page.getByRole('button', { name: /enter pratana.*team demo/i }).click()
   await expect(page.getByRole('heading', { name: /a clear view.*of today/i })).toBeVisible()
   const skipLink = page.getByRole('link', { name: 'Skip to content' })
   await skipLink.focus()

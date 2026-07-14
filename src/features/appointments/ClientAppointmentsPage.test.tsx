@@ -37,9 +37,9 @@ describe('client team appointment request', () => {
     expect(screen.getAllByText(/with elias rowan/i)).not.toHaveLength(0)
     await user.click(screen.getByRole('button', { name: /request appointment/i }))
 
-    const sora = screen.getByRole('radio', { name: /sora bell/i })
-    expect(sora).toBeInTheDocument()
-    await user.click(sora)
+    const wassana = screen.getByRole('radio', { name: /wassana schlaepfer/i })
+    expect(wassana).toBeInTheDocument()
+    await user.click(wassana)
     await user.click(screen.getByRole('button', { name: /send request/i }))
 
     const created = useDemoStore.getState().appointments.at(-1)
@@ -57,7 +57,7 @@ describe('client team appointment request', () => {
         ?.assignedClientIds,
     ).toContain('demo-client-noa')
     const confirmation = screen.getByRole('status')
-    expect(confirmation).toHaveTextContent(/preferred time with sora/i)
+    expect(confirmation).toHaveTextContent(/preferred time with wassana/i)
     expect(confirmation).toHaveFocus()
   })
 })

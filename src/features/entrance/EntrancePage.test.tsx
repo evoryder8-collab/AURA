@@ -14,9 +14,7 @@ describe('EntrancePage', () => {
       </MemoryRouter>,
     )
 
-    expect(
-      screen.getByRole('heading', { name: /how are you.*entering today/i }),
-    ).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: /step into.*your aura/i })).toBeInTheDocument()
     const therapist = screen.getByRole('link', { name: /i am a therapist/i })
     expect(therapist).toHaveAttribute('href', '/login/therapist')
     expect(screen.getByRole('link', { name: /i am a client/i })).toHaveAttribute(

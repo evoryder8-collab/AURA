@@ -7,6 +7,7 @@ import {
   House,
   LayoutList,
   Settings,
+  ShieldCheck,
   Sparkles,
   TrendingUp,
   UsersRound,
@@ -39,6 +40,7 @@ const clientItems: NavItem[] = [
   { to: '/client/progress', label: 'Progress', icon: TrendingUp, primary: true },
   { to: '/client/appointments', label: 'Appointments', icon: CalendarDays, primary: true },
   { to: '/client/history', label: 'History', icon: History },
+  { to: '/client/consents', label: 'Consent', icon: ShieldCheck },
   { to: '/client/settings', label: 'Settings', icon: Settings },
 ]
 

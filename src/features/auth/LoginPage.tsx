@@ -1,314 +1,155 @@
-import { zodResolver } from '@hookform/resolvers/zod'
-import {
-  ArrowLeft,
-  ArrowRight,
-  KeyRound,
-  Mail,
-  RotateCcw,
-  ShieldCheck,
-  Sparkles,
-} from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
-import { useForm } from 'react-hook-form'
+import { ArrowLeft, ArrowRight } from 'lucide-react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { flushSync } from 'react-dom'
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
-import { z } from 'zod'
-import { env } from '@/config/env'
 import { Button } from '@/components/design-system/Button'
-import { Field, Input } from '@/components/design-system/FormField'
+import { assetUrl } from '@/components/ui/assets'
+import { env } from '@/config/env'
 import { useDemoStore } from '@/data/demo/store'
-import { IdentityReveal, type IdentityCandidate } from './IdentityReveal'
+import { DuskScene } from '@/features/entrance/DuskScene'
+import { IdentityReveal } from './IdentityReveal'
 import { useAuth, type AuraRole } from './auth-context'
+import { CredentialsForm, IdentityForm, MfaForm } from './entrance-forms'
+import { demoIdentities, portalLanding, type EntranceIdentity } from './entrance-identity'
+import './entrance-signin.css'
 
-const schema = z.object({
-  identifier: z.string().min(3, 'Enter your email or configured username.'),
-  password: z.string().min(8, 'Use at least 8 characters.'),
-})
-type Values = z.infer<typeof schema>
-
-function portalLanding(role: AuraRole) {
-  if (role === 'therapist') return '/therapist/today'
-  return env.demoMode ? '/client/home' : '/client/appointments'
+/** Morph between steps where the browser can (the portrait glides into place); otherwise just switch. */
+function morph(update: () => void) {
+  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  if (reduced || typeof document.startViewTransition !== 'function') {
+    update()
+    return
+  }
+  document.startViewTransition(() => flushSync(update))
 }
 
 export function LoginPage() {
-  const { role: roleParam } = useParams()
-  const role: AuraRole = roleParam === 'client' ? 'client' : 'therapist'
+  const { role } = useParams()
+  const portal: AuraRole = role === 'client' ? 'client' : 'therapist'
+  // A new portal starts clean: nothing typed for one role carries into the other.
+  return <SignIn key={portal} role={portal} />
+}
+
+function SignIn({ role }: { role: AuraRole }) {
   const auth = useAuth()
   const navigate = useNavigate()
-  const clients = useDemoStore((state) => state.clients)
+  const demo = env.demoMode
   const therapists = useDemoStore((state) => state.therapists)
-  const [identified, setIdentified] = useState<IdentityCandidate | null>(null)
-  const [magicSent, setMagicSent] = useState(false)
-  const [mfaCode, setMfaCode] = useState('')
-  const [mfaSubmitting, setMfaSubmitting] = useState(false)
-  const {
-    register,
-    handleSubmit,
-    getValues,
-    formState: { errors, isSubmitting },
-  } = useForm<Values>({ resolver: zodResolver(schema) })
-
-  const identityCandidates = useMemo<IdentityCandidate[]>(
-    () =>
-      env.demoMode
-        ? role === 'therapist'
-          ? therapists.map((therapist) => ({
-              id: therapist.id,
-              name: therapist.displayName.replace(' — fictional demo', ''),
-              dateOfBirth: therapist.dateOfBirth,
-              subtitle: therapist.professionalTitle,
-              ...(therapist.portrait
-                ? { portraitUrl: `${import.meta.env.BASE_URL}${therapist.portrait.hero}` }
-                : {}),
-            }))
-          : clients.map((client) => ({
-              id: client.id,
-              dateOfBirth: client.dateOfBirth,
-              name: client.displayName,
-              subtitle: 'Personal care space',
-            }))
-        : [],
-    [clients, role, therapists],
+  const clients = useDemoStore((state) => state.clients)
+  const candidates = useMemo(
+    () => (demo ? demoIdentities(role, therapists, clients) : []),
+    [clients, demo, role, therapists],
   )
+  const [identity, setIdentity] = useState<EntranceIdentity | null>(null)
+  const [confirmed, setConfirmed] = useState(false)
+  const [settled, setSettled] = useState(false)
+  const confirmRef = useRef<HTMLButtonElement>(null)
 
-  useEffect(() => setIdentified(null), [role])
+  const step = auth.mfaChallengeRequired
+    ? 'mfa'
+    : !identity
+      ? 'identity'
+      : confirmed
+        ? 'credentials'
+        : 'reveal'
+
+  // Fetch the fictional portraits ahead, so the reveal never waits on the network.
+  useEffect(() => {
+    for (const person of candidates) {
+      if (person.portrait) new Image().src = assetUrl(person.portrait.hero)
+    }
+  }, [candidates])
 
   useEffect(() => {
-    window.scrollTo({ top: 0, behavior: 'auto' })
-  }, [identified])
+    if (step !== 'reveal') return
+    // Show the person from the top, with the answer focused below them.
+    if (document.scrollingElement) document.scrollingElement.scrollTop = 0
+    confirmRef.current?.focus({ preventScroll: true })
+  }, [step])
 
-  if (auth.role && !auth.mfaChallengeRequired) {
-    return <Navigate to={portalLanding(auth.role)} replace />
-  }
+  if (auth.role && !auth.mfaChallengeRequired)
+    return <Navigate to={portalLanding(auth.role, demo)} replace />
 
-  const connectedSignIn = async (values: Values) => {
-    const ok = await auth.signIn({ ...values, expectedRole: role })
-    if (ok) navigate(portalLanding(role))
-  }
-
-  const enterDemo = (profileId?: string) => {
-    auth.enterDemo(role, profileId)
-    navigate(portalLanding(role))
-  }
-
-  const verifyMfa = async () => {
-    setMfaSubmitting(true)
-    const ok = await auth.verifyMfa(mfaCode.trim())
-    setMfaSubmitting(false)
-    if (ok) navigate(portalLanding(auth.role ?? role))
-  }
-
-  const identityStage = !identified && !auth.mfaChallengeRequired
-  const isUnverifiedPreview = identified?.id === 'unverified-preview'
-  const recognizedName = identified?.name ?? (role === 'therapist' ? 'Therapist' : 'Client')
-  const recognizedFirstName = recognizedName.split(' ')[0] ?? recognizedName
-  const recognizedInitials = recognizedName
-    .split(' ')
-    .slice(0, 2)
-    .map((part) => part[0])
-    .join('')
-    .toUpperCase()
+  const startOver = () =>
+    morph(() => {
+      setIdentity(null)
+      setConfirmed(false)
+      setSettled(false)
+    })
+  const confirm = (value: boolean) =>
+    morph(() => {
+      setConfirmed(value)
+      // Back on the reveal, the light may move again.
+      if (!value) setSettled(false)
+    })
+  const signedIn = () => navigate(portalLanding(role, demo), { replace: true })
 
   return (
-    <main id="main-content" className={`login login--${role}`}>
-      <section className="login__visual" aria-hidden="true">
-        <div className={`login__visual-mark${identified ? ' is-identity' : ''}`}>
-          {identified ? recognizedInitials : 'A'}
-        </div>
-        <p>
-          {role === 'therapist'
-            ? 'Every practitioner has a private place within the team.'
-            : 'Your progress follows you, whoever supports your care.'}
-        </p>
-      </section>
-      <section className="login__form-wrap">
-        <Link to="/" className="back-link">
-          <ArrowLeft size={17} /> Change entrance
-        </Link>
-        <div className={`login__form${identityStage ? ' login__form--identity' : ''}`}>
-          {identityStage ? (
-            <IdentityReveal
-              key={role}
-              candidates={identityCandidates}
-              allowUnmatchedPreview={!env.demoMode}
-              showCandidateShortcuts={env.demoMode}
-              eyebrow={role === 'therapist' ? 'Team identity' : 'Personal identity'}
-              heading={
-                role === 'therapist' ? 'Find your place on the team' : 'Let your AURA take shape'
-              }
-              description={
-                role === 'therapist'
-                  ? 'Enter your name and age to reveal your individual practice entrance.'
-                  : 'Enter your name and age to reveal your personal portal before secure sign in.'
-              }
-              onContinue={setIdentified}
-            />
+    <main id="main-content" className={`signin signin--${role}`} data-step={step}>
+      <DuskScene focus={[0.72, 0.76]} energy={identity ? 0.55 : 0.85} settled={settled} />
+      <div className="signin__layout">
+        {step === 'identity' ? (
+          <Link to="/" className="signin__back">
+            <ArrowLeft size={18} aria-hidden="true" /> Back
+          </Link>
+        ) : step === 'mfa' ? null : (
+          <button
+            type="button"
+            className="signin__back"
+            onClick={() => (step === 'credentials' ? confirm(false) : startOver())}
+          >
+            <ArrowLeft size={18} aria-hidden="true" /> Back
+          </button>
+        )}
+
+        <div className="signin__hero">
+          {identity ? (
+            <IdentityReveal identity={identity} settled={settled} />
           ) : (
-            <>
-              {identified && !auth.mfaChallengeRequired && (
-                <button
-                  type="button"
-                  className="login__change-identity"
-                  onClick={() => setIdentified(null)}
-                >
-                  <RotateCcw size={15} /> Not you? Change identity
-                </button>
-              )}
-              <div className="credential-identity">
-                <span className="credential-identity__portrait" aria-hidden="true">
-                  <span>{recognizedInitials}</span>
-                  {identified?.portraitUrl && (
-                    <img
-                      src={identified.portraitUrl}
-                      alt=""
-                      style={{ transform: `scale(${identified.portraitScale ?? 1})` }}
-                      onError={(event) => {
-                        event.currentTarget.style.display = 'none'
-                      }}
-                    />
-                  )}
-                </span>
-                <div>
-                  <span>
-                    {auth.mfaChallengeRequired
-                      ? 'Account verified'
-                      : isUnverifiedPreview
-                        ? 'Entrance preview'
-                        : 'Identity revealed'}
-                  </span>
-                  <strong>{recognizedName}</strong>
-                  <small>
-                    {identified?.subtitle ??
-                      (role === 'therapist' ? 'Individual team account' : 'Private client account')}
-                  </small>
-                </div>
-                {auth.mfaChallengeRequired || !isUnverifiedPreview ? (
-                  <ShieldCheck size={20} />
-                ) : (
-                  <Sparkles size={20} />
-                )}
-              </div>
-              <p className="eyebrow">
-                {role === 'therapist' ? 'Practice portal' : 'Personal portal'} · secure entry
-              </p>
-              <h1>Welcome, {recognizedFirstName}.</h1>
-              <p className="login__intro">
-                {isUnverifiedPreview
-                  ? 'This personalized entrance is only a preview. Your credentials will securely identify your account and determine what you can access.'
-                  : 'Your name and age shaped this private entrance; credentials and the protected backend role still determine what you can access.'}
-              </p>
-              {env.demoMode && !auth.mfaChallengeRequired ? (
-                <div className="demo-entry">
-                  <div className="demo-entry__note">
-                    <ShieldCheck size={19} />
-                    <div>
-                      <strong>Synthetic demo access</strong>
-                      <span>
-                        No password or personal information is required for this showcase.
-                      </span>
-                    </div>
-                  </div>
-                  <Button
-                    size="lg"
-                    fullWidth
-                    iconAfter={<ArrowRight size={18} />}
-                    onClick={() => enterDemo(identified?.id)}
-                  >
-                    Enter {recognizedFirstName}’s {role === 'therapist' ? 'team' : 'client'} demo
-                  </Button>
-                </div>
-              ) : null}
-              {auth.mfaChallengeRequired ? (
-                <form
-                  className="form-stack"
-                  onSubmit={(event) => {
-                    event.preventDefault()
-                    void verifyMfa()
-                  }}
-                >
-                  <div className="demo-entry__note">
-                    <ShieldCheck size={19} />
-                    <div>
-                      <strong>Authenticator verification</strong>
-                      <span>
-                        Enter the current code from the authenticator linked to this account.
-                      </span>
-                    </div>
-                  </div>
-                  <Field label="Six-digit verification code">
-                    <div className="input-with-icon">
-                      <KeyRound size={18} />
-                      <Input
-                        inputMode="numeric"
-                        autoComplete="one-time-code"
-                        pattern="[0-9]*"
-                        maxLength={8}
-                        value={mfaCode}
-                        onChange={(event) => setMfaCode(event.target.value)}
-                        autoFocus
-                      />
-                    </div>
-                  </Field>
-                  {auth.error && (
-                    <p className="form-error" role="alert">
-                      {auth.error}
-                    </p>
-                  )}
-                  <Button
-                    type="submit"
-                    fullWidth
-                    size="lg"
-                    disabled={mfaCode.trim().length < 6 || mfaSubmitting}
-                  >
-                    {mfaSubmitting ? 'Verifying…' : 'Verify & continue'}
-                  </Button>
-                </form>
-              ) : !env.demoMode ? (
-                <form className="form-stack" onSubmit={handleSubmit(connectedSignIn)} noValidate>
-                  <Field label="Email or username" error={errors.identifier?.message}>
-                    <div className="input-with-icon">
-                      <Mail size={18} />
-                      <Input autoComplete="username" {...register('identifier')} />
-                    </div>
-                  </Field>
-                  <Field label="Password" error={errors.password?.message}>
-                    <div className="input-with-icon">
-                      <KeyRound size={18} />
-                      <Input
-                        type="password"
-                        autoComplete="current-password"
-                        {...register('password')}
-                      />
-                    </div>
-                  </Field>
-                  {auth.error && (
-                    <p className="form-error" role="alert">
-                      {auth.error}
-                    </p>
-                  )}
-                  <Button type="submit" fullWidth size="lg" disabled={isSubmitting}>
-                    {isSubmitting ? 'Verifying…' : 'Sign in securely'}
-                  </Button>
-                  {role === 'client' && (
-                    <Button
-                      variant="ghost"
-                      fullWidth
-                      disabled={magicSent}
-                      onClick={async () => {
-                        const email = getValues('identifier')
-                        if (!email.includes('@')) return
-                        setMagicSent(await auth.signInWithMagicLink(email))
-                      }}
-                    >
-                      {magicSent ? 'Secure link sent' : 'Email me a magic link'}
-                    </Button>
-                  )}
-                </form>
-              ) : null}
-            </>
+            <div className="signin__intro">
+              <h1>
+                {role === 'therapist' ? 'Therapist' : 'Client'}{' '}
+                <span className="nowrap">sign-in</span>
+              </h1>
+              <p>{demo ? 'Start with your name and age.' : 'Start with your name.'}</p>
+            </div>
           )}
         </div>
-      </section>
+
+        <div
+          className="signin__panel"
+          onFocus={step === 'credentials' || step === 'mfa' ? () => setSettled(true) : undefined}
+        >
+          {step === 'identity' ? (
+            <IdentityForm demo={demo} candidates={candidates} onFound={setIdentity} />
+          ) : step === 'reveal' ? (
+            <div className="signin__confirm">
+              <Button
+                ref={confirmRef}
+                size="lg"
+                fullWidth
+                iconAfter={<ArrowRight size={18} />}
+                onClick={() => confirm(true)}
+              >
+                {demo ? 'That’s me' : 'Continue'}
+              </Button>
+              <Button variant="ghost" fullWidth onClick={startOver}>
+                {demo ? 'Not me, start again' : 'Change name'}
+              </Button>
+            </div>
+          ) : step === 'credentials' && identity ? (
+            <CredentialsForm
+              role={role}
+              identity={identity}
+              demo={demo}
+              onSignedIn={signedIn}
+              onStartOver={startOver}
+            />
+          ) : (
+            <MfaForm onVerified={signedIn} />
+          )}
+        </div>
+      </div>
     </main>
   )
 }

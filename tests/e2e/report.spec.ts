@@ -1,3 +1,4 @@
+/// <reference types="node" />
 import { readFileSync } from 'node:fs'
 import { expect, test } from '@playwright/test'
 import { IDS, freshDemo, signInAs } from './helpers'

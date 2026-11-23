@@ -1,0 +1,408 @@
+/* Entrance: the dusk scene, letters formed in light, and the way in. Uses the Dusk tokens. */
+
+/* ---------- Scene ---------- */
+
+.dusk {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100lvh;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+  contain: strict;
+  color: #010507; /* the colour of every botanical shadow */
+  background:
+    radial-gradient(75% 55% at 82% 20%, rgba(34, 96, 94, 0.5), transparent 72%),
+    radial-gradient(70% 55% at 4% 100%, rgba(118, 78, 42, 0.42), transparent 72%),
+    linear-gradient(180deg, #0d2227 0%, #09171c 46%, #050d0f 100%);
+}
+
+.dusk__glow {
+  position: absolute;
+  border-radius: 50%;
+  will-change: transform, opacity;
+  animation: dusk-breathe 12s var(--ease-soft) infinite alternate;
+}
+
+.dusk__glow--lantern {
+  width: 110vmax;
+  height: 90vmax;
+  left: -52vmax;
+  bottom: -50vmax;
+  background: radial-gradient(
+    closest-side,
+    rgba(246, 196, 128, 0.34),
+    rgba(214, 140, 78, 0.12) 55%,
+    transparent
+  );
+}
+
+.dusk__glow--water {
+  width: 95vmax;
+  height: 80vmax;
+  right: -38vmax;
+  top: -30vmax;
+  background: radial-gradient(
+    closest-side,
+    rgba(116, 230, 208, 0.24),
+    rgba(40, 140, 140, 0.08) 60%,
+    transparent
+  );
+  animation-duration: 15s;
+  animation-delay: -7s;
+}
+
+@keyframes dusk-breathe {
+  from {
+    transform: scale(0.9);
+    opacity: 0.7;
+  }
+  to {
+    transform: scale(1.06);
+    opacity: 1;
+  }
+}
+
+.dusk__light {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.dusk__light--still {
+  background:
+    radial-gradient(
+      9% 4% at calc(var(--fx) - 9%) calc(var(--fy) - 5%),
+      rgba(196, 246, 232, 0.2),
+      transparent 70%
+    ),
+    radial-gradient(
+      7% 3% at calc(var(--fx) + 7%) calc(var(--fy) + 2%),
+      rgba(196, 246, 232, 0.16),
+      transparent 70%
+    ),
+    radial-gradient(
+      12% 4% at calc(var(--fx) - 2%) calc(var(--fy) + 9%),
+      rgba(243, 214, 160, 0.12),
+      transparent 70%
+    ),
+    radial-gradient(40% 26% at var(--fx) var(--fy), rgba(120, 220, 200, 0.14), transparent 70%);
+}
+
+.dusk__plant {
+  position: absolute;
+  will-change: transform;
+  animation: dusk-sway var(--sway, 17s) var(--ease-soft) infinite alternate;
+}
+
+.dusk__plant svg {
+  width: 100%;
+  height: auto;
+  max-width: none;
+  overflow: visible;
+  fill: currentColor;
+}
+
+.dusk__plant--palm {
+  --sway: 15s;
+  top: max(-170px, -18vw);
+  right: max(-300px, -42vw);
+  width: max(600px, 118vw);
+  max-width: 1120px;
+  opacity: 0.66;
+  transform-origin: 96% 44%;
+}
+
+.dusk__plant--palm svg {
+  transform: scaleX(-1) rotate(-6deg);
+}
+
+.dusk__plant--monstera {
+  --sway: 19s;
+  left: max(-120px, -22vw);
+  bottom: max(-150px, -26vw);
+  width: max(250px, 54vw);
+  max-width: 480px;
+  opacity: 0.7;
+  transform-origin: 12% 97%;
+  animation-delay: -5s;
+}
+
+.dusk__plant--monstera svg {
+  transform: scaleY(-1) rotate(-28deg);
+}
+
+.dusk__plant--frangipani {
+  --sway: 13s;
+  left: max(-110px, -24vw);
+  top: max(-60px, -12vw);
+  width: max(210px, 40vw);
+  max-width: 440px;
+  opacity: 0.42;
+  transform-origin: 4% 9%;
+  animation-delay: -9s;
+}
+
+.dusk__plant--frangipani svg {
+  transform: scaleY(-1) rotate(10deg);
+}
+
+@keyframes dusk-sway {
+  from {
+    transform: rotate(-2deg);
+  }
+  to {
+    transform: rotate(2deg);
+  }
+}
+
+.dusk__vignette {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(130% 95% at 50% 38%, transparent 52%, rgba(2, 7, 9, 0.62) 100%);
+}
+
+/* Someone is typing: the wind drops and the light holds still. */
+.dusk--settled .dusk__plant,
+.dusk--settled .dusk__glow {
+  animation-play-state: paused;
+}
+
+/* ---------- Letters formed in light ---------- */
+
+.light-text__word {
+  display: inline-block;
+  white-space: nowrap;
+}
+
+.light-text__letter {
+  display: inline-block;
+  /* Equal padding and negative margin: room for the blur without moving a single letter. */
+  padding: 0.3em 0.4em;
+  margin: -0.3em -0.4em;
+  animation: light-form 1100ms var(--ease) both;
+  animation-delay: calc(var(--light-delay, 0ms) + var(--i, 0) * var(--light-step, 55ms));
+}
+
+@keyframes light-form {
+  from {
+    opacity: 0;
+    filter: blur(0.14em);
+    transform: translateY(0.16em) scale(1.06);
+  }
+  45% {
+    opacity: 1;
+  }
+  to {
+    opacity: 1;
+    filter: none;
+    transform: none;
+  }
+}
+
+/* ---------- Portal ---------- */
+
+.portal {
+  position: relative;
+  isolation: isolate;
+  min-height: 100svh;
+  overflow-x: clip;
+}
+
+.portal__inner {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-rows: 1fr auto;
+  gap: var(--s-8);
+  width: min(100%, 1180px);
+  min-height: 100svh;
+  margin: 0 auto;
+  padding: calc(var(--safe-top) + 52px) var(--gutter) calc(var(--safe-bottom) + var(--s-6));
+}
+
+.portal__brand {
+  align-self: center;
+  display: grid;
+  gap: var(--s-4);
+  padding-bottom: 4svh;
+}
+
+.portal__wordmark {
+  font-size: clamp(60px, 19vw, 156px);
+  font-weight: 200;
+  line-height: 0.9;
+  letter-spacing: 0.24em;
+}
+
+.portal__wordmark .light-text__letter {
+  color: transparent;
+  background: linear-gradient(180deg, #fff8ea 22%, #f3d9a8 52%, #9fe9d9 92%);
+  -webkit-background-clip: text;
+  background-clip: text;
+}
+
+.portal__wordmark .light-text {
+  filter: drop-shadow(0 0 28px rgba(138, 230, 214, 0.28));
+}
+
+.portal__line {
+  max-width: 24ch;
+  font-size: clamp(17px, 2.2vw, 21px);
+  line-height: 1.4;
+  color: var(--text-soft);
+  text-wrap: balance;
+}
+
+.portal__roles {
+  display: grid;
+  gap: var(--s-3);
+  width: 100%;
+  min-width: 0;
+  max-width: 780px;
+}
+
+@media (min-width: 720px) {
+  .portal__roles {
+    grid-template-columns: 1fr 1fr;
+    gap: var(--s-4);
+  }
+}
+
+.role-tile {
+  --tint: var(--aqua);
+  --tint-glow: rgba(118, 230, 210, 0.3);
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: var(--s-3);
+  min-width: 0;
+  min-height: 74px;
+  padding: 14px 14px 14px 20px;
+  border: 1px solid var(--line-strong);
+  border-radius: 24px;
+  color: var(--text);
+  text-decoration: none;
+  background:
+    radial-gradient(
+      120% 160% at 0% 0%,
+      color-mix(in srgb, var(--tint) 12%, transparent),
+      transparent 60%
+    ),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.015)),
+    rgba(9, 24, 29, 0.56);
+  backdrop-filter: blur(20px) saturate(1.25);
+  -webkit-backdrop-filter: blur(20px) saturate(1.25);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    0 18px 44px rgba(0, 0, 0, 0.34);
+  transition:
+    transform var(--t-fast) var(--ease),
+    border-color var(--t-fast) var(--ease),
+    box-shadow var(--t-med) var(--ease);
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.role-tile--therapist {
+  --tint: var(--lantern);
+  --tint-glow: rgba(243, 207, 142, 0.32);
+}
+
+.role-tile:hover {
+  border-color: color-mix(in srgb, var(--tint) 45%, transparent);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    0 18px 50px rgba(0, 0, 0, 0.36),
+    0 0 36px var(--tint-glow);
+}
+
+.role-tile:active {
+  transform: scale(0.985);
+}
+
+.role-tile:focus-visible {
+  outline-offset: 4px;
+  border-radius: 24px;
+}
+
+.role-tile__label {
+  font-family: var(--font-display);
+  font-size: 19px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+}
+
+.role-tile__detail {
+  grid-column: 1;
+  margin-top: 3px;
+  font-size: 14px;
+  line-height: 1.35;
+  color: var(--text-dim);
+}
+
+.role-tile__go {
+  grid-row: 1 / span 2;
+  grid-column: 2;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  color: #0a1a1c;
+  background: linear-gradient(160deg, #ffffff, var(--tint) 70%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.7),
+    0 6px 22px var(--tint-glow);
+  transition: transform var(--t-med) var(--ease);
+}
+
+.role-tile:hover .role-tile__go {
+  transform: translateX(3px);
+}
+
+@media (min-width: 720px) {
+  .portal__inner {
+    padding-bottom: calc(var(--safe-bottom) + 9svh);
+  }
+
+  .role-tile {
+    min-height: 96px;
+    padding: 20px 20px 20px 26px;
+    border-radius: 28px;
+  }
+
+  .role-tile__label {
+    font-size: 22px;
+  }
+
+  .role-tile__detail {
+    font-size: 15px;
+  }
+}
+
+@media (max-height: 600px) {
+  .portal__inner {
+    gap: var(--s-5);
+    padding-top: calc(var(--safe-top) + 44px);
+  }
+
+  .portal__brand {
+    padding-bottom: 0;
+  }
+}
+
+/* Reduced motion: the finished frame at once. The global rule only shortens animations, and a
+   delayed letter would stay invisible for its delay, so these are switched off outright. */
+@media (prefers-reduced-motion: reduce) {
+  .dusk__glow,
+  .dusk__plant,
+  .light-text__letter {
+    animation: none;
+  }
+}

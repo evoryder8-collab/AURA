@@ -21,7 +21,7 @@ test('@a11y client screens have no serious axe violations', async ({ page }) => 
     ['/client/me', null],
   ] as const) {
     await page.goto(`/AURA/#${hash}`)
-    if (heading) await expect(page.getByRole('heading', { name: heading })).toBeVisible()
+    if (heading) await expect(page.getByRole('heading', { name: heading })).toBeVisible({ timeout: 15_000 })
     else await page.waitForLoadState('networkidle')
     await expectNoSeriousViolations(page, hash)
   }

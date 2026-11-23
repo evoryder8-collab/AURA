@@ -26,6 +26,14 @@ Everything below is fictional and stays in your browser (IndexedDB); nothing is 
 
 Fixtures are generated relative to the moment the demo first loads: Mira saw Pratana seven days ago and sees Wassana tomorrow at 10:00; Noa has a 90-minute session with Pratana at the next half hour. *Me → Reset demo data* restores this state.
 
+## A five-minute walkthrough
+
+1. **Entrance.** Choose *I'm a therapist*, type `Pratana Halstrick` and `35`, Continue, *That's me*, *Fill demo sign-in*, Sign in.
+2. **Today.** Noa's 90-minute visit is next, with her at-home update from yesterday and a small body preview. *Begin arrival* hands the screen to the client; *Open Session Mode* shows the table display. Turn the figure to match the head of your table (remembered on this device), flip face up/face down, start the session. The synthetic test clock (+1/+10 min) lets you cross zero into *Extra care* without waiting. *Finish* shows booked, actual and extra minutes; confirm the Bonus Care minutes.
+3. **Client.** Sign out, choose *I'm a client*, `Mira Ellison`, `34`. Tap *Log how I feel* (centre of the bottom bar), tap the left shoulder on the body or choose it from the list, score it, add a sentence, Save: it tells you Wassana will see it before tomorrow's visit. Visits books a therapist; Progress answers "How has my left shoulder felt over the last 6 visits?"; Me holds consent, photos and reports.
+4. **Wassana.** Sign in as `Wassana Schlaepfer`, `55`. Today leads with Mira's dated update. *Begin arrival* → "Still accurate" on the shoulder, add *Right calf* 3/10 → Session Mode shows both, the calf marked "on the back" until you flip.
+5. **Report.** Mira's profile → Notes (private vs for a doctor) → *Prepare report for a doctor* → *Ask Mira to review* → *Mira is here* → she agrees → *Download PDF*.
+
 ## Core principles
 
 - The role entrance is presentation; protected backend profile data authorizes therapist/client routes.
@@ -73,16 +81,11 @@ The example environment already selects explicit demo mode. Open the local URL p
 
 To reset local demo state, use the in-application reset action. `npm run seed:demo` is for local Supabase auth/relational bootstrap, not browser-only demo fixtures.
 
-### Adding transparent demo portraits
+### Demo portraits and the body model
 
-The identity reveal, secure credential card, signed-in therapist identity, appointment views, care-team strip, and booking cards support optimized transparent PNG/WebP portraits and fall back to polished monograms when no image is configured. Put synthetic/demo-only images under `public/portraits/`, then add the base-relative public path to the matching therapist or client in `src/data/demo/fixtures.ts`, for example:
+Therapist portraits live in `public/portraits/` as a transparent `*-hero.webp` (reveal) and a head-and-shoulders `*-avatar.webp` (lists, bookings, signed-in rail), referenced from `portrait` in `src/data/demo/fixtures.ts`; people without one get a monogram. Connected client portraits are never looked up before authentication.
 
-```ts
-portraitUrl: 'portraits/demo-therapist.webp',
-portraitScale: 1.4,
-```
-
-Use a tightly cropped transparent portrait with comfortable space above the head and around the shoulders; roughly `1200 × 1500` pixels works well. Tune `portraitScale` per source image rather than assuming every transparent canvas has the same crop. Paths with spaces must be percent encoded. Do not commit a real client photograph or identifying filename. Connected client portraits remain protected and are never looked up from the pre-auth name-and-age presentation step.
+The anatomical body is built from CC0 MakeHuman data by `scripts/body/` in Blender (see its README and `public/models/CREDITS.md`). It produces `public/models/aura-body.glb`, the print renders `public/body/front.png` and `back.png` with their exact frames in `views.json`, and the surface anchors in `src/features/body/anchors.json`.
 
 ## Environment variables
 
@@ -272,6 +275,7 @@ Read [Security](./docs/SECURITY.md) before changing auth, RLS, storage, consent,
 
 ## Documentation
 
+- [Design system](./docs/DESIGN_SYSTEM.md)
 - [Architecture](./docs/ARCHITECTURE.md)
 - [Data model](./docs/DATA_MODEL.md)
 - [Security and privacy](./docs/SECURITY.md)
@@ -282,15 +286,16 @@ Read [Security](./docs/SECURITY.md) before changing auth, RLS, storage, consent,
 
 ## Known limitations
 
+- The redesigned clinical workflows (check-in observations, arrival confirmations, Session Mode, Bonus Care, therapist notes, doctor reports, photos) run on the synthetic local store. Connected (Supabase) mode still shows only Today, Clients, Visits and Settings; promoting the rest needs repository adapters, migrations, grants and RLS (mapping in [Data model](./docs/DATA_MODEL.md)).
+- Demo data lives in each browser's IndexedDB: what you enter on a phone is not visible on another device. *Reset demo data* restores the story.
+- The Session Mode test clock is a synthetic-demo control for crossing the end of a booking quickly; it does not exist in connected mode.
+- *Print* opens the browser print dialog for the PDF; on some Safari versions it may print a blank page. *Download PDF* is the reliable path.
+- The figure needs WebGL; without it the same model's print renders are shown with identical marker positions.
 - Prototype pattern thresholds are labelled **not clinically validated** and require professional judgment.
 - This test build is not a jurisdiction-specific consent, guardian, retention, deletion, medical-record, or regulatory solution.
 - AI/transcription/messaging/passkey/secure-link behavior depends on protected provider or Edge Function configuration; deterministic/manual/in-app fallbacks cover the core workflow.
-- The first hosted therapist identity requires a trusted out-of-band bootstrap and MFA enrollment; `admin-users` cannot bootstrap its own administrator.
-- A secure handoff link requires active handoff consent and a private PDF already generated/uploaded by the therapist workflow.
-- Browser Wake Lock, camera, notifications, MediaRecorder, installability, and PDF download behavior vary by browser/device and require feature detection.
-- Photo alignment assists consistency but cannot guarantee identical posture, angle, lighting, or distance.
+- Browser Wake Lock, camera, notifications and PDF download behavior vary by browser/device and are feature-detected.
 - GitHub Pages hosts only public static assets. It cannot protect server secrets or replace Supabase authorization.
-- Delivery status is separate from code presence: do not claim checks, hosted migrations/functions, Pages deployment, or published navigation succeeded until exact evidence is observed.
 
 ## Production-readiness warning
 

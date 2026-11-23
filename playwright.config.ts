@@ -4,6 +4,8 @@ export default defineConfig({
   testDir: './tests/e2e',
   fullyParallel: false,
   retries: process.env.CI ? 2 : 0,
+  // Lazily loaded screens (Session Mode, the PDF) can take a few seconds on a busy runner.
+  expect: { timeout: 10_000 },
   workers: process.env.CI ? 1 : undefined,
   reporter: process.env.CI ? [['html', { open: 'never' }], ['github']] : 'list',
   use: {

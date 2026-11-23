@@ -40,6 +40,7 @@
     "react-dom": "^19.2.7",
     "react-hook-form": "^7.81.0",
     "react-router-dom": "^7.18.1",
+    "three": "^0.181.0",
     "vite-plugin-pwa": "^1.3.0",
     "zod": "^4.4.3",
     "zustand": "^5.0.14"
@@ -53,6 +54,7 @@
     "@types/node": "^24.13.2",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
+    "@types/three": "^0.181.0",
     "@vitejs/plugin-react": "^6.0.3",
     "@vitest/coverage-v8": "^4.1.10",
     "jsdom": "^29.1.1",

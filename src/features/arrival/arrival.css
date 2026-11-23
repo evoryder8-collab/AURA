@@ -1,0 +1,223 @@
+.arrival {
+  min-height: 100dvh;
+  padding: calc(34px + var(--safe-top)) var(--gutter) 0;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  gap: var(--s-4);
+  max-width: 1240px;
+  margin: 0 auto;
+}
+
+.arrival__top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-2);
+}
+
+.arrival__handover {
+  padding: 6px 12px;
+  border-radius: var(--r-pill);
+  border: 1px solid rgba(138, 230, 214, 0.35);
+  color: var(--aqua);
+  font-size: 13.5px;
+  font-weight: 650;
+}
+
+.arrival__layout {
+  display: grid;
+  gap: var(--s-6);
+  align-items: start;
+}
+
+.arrival__intro {
+  display: grid;
+  gap: var(--s-3);
+}
+
+.arrival__figure {
+  position: relative;
+  height: min(52dvh, 520px);
+  min-height: 300px;
+  border-radius: var(--r-xl);
+  border: 1px solid var(--line);
+  background: radial-gradient(70% 60% at 50% 40%, rgba(31, 70, 78, 0.55), transparent 75%), rgba(4, 13, 16, 0.55);
+  overflow: hidden;
+}
+
+.arrival__figure-controls {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+}
+
+.arrival__review {
+  display: grid;
+  gap: var(--s-4);
+}
+
+.arrival-card {
+  display: grid;
+  gap: var(--s-3);
+  padding: var(--s-5);
+  border-radius: var(--r-lg);
+  border: 1px solid var(--line);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.015)), var(--glass);
+  transition: border-color var(--t-fast) var(--ease);
+}
+
+.arrival-card.is-decided {
+  border-color: rgba(138, 230, 214, 0.4);
+}
+
+.arrival-card.is-new {
+  border-color: rgba(243, 207, 142, 0.4);
+}
+
+.arrival-card header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--s-3);
+}
+
+.arrival-card h3 {
+  font-size: 20px;
+}
+
+.arrival-card q {
+  color: var(--text-soft);
+  font-style: italic;
+}
+
+.arrival-card__choices {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--s-2);
+}
+
+.arrival-card__choices button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 52px;
+  border-radius: var(--r-md);
+  border: 1px solid var(--line-strong);
+  background: rgba(255, 255, 255, 0.04);
+  font-weight: 700;
+  font-size: 15.5px;
+}
+
+.arrival-card__choices button[aria-pressed='true'] {
+  border-color: transparent;
+  background: var(--aqua);
+  color: #0c2420;
+}
+
+.arrival-card__choices button:last-child[aria-pressed='true'] {
+  background: var(--lantern);
+  color: #1d1406;
+}
+
+.arrival-card__kept {
+  color: var(--aqua);
+}
+
+.arrival__add {
+  display: grid;
+  gap: var(--s-3);
+  justify-items: start;
+}
+
+.arrival__adding {
+  color: var(--lantern);
+  font-weight: 600;
+}
+
+.link-button {
+  min-height: var(--touch);
+  padding: 0 4px;
+  border: 0;
+  background: none;
+  color: var(--aqua);
+  font-weight: 650;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.arrival__quick {
+  width: 100%;
+}
+
+.arrival__quick summary {
+  min-height: var(--touch);
+  display: flex;
+  align-items: center;
+  color: var(--text-soft);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.arrival__quick-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: var(--s-3);
+}
+
+.arrival__quick-row .field {
+  flex: 1 1 200px;
+}
+
+.arrival__save {
+  position: sticky;
+  bottom: 0;
+  display: grid;
+  gap: var(--s-2);
+  padding: var(--s-3) 0 calc(var(--s-3) + var(--safe-bottom));
+  background: linear-gradient(180deg, transparent, rgba(5, 13, 15, 0.94) 30%);
+}
+
+@media (min-width: 980px) {
+  .arrival__layout {
+    grid-template-columns: 1fr 1fr;
+  }
+  .arrival__intro {
+    position: sticky;
+    top: var(--s-6);
+  }
+  .arrival__figure {
+    height: calc(100dvh - 300px);
+  }
+  .arrival__save {
+    width: 50%;
+    margin-left: auto;
+    padding-left: var(--s-3);
+  }
+}
+
+.arrival--done {
+  display: grid;
+  place-items: center;
+}
+
+.arrival__done {
+  width: min(100%, 440px);
+  display: grid;
+  gap: var(--s-4);
+  justify-items: center;
+  text-align: center;
+}
+
+.arrival__done-mark {
+  display: grid;
+  place-items: center;
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  color: #0e231f;
+  background: radial-gradient(circle at 35% 30%, #c9fff4, var(--aqua) 55%, var(--aqua-deep));
+  box-shadow: 0 12px 40px var(--aqua-glow);
+}

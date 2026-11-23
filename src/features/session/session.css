@@ -1,0 +1,283 @@
+.session {
+  position: relative;
+  min-height: 100dvh;
+  height: 100dvh;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  padding: calc(30px + var(--safe-top)) var(--gutter) calc(var(--s-4) + var(--safe-bottom));
+  gap: var(--s-3);
+  background:
+    radial-gradient(70% 60% at 40% 45%, rgba(26, 58, 66, 0.55), transparent 70%),
+    radial-gradient(60% 50% at 90% 10%, rgba(243, 207, 142, 0.06), transparent 70%),
+    linear-gradient(180deg, #071216, #04090b);
+  overflow: hidden;
+}
+
+.session--missing {
+  align-content: center;
+  justify-items: center;
+}
+
+.session__bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-3);
+}
+
+.session__who {
+  display: grid;
+  text-align: right;
+  line-height: 1.25;
+}
+
+.session__who strong {
+  font-size: 18px;
+}
+
+.session__who span {
+  font-size: 13px;
+  color: var(--text-dim);
+}
+
+.session__stage {
+  position: relative;
+  min-height: 0;
+  border-radius: var(--r-xl);
+  border: 1px solid rgba(208, 238, 230, 0.07);
+  background: radial-gradient(60% 70% at 50% 50%, rgba(16, 42, 48, 0.6), rgba(3, 10, 12, 0.5));
+  overflow: hidden;
+}
+
+.session__head {
+  position: absolute;
+  padding: 4px 10px;
+  border-radius: var(--r-pill);
+  border: 1px solid var(--line);
+  background: rgba(3, 10, 12, 0.6);
+  color: var(--text-dim);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.session__head--top {
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.session__head--bottom {
+  bottom: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.session__head--left {
+  left: 12px;
+  top: 50%;
+  transform: translate(-38%, -50%) rotate(-90deg);
+}
+
+.session__head--right {
+  right: 12px;
+  top: 50%;
+  transform: translate(38%, -50%) rotate(90deg);
+}
+
+.session__unconfirmed {
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  bottom: 14px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 12px;
+  padding: 10px 14px;
+  border-radius: var(--r-md);
+  border: 1px solid rgba(243, 207, 142, 0.45);
+  background: rgba(20, 16, 8, 0.78);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  font-size: 15px;
+}
+
+.session__unconfirmed strong {
+  color: var(--lantern);
+}
+
+.session__unconfirmed a {
+  margin-left: auto;
+  min-height: 40px;
+  display: inline-flex;
+  align-items: center;
+  color: var(--aqua);
+  font-weight: 700;
+}
+
+.session__none {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 18px;
+  text-align: center;
+  color: var(--text-dim);
+}
+
+.session__side {
+  display: grid;
+  gap: var(--s-4);
+  align-content: end;
+}
+
+.session__clock {
+  container-type: inline-size;
+  display: grid;
+  gap: 2px;
+  text-align: center;
+}
+
+.session__clock-label {
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+.session__time {
+  font-family: var(--font-display);
+  font-weight: 300;
+  font-size: min(25cqw, 168px);
+  line-height: 0.95;
+  letter-spacing: -0.02em;
+  color: var(--text);
+  text-shadow: 0 0 40px rgba(138, 230, 214, 0.18);
+  transition:
+    color var(--t-slow) var(--ease),
+    text-shadow var(--t-slow) var(--ease);
+}
+
+.session.is-extra .session__clock-label {
+  color: var(--lantern);
+}
+
+.session.is-extra .session__time {
+  color: var(--lantern);
+  text-shadow: 0 0 46px rgba(243, 207, 142, 0.35);
+}
+
+.session__clock-meta {
+  font-size: 14px;
+  color: var(--text-dim);
+}
+
+.session__controls {
+  display: grid;
+  gap: var(--s-3);
+}
+
+.session__orient {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--s-2);
+}
+
+.session__tool {
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  min-height: 64px;
+  padding: 8px 4px;
+  border-radius: var(--r-md);
+  border: 1px solid var(--line-strong);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-soft);
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.session__tool:active {
+  transform: scale(0.97);
+}
+
+.session__tool--flip {
+  border-color: rgba(138, 230, 214, 0.4);
+  color: var(--aqua);
+}
+
+.session__testclock {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px;
+  border-radius: var(--r-md);
+  border: 1px dashed rgba(243, 207, 142, 0.35);
+  color: var(--text-dim);
+  font-size: 12.5px;
+}
+
+.session__testclock span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.session__testclock button {
+  min-height: 40px;
+  padding: 0 12px;
+  border-radius: var(--r-pill);
+  border: 1px solid var(--line-strong);
+  background: rgba(255, 255, 255, 0.05);
+  font-weight: 650;
+  font-size: 13px;
+}
+
+/* Tablet and laptop in landscape: body centre stage, time to the side */
+@media (min-width: 820px) and (min-aspect-ratio: 5/4) {
+  .session {
+    grid-template-columns: minmax(0, 1fr) clamp(320px, 31vw, 430px);
+    grid-template-rows: auto minmax(0, 1fr);
+    column-gap: var(--s-5);
+  }
+  .session__bar {
+    grid-column: 1 / -1;
+  }
+  .session__side {
+    align-content: space-between;
+    padding: var(--s-4) 0;
+  }
+  .session__clock-label {
+    font-size: 17px;
+  }
+  .body-stage--session .body-label__text {
+    font-size: 21px;
+  }
+}
+
+/* Phones in portrait: time on top, the body fills the rest */
+@media (max-width: 819px), (max-aspect-ratio: 5/4) {
+  .session__side {
+    grid-row: 3;
+  }
+  .session__clock {
+    position: absolute;
+    top: calc(78px + var(--safe-top));
+    left: 0;
+    right: 0;
+    z-index: 2;
+    pointer-events: none;
+  }
+  .session__time {
+    font-size: min(24cqw, 120px);
+  }
+  .session__stage {
+    margin-top: 118px;
+  }
+}

@@ -64,3 +64,13 @@ export function greeting(now: number | Date = Date.now()) {
 }
 
 export const minutesLabel = (minutes: number) => `${minutes} ${minutes === 1 ? 'minute' : 'minutes'}`
+
+/** For use inside a sentence: "today", "yesterday", "tomorrow" or "on Sat 14 Nov". */
+export function dayPhrase(value: string | number | Date, now: string | number | Date = Date.now()) {
+  const day = relativeDay(value, now)
+  return day === 'Today' || day === 'Yesterday' || day === 'Tomorrow' ? day.toLocaleLowerCase() : `on ${day}`
+}
+
+/** For use inside a sentence: "yesterday at 18:40" or "on Sat 14 Nov at 09:10". */
+export const whenPhrase = (value: string | number | Date, now: string | number | Date = Date.now()) =>
+  `${dayPhrase(value, now)} at ${fmtTime(value)}`

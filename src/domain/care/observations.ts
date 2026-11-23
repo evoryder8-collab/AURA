@@ -147,22 +147,23 @@ export function updatesBetween(
 }
 
 export const ARRIVAL_LOOKBACK_DAYS = 30
+const PREVIOUS_VISIT_MARGIN_MS = 12 * 3_600_000
 
 /**
  * The areas a client is asked to confirm or update at arrival: the latest report for every
- * area seen in the lookback window, unless that latest report was a zero recorded before
- * the previous visit (an area that settled long ago).
+ * area mentioned at or since the previous visit (or in the last 30 days for a first visit).
+ * An area nobody mentioned at the last visit is treated as settled, so arrival stays short.
  */
 export function areasToReview(
   observations: readonly CareObservation[],
   appointmentStartsAt: string,
   previousVisitAt?: string,
 ): AreaPoint[] {
-  const windowStart = time(appointmentStartsAt) - ARRIVAL_LOOKBACK_DAYS * 86_400_000
-  const previous = previousVisitAt ? time(previousVisitAt) : -Infinity
+  const windowStart = previousVisitAt
+    ? time(previousVisitAt) - PREVIOUS_VISIT_MARGIN_MS
+    : time(appointmentStartsAt) - ARRIVAL_LOOKBACK_DAYS * 86_400_000
   return [...latestByArea(observations, appointmentStartsAt).values()]
     .filter((point) => time(point.observedAt) >= windowStart)
-    .filter((point) => point.pain > 0 || time(point.observedAt) > previous)
     .sort((a, b) => b.pain - a.pain || time(b.observedAt) - time(a.observedAt))
 }
 

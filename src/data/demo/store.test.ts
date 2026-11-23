@@ -49,7 +49,7 @@ describe('acceptance: Pratana, 90-minute booking finished at 102 minutes', () =>
       therapistId: pratana,
       startsAt: '2026-11-23T09:00:00.000Z',
       durationMinutes: 90,
-      sessionType: 'Deep restorative · 90 min',
+      sessionType: 'Deep restorative massage',
       status: 'confirmed',
       intakeStatus: 'complete',
       room: 'Garden room',

@@ -100,7 +100,8 @@ export function LogHowIFeelPage() {
       area: areaKey(item.region, side),
       pain: item.pain ?? 0,
       label: areaLabel(item.region, side),
-      tone: item.pain === null ? ('muted' as const) : ('default' as const),
+      tone: item.pain === null ? ('selected' as const) : ('default' as const),
+      ...(item.pain === null ? { scoreLabel: '–' } : {}),
     })),
   )
 
@@ -173,15 +174,6 @@ export function LogHowIFeelPage() {
           <p className="eyebrow">Log how I feel</p>
           <h1 className="title-md">Where do you feel it?</h1>
         </div>
-        <Segmented
-          label="Body side shown"
-          value={face}
-          onChange={setFace}
-          options={[
-            { value: 'front', label: 'Front' },
-            { value: 'back', label: 'Back' },
-          ]}
-        />
       </header>
 
       <section className="log__figure" aria-label="Body">
@@ -196,8 +188,19 @@ export function LogHowIFeelPage() {
             addArea(anchor.region, side)
           }}
         />
+        <div className="log__face">
+          <Segmented
+            label="Body side shown"
+            value={face}
+            onChange={setFace}
+            options={[
+              { value: 'front', label: 'Front' },
+              { value: 'back', label: 'Back' },
+            ]}
+          />
+        </div>
         <p className="log__hint" aria-hidden="true">
-          Tap where you feel it · your left is on the figure’s {face === 'front' ? 'right' : 'left'}
+          Tap where you feel it
         </p>
       </section>
 

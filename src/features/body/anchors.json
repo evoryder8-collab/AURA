@@ -1,0 +1,617 @@
+[
+  {
+    "region": "head",
+    "side": "centre",
+    "position": [
+      0.0,
+      1.65789,
+      0.14283
+    ],
+    "normal": [
+      -0.0014,
+      0.33766,
+      0.94127
+    ],
+    "surface": "front"
+  },
+  {
+    "region": "neck",
+    "side": "centre",
+    "position": [
+      0.0,
+      1.51739,
+      -0.015
+    ],
+    "normal": [
+      0.00102,
+      0.10316,
+      -0.99466
+    ],
+    "surface": "back"
+  },
+  {
+    "region": "neck",
+    "side": "left",
+    "position": [
+      0.05167,
+      1.51739,
+      0.03299
+    ],
+    "normal": [
+      0.99924,
+      -0.03862,
+      -0.00457
+    ],
+    "surface": "edge"
+  },
+  {
+    "region": "neck",
+    "side": "right",
+    "position": [
+      -0.05166,
+      1.51739,
+      0.03299
+    ],
+    "normal": [
+      -0.99927,
+      -0.03809,
+      -0.00377
+    ],
+    "surface": "edge"
+  },
+  {
+    "region": "shoulder",
+    "side": "left",
+    "position": [
+      0.23354,
+      1.40446,
+      0.01496
+    ],
+    "normal": [
+      0.66929,
+      0.74297,
+      0.00641
+    ],
+    "surface": "edge"
+  },
+  {
+    "region": "shoulder",
+    "side": "right",
+    "position": [
+      -0.23354,
+      1.40446,
+      0.01496
+    ],
+    "normal": [
+      -0.66923,
+      0.74302,
+      0.00715
+    ],
+    "surface": "edge"
+  },
+  {
+    "region": "shoulder_blade",
+    "side": "left",
+    "position": [
+      0.116,
+      1.3542,
+      -0.08479
+    ],
+    "normal": [
+      0.19523,
+      0.15608,
+      -0.96826
+    ],
+    "surface": "back"
+  },
+  {
+    "region": "shoulder_blade",
+    "side": "right",
+    "position": [
+      -0.116,
+      1.3542,
+      -0.08482
+    ],
+    "normal": [
+      -0.19356,
+      0.15452,
+      -0.96884
+    ],
+    "surface": "back"
+  },
+  {
+    "region": "upper_back",
+    "side": "centre",
+    "position": [
+      0.0,
+      1.3707,
+      -0.05396
+    ],
+    "normal": [
+      0.0,
+      0.1903,
+      -0.98173
+    ],
+    "surface": "back"
+  },
+  {
+    "region": "mid_back",
+    "side": "centre",
+    "position": [
+      0.0,
+      1.25522,
+      -0.06239
+    ],
+    "normal": [
+      1e-05,
+      -0.12344,
+      -0.99235
+    ],
+    "surface": "back"
+  },
+  {
+    "region": "lower_back",
+    "side": "left",
+    "position": [
+      0.04,
+      1.04075,
+      -0.0513
+    ],
+    "normal": [
+      0.13041,
+      0.18109,
+      -0.97478
+    ],
+    "surface": "back"
+  },
+  {
+    "region": "lower_back",
+    "side": "right",
+    "position": [
+      -0.04,
+      1.04075,
+      -0.05133
+    ],
+    "normal": [
+      -0.12836,
+      0.18555,
+      -0.97422
+    ],
+    "surface": "back"
+  },
+  {
+    "region": "lower_back",
+    "side": "centre",
+    "position": [
+      0.0,
+      1.04075,
+      -0.03632
+    ],
+    "normal": [
+      0.0,
+      0.33982,
+      -0.94049
+    ],
+    "surface": "back"
+  },
+  {
+    "region": "chest",
+    "side": "left",
+    "position": [
+      0.07987,
+      1.2832,
+      0.1353
+    ],
+    "normal": [
+      0.25137,
+      0.23915,
+      0.93788
+    ],
+    "surface": "front"
+  },
+  {
+    "region": "chest",
+    "side": "right",
+    "position": [
+      -0.07987,
+      1.2832,
+      0.13527
+    ],
+    "normal": [
+      -0.24907,
+      0.23969,
+      0.93836
+    ],
+    "surface": "front"
+  },
+  {
+    "region": "chest",
+    "side": "centre",
+    "position": [
+      0.0,
+      1.2832,
+      0.12987
+    ],
+    "normal": [
+      -0.00079,
+      0.20727,
+      0.97828
+    ],
+    "surface": "front"
+  },
+  {
+    "region": "abdomen",
+    "side": "centre",
+    "position": [
+      0.0,
+      1.07695,
+      0.12038
+    ],
+    "normal": [
+      -0.00025,
+      -0.06928,
+      0.9976
+    ],
+    "surface": "front"
+  },
+  {
+    "region": "upper_arm",
+    "side": "left",
+    "position": [
+      0.26439,
+      1.27051,
+      0.00746
+    ],
+    "normal": [
+      0.99999,
+      0.00424,
+      -0.00312
+    ],
+    "surface": "edge"
+  },
+  {
+    "region": "upper_arm",
+    "side": "right",
+    "position": [
+      -0.26439,
+      1.27051,
+      0.00746
+    ],
+    "normal": [
+      -0.99999,
+      0.00426,
+      -0.00319
+    ],
+    "surface": "edge"
+  },
+  {
+    "region": "elbow",
+    "side": "left",
+    "position": [
+      0.26115,
+      1.12437,
+      -0.00624
+    ],
+    "normal": [
+      -0.05863,
+      0.10297,
+      -0.99295
+    ],
+    "surface": "back"
+  },
+  {
+    "region": "elbow",
+    "side": "right",
+    "position": [
+      -0.26115,
+      1.12437,
+      -0.00636
+    ],
+    "normal": [
+      0.05456,
+      0.0933,
+      -0.99414
+    ],
+    "surface": "back"
+  },
+  {
+    "region": "forearm",
+    "side": "left",
+    "position": [
+      0.29151,
+      1.04846,
+      0.06588
+    ],
+    "normal": [
+      0.30968,
+      0.08484,
+      0.94705
+    ],
+    "surface": "front"
+  },
+  {
+    "region": "forearm",
+    "side": "right",
+    "position": [
+      -0.29151,
+      1.04846,
+      0.06583
+    ],
+    "normal": [
+      -0.30456,
+      0.08336,
+      0.94884
+    ],
+    "surface": "front"
+  },
+  {
+    "region": "hand",
+    "side": "left",
+    "position": [
+      0.37328,
+      0.84192,
+      0.07122
+    ],
+    "normal": [
+      -0.20253,
+      -0.10133,
+      0.97402
+    ],
+    "surface": "front"
+  },
+  {
+    "region": "hand",
+    "side": "right",
+    "position": [
+      -0.37328,
+      0.84192,
+      0.0713
+    ],
+    "normal": [
+      0.19907,
+      -0.09904,
+      0.97497
+    ],
+    "surface": "front"
+  },
+  {
+    "region": "hip",
+    "side": "left",
+    "position": [
+      0.16716,
+      0.87427,
+      0.03471
+    ],
+    "normal": [
+      0.97826,
+      0.20527,
+      -0.02957
+    ],
+    "surface": "edge"
+  },
+  {
+    "region": "hip",
+    "side": "right",
+    "position": [
+      -0.16713,
+      0.87427,
+      0.03471
+    ],
+    "normal": [
+      -0.97845,
+      0.20452,
+      -0.02852
+    ],
+    "surface": "edge"
+  },
+  {
+    "region": "glute",
+    "side": "left",
+    "position": [
+      0.075,
+      0.86927,
+      -0.07423
+    ],
+    "normal": [
+      0.09264,
+      -0.35859,
+      -0.92889
+    ],
+    "surface": "back"
+  },
+  {
+    "region": "glute",
+    "side": "right",
+    "position": [
+      -0.075,
+      0.86927,
+      -0.07427
+    ],
+    "normal": [
+      -0.09638,
+      -0.35867,
+      -0.92847
+    ],
+    "surface": "back"
+  },
+  {
+    "region": "thigh_front",
+    "side": "left",
+    "position": [
+      0.11129,
+      0.73354,
+      0.1299
+    ],
+    "normal": [
+      -0.1371,
+      0.04908,
+      0.98934
+    ],
+    "surface": "front"
+  },
+  {
+    "region": "thigh_front",
+    "side": "right",
+    "position": [
+      -0.11129,
+      0.73354,
+      0.12988
+    ],
+    "normal": [
+      0.13838,
+      0.0521,
+      0.98901
+    ],
+    "surface": "front"
+  },
+  {
+    "region": "thigh_back",
+    "side": "left",
+    "position": [
+      0.11234,
+      0.71346,
+      -0.03777
+    ],
+    "normal": [
+      0.21394,
+      -0.11078,
+      -0.97054
+    ],
+    "surface": "back"
+  },
+  {
+    "region": "thigh_back",
+    "side": "right",
+    "position": [
+      -0.11234,
+      0.71346,
+      -0.03777
+    ],
+    "normal": [
+      -0.21367,
+      -0.11039,
+      -0.97065
+    ],
+    "surface": "back"
+  },
+  {
+    "region": "knee",
+    "side": "left",
+    "position": [
+      0.12286,
+      0.53865,
+      0.09994
+    ],
+    "normal": [
+      0.26597,
+      -0.16642,
+      0.94951
+    ],
+    "surface": "front"
+  },
+  {
+    "region": "knee",
+    "side": "right",
+    "position": [
+      -0.12286,
+      0.53865,
+      0.09994
+    ],
+    "normal": [
+      -0.26626,
+      -0.16506,
+      0.94966
+    ],
+    "surface": "front"
+  },
+  {
+    "region": "shin",
+    "side": "left",
+    "position": [
+      0.12595,
+      0.3355,
+      0.06392
+    ],
+    "normal": [
+      -0.57553,
+      -0.13841,
+      0.80598
+    ],
+    "surface": "front"
+  },
+  {
+    "region": "shin",
+    "side": "right",
+    "position": [
+      -0.12595,
+      0.3355,
+      0.06379
+    ],
+    "normal": [
+      0.57995,
+      -0.14062,
+      0.80243
+    ],
+    "surface": "front"
+  },
+  {
+    "region": "calf",
+    "side": "left",
+    "position": [
+      0.11895,
+      0.39307,
+      -0.07107
+    ],
+    "normal": [
+      0.18459,
+      0.1416,
+      -0.97256
+    ],
+    "surface": "back"
+  },
+  {
+    "region": "calf",
+    "side": "right",
+    "position": [
+      -0.11895,
+      0.39307,
+      -0.07107
+    ],
+    "normal": [
+      -0.18276,
+      0.13637,
+      -0.97365
+    ],
+    "surface": "back"
+  },
+  {
+    "region": "foot",
+    "side": "left",
+    "position": [
+      0.13693,
+      0.06168,
+      0.09178
+    ],
+    "normal": [
+      0.26201,
+      0.79779,
+      0.54304
+    ],
+    "surface": "front"
+  },
+  {
+    "region": "foot",
+    "side": "right",
+    "position": [
+      -0.13693,
+      0.06176,
+      0.09186
+    ],
+    "normal": [
+      -0.26983,
+      0.79877,
+      0.53774
+    ],
+    "surface": "front"
+  }
+]

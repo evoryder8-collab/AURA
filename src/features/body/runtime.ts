@@ -25,7 +25,7 @@ import {
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js'
 import { anatomicalLeftScreenDirection, type AreaKey, type TableRotation } from '@/domain/care'
-import { anchorFor, anchorVisible, nearestAnchor, type BodyAnchor, type FigureFace } from './anchors'
+import { BODY_ANCHORS, anchorFor, anchorVisible, nearestAnchor, type BodyAnchor, type FigureFace } from './anchors'
 import type { ProjectedMarker } from './BodyStage'
 import type { Point } from './layout'
 
@@ -108,6 +108,8 @@ export async function createBodyRuntime(
     interactive: boolean
     onPick: (anchor: BodyAnchor) => void
     onProject: (projection: Projection) => void
+    /** Space around the figure; larger leaves room for controls over the stage. */
+    pad?: number
   },
 ): Promise<BodyRuntime> {
   const renderer = new WebGLRenderer({ canvas, antialias: true, alpha: true, powerPreference: 'high-performance' })
@@ -209,7 +211,7 @@ export async function createBodyRuntime(
     const bodyW = vertical ? size.x : size.y
     const bodyH = vertical ? size.y : size.x
     const aspect = width / height
-    const pad = 1.12
+    const pad = options.pad ?? 1.12
     let halfH = (bodyH / 2) * pad
     let halfW = halfH * aspect
     if (halfW < (bodyW / 2) * pad) {
@@ -359,10 +361,23 @@ export async function createBodyRuntime(
     const ndc = new Vector2(((event.clientX - rect.left) / rect.width) * 2 - 1, -((event.clientY - rect.top) / rect.height) * 2 + 1)
     raycaster.setFromCamera(ndc, camera)
     const hit = raycaster.intersectObjects(meshes, false)[0]
-    if (!hit) return
-    const local = model.worldToLocal(hit.point.clone())
-    const anchor = nearestAnchor([local.x, local.y, local.z], state.face)
-    if (anchor) options.onPick(anchor)
+    if (hit) {
+      const local = model.worldToLocal(hit.point.clone())
+      const anchor = nearestAnchor([local.x, local.y, local.z], state.face)
+      if (anchor) options.onPick(anchor)
+      return
+    }
+    // A near miss on a small figure still counts: take the closest visible area within a fingertip.
+    const x = event.clientX - rect.left
+    const y = event.clientY - rect.top
+    let best: { anchor: BodyAnchor; distance: number } | null = null
+    for (const anchor of BODY_ANCHORS) {
+      if (!anchorVisible(anchor, state.face)) continue
+      const v = new Vector3(...anchor.position).applyMatrix4(model.matrixWorld).project(camera)
+      const distance = Math.hypot(((v.x + 1) / 2) * rect.width - x, ((1 - v.y) / 2) * rect.height - y)
+      if (distance < 30 && (!best || distance < best.distance)) best = { anchor, distance }
+    }
+    if (best) options.onPick(best.anchor)
   }
   canvas.addEventListener('pointerdown', onDown)
   canvas.addEventListener('pointerup', onUp)

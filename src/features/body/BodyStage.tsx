@@ -16,6 +16,8 @@ export type BodyMarker = {
   /** Extra line under the label, e.g. "Yesterday · not yet confirmed". */
   readonly detail?: string
   readonly tone?: 'default' | 'muted' | 'selected'
+  /** Shown instead of the number while no score has been chosen, e.g. "–". */
+  readonly scoreLabel?: string
 }
 
 export type ProjectedMarker = { area: AreaKey; x: number; y: number; visible: boolean }
@@ -84,6 +86,7 @@ export function BodyStage({
         if (disposed) return
         runtime = await createBodyRuntime(canvas, {
           interactive: true,
+          pad: variant === 'picker' ? 1.3 : variant === 'compact' ? 1.14 : 1.1,
           onPick: (anchor) => onPickRef.current?.(anchor),
           onProject: (value) => {
             if (!disposed) setProjected(value)
@@ -104,7 +107,7 @@ export function BodyStage({
       runtime?.dispose()
       runtimeRef.current = null
     }
-  }, [])
+  }, [variant])
 
   useEffect(() => {
     runtimeRef.current?.update({
@@ -253,7 +256,7 @@ export function BodyStage({
             className={clsx('body-label', !item.visible && 'is-hidden-side', item.data.tone && `is-${item.data.tone}`)}
             style={{ left: item.label.x, top: item.label.y, '--pain': painHex(item.data.pain) } as CSSProperties}
           >
-            <b className="num">{item.data.pain}</b>
+            <b className="num">{item.data.scoreLabel ?? item.data.pain}</b>
             <span className="body-label__text">
               <span>{sideWord(item.data)}</span>
               {!item.visible ? <em>{face === 'front' ? 'on the back' : 'on the front'}</em> : null}
@@ -270,7 +273,7 @@ export function BodyStage({
               .map((marker) => {
                 const anchor = anchorFor(marker.area)
                 const hidden = anchor ? !anchorVisible(anchor, face) : false
-                return `${marker.label}, ${marker.pain} out of 10${hidden ? `, on the ${face === 'front' ? 'back' : 'front'} of the body` : ''}${marker.detail ? `, ${marker.detail}` : ''}`
+                return `${marker.label}, ${marker.scoreLabel ? 'no score yet' : `${marker.pain} out of 10`}${hidden ? `, on the ${face === 'front' ? 'back' : 'front'} of the body` : ''}${marker.detail ? `, ${marker.detail}` : ''}`
               })
               .join('; ')
           : 'No areas marked.'}

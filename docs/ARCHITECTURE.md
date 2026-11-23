@@ -112,26 +112,47 @@ Public routes:
 - `/`, `/login/therapist`, `/login/client`, `/auth/callback`
 - `/handoff/:token`, `/offline`, `/privacy-placeholder`
 
-Therapist routes:
+Therapist routes (shell: side rail ≥1000px, bottom bar on phones):
 
-- `/therapist/today`, `/therapist/clients`, `/therapist/clients/:clientId`
-- `/therapist/session/:appointmentId`, `/therapist/calendar`, `/therapist/settings`
+- `/therapist/today` — next appointment with the client's latest update and a body preview
+- `/therapist/clients`, `/therapist/clients/:clientId` (overview, history across therapists, progress, dated notes, photos)
+- `/therapist/clients/:clientId/report[/:reportId]` — doctor report builder
+- `/therapist/session/:appointmentId/finish`, `/therapist/calendar`, `/therapist/settings`
 
-Client routes:
+Full-screen therapist routes: `/therapist/arrival/:appointmentId` (hand the device to the client) and `/therapist/session/:appointmentId` (Session Mode).
 
-- `/client/home`, `/client/check-in/:appointmentId`, `/client/progress`
-- `/client/history`, `/client/appointments`, `/client/consents`, `/client/settings`
+Client routes (shell: bottom bar with a centre **Log how I feel** button):
 
-Ordinary therapist work follows the three-screen law: **Today → Clients → Session**. Calendar and settings are contextual extensions, and primary work remains reachable within two interactions.
+- `/client/home`, `/client/progress`, `/client/visits`, `/client/visits/book`, `/client/me`, `/client/reports/:reportId`, `/client/settings`
+
+Full-screen client routes: `/client/log`, `/client/arrival/:appointmentId`, `/client/follow-up/:appointmentId`.
+
+Connected mode (Supabase) shows only the screens with protected adapters: Today, Clients, Settings for therapists and Visits, Settings for clients.
+
+## Care domain (`src/domain/care`)
+
+Pure TypeScript, no React or Supabase:
+
+- `regions.ts` — body regions, anatomical sides (`left` is always the client's own left), surfaces (front, back, edge) and area keys such as `shoulder:left`. "Both" is stored as one entry per side.
+- `observations.ts` — dated observations (`observedAt` vs `recordedAt`, source: home, arrival, session, next-day follow-up), per-area series, what changed since the previous visit, the areas to review at arrival, and the pain points Session Mode shows. An arrival "Still accurate" is an `ArrivalConfirmation` pointing at the original observation, so it can never become a second chart point.
+- `session.ts` — the session clock derived only from timestamps (`90:00` down, then `+00:01` extra care), the finish summary (102 minutes on a 90-minute booking → 12 extra), the idempotent Bonus Care ledger (one credit per visit, id `bonus-<appointmentId>`), and table orientation helpers that keep anatomical sides correct through rotation and flips.
+- `report.ts` — what a doctor report may contain. It takes the report's chosen wording, never the notes collection, so private notes cannot leak; export requires consent matching recipient, purpose and photo inclusion.
+- `recovery.ts` — one comparable row per completed visit for the unchanged `prototype-v1` pattern engine.
+
+`src/data/demo/selectors.ts` composes these for screens so every figure on a screen comes from one shared calculation.
+
+## The body (`src/features/body`)
+
+A Blender-refined, openly licensed anatomical model (`public/models/aura-body.glb`, credits in `public/models/CREDITS.md`, rebuild scripts in `scripts/body/`) is rendered with three.js through an orthographic camera, so the live figure and the print renders (`public/body/front.png`, `back.png`, `views.json`) share one projection. Ray-cast surface anchors (`anchors.json`) place markers; labels are HTML for legibility and screen readers. Without WebGL the stage falls back to the print renders with identical anchor projection.
 
 ## Data access
 
-Repository interfaces currently cover core client and appointment records with explicit allowlisted fields and safe mutations. Implementations are selected by the repository factory:
+Repository interfaces cover core client and appointment records with explicit allowlisted fields and safe mutations. Implementations are selected by the repository factory:
 
 - demo repositories use deterministic fixtures and IndexedDB-backed state;
 - Supabase repositories use the publishable client, current authenticated session, and narrow request/cancel database functions for client scheduling.
 
-The synthetic application screens still use the richer demo store for intake, sessions, progress, photos, and handoffs. Those capabilities must gain dedicated repository contracts before connected mode is approved; the application must never label those local mutations as synchronized.
+The synthetic screens use the richer demo store (`src/data/demo/store.ts`) for observations, arrival, sessions, Bonus Care, notes, reports and photos. Those capabilities must gain dedicated repository contracts, migrations, grants and RLS before connected mode is approved; the application never labels local mutations as synchronized.
 
 The browser never receives the service-role key. RLS remains in force even if a client route, query key, or browser call is manipulated. Private fields are separated at the schema/view layer instead of being fetched and hidden with CSS.
 

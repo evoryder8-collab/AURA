@@ -89,22 +89,14 @@ Use fake timers only at the test boundary. Session elapsed behavior must still b
 
 ### End-to-end synthetic flow
 
-The critical Playwright flow is intentionally long enough to prove integration:
+The acceptance journeys run in Playwright on a controlled clock (`page.clock`), against the real WebGL figure:
 
-1. enter as therapist and open Today;
-2. create a pending new-client appointment;
-3. complete structured intake, a functional goal, and body-map pain;
-4. start Session Mode, preserve/reload timer state, and finish;
-5. confirm Bonus Care Minutes and complete wrap-up;
-6. enter as the corresponding client and complete follow-up;
-7. view accessible progress summaries;
-8. open the sustained-worsening synthetic record;
-9. prepare a handoff with photographs excluded by default;
-10. grant scoped client consent and generate/preview the PDF.
+- `tests/e2e/story-pratana.spec.ts` — Mira books a 90-minute visit with Pratana, checks in, the session counts down from `90:00`, crosses zero into `+00:0x` extra care, survives a reload, finishes at 102 minutes, and 12 minutes are credited to Pratana exactly once; Mira's home then reads "Pratana gave you 12 extra minutes today, bringing her total to 47 minutes across your visits."
+- `tests/e2e/story-wassana.spec.ts` — on day seven Mira logs left shoulder 7/10 with a note; Wassana's Today shows the dated update; on day eight arrival confirms the shoulder (kept as one chart point) and adds right calf 3/10; Session Mode shows both with correct sides, including after a face-up/face-down flip (marker positions are measured on screen).
+- `tests/e2e/report.spec.ts` — the doctor report: private and report notes, client consent, PDF download.
+- `tests/e2e/entrance.spec.ts` and `tests/e2e/responsive.spec.ts` — both role buttons visible at 320px, name/age reveal, credentials, and no horizontal scroll at 320, 390, tablet landscape and laptop widths.
 
-Smaller smoke tests should prove the entrance, both portal homes, Today/Clients/Session navigation, and route refresh under a non-root Vite base.
-
-The returning check-in test records meaningful interactions and proves the unchanged/minimally changed path stays within the product tap budget and presents the under-30-second estimate. Wall-clock performance on a CI runner is not a reliable substitute for interaction-count assertions.
+The PDF itself is rendered to a file by `scripts/render-report-pdf` and every page is inspected as an image, including a grayscale pass; private-note text is asserted absent with `pdftotext`.
 
 ### Accessibility tests
 
@@ -205,17 +197,13 @@ PDF layout needs visual review at representative content lengths. Check branded 
 
 ## Synthetic fixtures
 
-Fixtures are obviously fictional and deterministic. The minimum dataset includes:
+Fixtures (`src/data/demo/fixtures.ts`) are generated relative to the moment the demo first loads so the story always reads correctly:
 
-- six-session improvement across pain, stiffness, ROM, and function;
-- mixed improvement;
-- sustained worsening sufficient for Review Progress and handoff preparation;
-- pending-intake appointment;
-- completed session with Bonus Care Minutes;
-- due next-day follow-up;
-- poor sleep, sport, and long-drive event markers.
+- Mira Ellison: six visits over six weeks with both Pratana and Wassana, left shoulder steady at 5–6/10, at-home entries between visits, one visit that only confirmed an earlier home entry, a missed next-day follow-up (an honest gap of more than a week), goniometer neck rotation and shoulder abduction, a functional goal in her words, 35 Bonus Care minutes from Pratana and 10 from Wassana, two private notes and one note written for a doctor; a visit with Wassana tomorrow at 10:00.
+- Noa Lindqvist: lower back, an at-home update yesterday, a 90-minute visit with Pratana at the next half hour.
+- Sage Okafor: right hip with Wassana, a visit later in the week.
 
-Use stable IDs/timestamps relative to a controlled clock where possible. Do not use names, emails, phone numbers, dates of birth, photos, or narratives copied from real people.
+Do not use names, emails, phone numbers, dates of birth, photos, or narratives copied from real people.
 
 ## CI behavior
 

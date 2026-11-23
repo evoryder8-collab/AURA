@@ -18,6 +18,22 @@ Conventions:
 
 The migration files are the executable authority. This document describes their intended domain and security boundaries.
 
+## Synthetic demo store (v2) and the connected schema
+
+The published demo runs on the local store in `src/data/demo/store.ts` (IndexedDB key `aura-demo-state-v2`). Its records map onto this schema as follows; the connected adapters for these workflows are not built yet, which is why connected navigation hides them.
+
+| Demo record | Meaning | Connected counterpart |
+| --- | --- | --- |
+| `observations` | One dated check-in: entries of region + anatomical side + 0–10 pain, `observedAt`, `recordedAt`, source (home, arrival, session, follow-up), optional note and goal score | `pain_entries` (needs `observed_at`, `source` and side columns) |
+| `confirmations` | "Still accurate" at arrival, pointing at the original observation and area | new table; never a second `pain_entries` row |
+| `stiffness`, `rom` | Therapist palpation 0–10; range of motion in degrees with movement, side and method | `therapist_assessments` |
+| `goals`, `goalScores` | Functional goal in the client's words and ease scores | `functional_goals`, `functional_goal_entries` |
+| `followUps` | Next-day response −2…+2 | `follow_up_responses` |
+| `bonusCredits` | One confirmed Bonus Care credit per visit (`bonus-<appointmentId>`) | `session_records` with a unique appointment constraint |
+| `notes` | Therapist notes, `private` or written for a doctor's `report` | `session_private_notes` / `appointment_private_notes`, plus a report-note type |
+| `reports` | Doctor report draft, client consent for recipient + purpose + photos | `handoff_exports`, `handoff_export_approvals`, `consents` |
+| `photos` | Downscaled JPEG kept only in this browser | `progress_photos` in private storage |
+
 ## Constrained values
 
 | Type                    | Values                                                                                                                            |

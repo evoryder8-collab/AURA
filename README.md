@@ -1,12 +1,30 @@
 # AURA
 
-AURA is a single-practice treatment-workflow test application with therapist and client experiences inside one React application. It covers structured intake, body/goal tracking, appointments, Session Mode, follow-up, deterministic progress patterns, consent-aware visual progress, and therapist-reviewed professional handoff preparation.
+AURA connects what a massage client feels between appointments, what their therapist needs to know before they arrive, what happens at the table, and what deserves professional review afterwards. It serves independent massage therapists, small practices with several therapists, and their clients, in one React application with a therapist portal and a client portal.
 
 > **Synthetic-data test build:** this repository is not approved for real client or health data. Outside an explicitly approved production configuration, the interface displays `TEST BUILD — SYNTHETIC DATA ONLY` and uses clearly fictional records.
 
 Published demo: [https://evoryder8-collab.github.io/AURA/](https://evoryder8-collab.github.io/AURA/)
 
 This is an implementation repository, not a pricing, marketing, billing, investor, legal-contract, shared multi-tenant, or separate-frontend project.
+
+## The story the product is built around
+
+A client sees Pratana for shoulder discomfort. Seven days later, at home, turning to look behind the car still hurts. They open AURA, tap their left shoulder, score it 7/10 and add a sentence. They already have a session with Wassana tomorrow, so Wassana sees what they reported, when, and what changed before they walk in. At arrival they only confirm it ("Still accurate") or update it, and add anything new. Session Mode then shows the confirmed points on a lit 3D body aligned to the real table, beside a countdown readable from across the room. If the issue persists, the same history becomes a consented, illustrated PDF for a doctor.
+
+## Demo identities
+
+Everything below is fictional and stays in your browser (IndexedDB); nothing is sent anywhere.
+
+| Role | Name | Age | Username | Password |
+| --- | --- | --- | --- | --- |
+| Therapist (practice lead) | Pratana Halstrick | 35 | `pratana` | any 8+ characters |
+| Therapist | Wassana Schlaepfer | 55 | `wassana` | any 8+ characters |
+| Client | Mira Ellison | 34 | `mira` | any 8+ characters |
+| Client | Noa Lindqvist | 39 | `noa` | any 8+ characters |
+| Client | Sage Okafor | 47 | `sage` | any 8+ characters |
+
+Fixtures are generated relative to the moment the demo first loads: Mira saw Pratana seven days ago and sees Wassana tomorrow at 10:00; Noa has a 90-minute session with Pratana at the next half hour. *Me → Reset demo data* restores this state.
 
 ## Core principles
 
@@ -29,7 +47,8 @@ Repository-wide rules are in [AGENTS.md](./AGENTS.md).
 - Supabase Auth, Postgres, Row Level Security, Storage, Edge Functions, CLI migrations, and synthetic seed data
 - IndexedDB through `idb` for allowed demo/offline state
 - Vite PWA plugin for the installable application shell
-- Bespoke accessible SVG journey charts with textual progress summaries
+- three.js for the lit anatomical body (Blender-refined, openly licensed model; see `public/models/CREDITS.md`)
+- Bespoke accessible SVG progress charts with text summaries and table alternatives
 - Radix primitives and a small custom CSS-variable design system
 - date-fns, React PDF, and QR rendering
 - Vitest, React Testing Library, Playwright, and axe

@@ -306,8 +306,12 @@ export const useDemoStore = create<DemoStore>()(
                   ...item,
                   session: {
                     ...item.session,
-                    finishedAt,
-                    summary: finishSummary(item.session.startedAt, finishedAt, item.durationMinutes),
+                    finishedAt: finishedAt < item.session.startedAt ? item.session.startedAt : finishedAt,
+                    summary: finishSummary(
+                      item.session.startedAt,
+                      finishedAt < item.session.startedAt ? item.session.startedAt : finishedAt,
+                      item.durationMinutes,
+                    ),
                   },
                 }
               : item,

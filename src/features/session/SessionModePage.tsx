@@ -126,7 +126,11 @@ export function SessionModePage() {
   }))
   const unconfirmed = !appointment.arrival
   const latestReport = points.reduce<string | null>((latest, point) => (latest && latest > point.observedAt ? latest : point.observedAt), null)
-  const summarySoFar = startedAt ? finishSummary(startedAt, new Date(now).toISOString(), appointment.durationMinutes) : null
+  // A device clock behind the recorded start (clock skew, another device) must never break the screen.
+  const summarySoFar =
+    startedAt && now >= new Date(startedAt).getTime()
+      ? finishSummary(startedAt, new Date(now).toISOString(), appointment.durationMinutes)
+      : null
 
   return (
     <main id="main-content" className={`session${extra ? ' is-extra' : ''}${running ? ' is-running' : ''}`}>

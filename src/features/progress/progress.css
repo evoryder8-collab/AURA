@@ -1,0 +1,593 @@
+/* Progress: one quiet glass panel per question. Colours come from the Dusk tokens. */
+
+/* Each source keeps its own hue as well as its own shape. */
+.tone-home { color: var(--aqua); }
+.tone-arrival { color: var(--lantern); }
+.tone-session { color: var(--rose); }
+.tone-follow_up { color: var(--text); }
+.tone-measure { color: var(--aqua); }
+.tone-index { color: var(--lantern); }
+.tone-better { color: var(--aqua); }
+.tone-worse { color: var(--rose); }
+.tone-same { color: var(--text-soft); }
+
+.progress {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--s-6);
+  min-width: 0;
+}
+
+.progress__grid {
+  display: grid;
+  gap: var(--s-6);
+  min-width: 0;
+}
+
+@media (min-width: 900px) {
+  .progress__grid {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    align-items: start;
+  }
+}
+
+.progress-panel {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--s-3);
+  min-width: 0;
+  padding: var(--s-6) var(--s-4);
+}
+
+@media (min-width: 420px) {
+  .progress-panel {
+    padding: var(--s-6) var(--s-5);
+  }
+}
+
+@media (min-width: 760px) {
+  .progress-panel {
+    padding: var(--s-8);
+  }
+}
+
+.progress-panel__head {
+  display: grid;
+  gap: var(--s-2);
+  justify-items: start;
+}
+
+.progress-panel__title {
+  font-size: 20px;
+  line-height: 1.25;
+}
+
+.progress-question {
+  font-size: clamp(26px, 5.2vw, 40px);
+  line-height: 1.2;
+  max-width: 24ch;
+}
+
+/* Embedded under the client's name in the therapist profile: one step quieter. */
+.progress--therapist .progress-question {
+  font-size: clamp(22px, 3.6vw, 30px);
+  max-width: 30ch;
+}
+
+.progress-answer {
+  font-size: clamp(17px, 2.2vw, 20px);
+  line-height: 1.45;
+  color: var(--text);
+  max-width: 60ch;
+}
+
+.progress-summary {
+  color: var(--text-soft);
+  font-size: 15px;
+  max-width: 62ch;
+}
+
+.progress-axis-note {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  font-size: 13px;
+  color: var(--text-dim);
+}
+
+/* ---------- The question's pickers ---------- */
+
+.picker {
+  position: relative;
+  display: inline-block;
+  max-width: 100%;
+}
+
+.picker__text {
+  color: var(--aqua);
+  text-decoration: underline dotted;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 0.2em;
+  text-decoration-color: color-mix(in srgb, var(--aqua) 55%, transparent);
+}
+
+.picker__chevron {
+  display: inline-block;
+  vertical-align: 0.05em;
+  margin: 0 -1px 0 3px;
+  color: var(--aqua);
+}
+
+.picker__select {
+  position: absolute;
+  top: -6px;
+  left: -4px;
+  width: calc(100% + 8px);
+  height: calc(100% + 12px);
+  min-height: var(--touch);
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+  font-size: 16px;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.picker:focus-within {
+  outline: 2px solid var(--lantern);
+  outline-offset: 4px;
+  border-radius: 8px;
+}
+
+/* ---------- Legend ---------- */
+
+.progress-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 18px;
+  margin: var(--s-2) 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: 13.5px;
+  color: var(--text-soft);
+}
+
+.progress-legend li {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  white-space: nowrap;
+}
+
+.legend-swatch {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+}
+
+.legend-swatch--visit {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.legend-swatch--gap {
+  border: 1px dashed var(--line-strong);
+  background: repeating-linear-gradient(45deg, rgba(208, 238, 230, 0.32) 0 1.5px, transparent 1.5px 5px);
+}
+
+.source-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  white-space: nowrap;
+}
+
+.source-icon {
+  display: inline-block;
+  flex: none;
+  overflow: visible;
+  vertical-align: -3px;
+}
+
+/* ---------- Chart ---------- */
+
+.time-chart {
+  width: 100%;
+  min-width: 0;
+  margin-top: var(--s-2);
+}
+
+.time-chart svg {
+  overflow: visible;
+  touch-action: manipulation;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.time-chart text {
+  font-family: var(--font);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+.time-chart__grid line {
+  stroke: var(--line);
+}
+
+.time-chart__grid text,
+.time-chart__axis text {
+  fill: var(--text-dim);
+}
+
+.time-chart__axis line {
+  stroke: var(--line-strong);
+}
+
+.time-chart__axis .time-chart__today {
+  fill: var(--text-soft);
+  font-weight: 600;
+}
+
+.time-chart__visits rect {
+  fill: rgba(255, 255, 255, 0.05);
+}
+
+.time-chart__visits text {
+  fill: var(--text-soft);
+  font-weight: 600;
+}
+
+.time-chart__hatch-line {
+  stroke: rgba(208, 238, 230, 0.15);
+  stroke-width: 1.5;
+}
+
+.time-chart__gap line {
+  stroke: var(--line-strong);
+  stroke-dasharray: 3 3;
+}
+
+.time-chart__gap text {
+  fill: var(--text-soft);
+  font-weight: 600;
+  paint-order: stroke;
+  stroke: var(--ink-850);
+  stroke-width: 4px;
+}
+
+.time-chart__reference rect {
+  fill: rgba(138, 230, 214, 0.06);
+}
+
+.time-chart__reference line {
+  stroke: var(--aqua);
+  stroke-opacity: 0.55;
+  stroke-dasharray: 5 4;
+}
+
+.time-chart__reference text {
+  fill: var(--aqua);
+  font-weight: 600;
+}
+
+.time-chart__line {
+  fill: none;
+  stroke: var(--text-soft);
+  stroke-opacity: 0.5;
+  stroke-width: 2;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+  stroke-dasharray: 1;
+  animation: chart-draw 900ms var(--ease) both;
+}
+
+.time-chart__line--dashed {
+  stroke-dasharray: 4 5;
+  animation: none;
+}
+
+@keyframes chart-draw {
+  from {
+    stroke-dashoffset: 1;
+  }
+}
+
+.time-chart__guide {
+  stroke: var(--text-soft);
+  stroke-opacity: 0.35;
+  stroke-dasharray: 2 4;
+}
+
+.time-chart__point {
+  cursor: pointer;
+}
+
+.time-chart__point:focus,
+.time-chart__point:focus-visible {
+  outline: none;
+}
+
+.time-chart__hit {
+  fill: transparent;
+}
+
+.time-chart__focus {
+  fill: none;
+  stroke: var(--lantern);
+  stroke-width: 2;
+  opacity: 0;
+}
+
+.time-chart__point:focus-visible .time-chart__focus {
+  opacity: 1;
+}
+
+.marker {
+  fill: currentColor;
+  stroke: var(--ink-850);
+  stroke-width: 1.5;
+}
+
+.marker--open {
+  fill: var(--ink-850);
+  stroke: currentColor;
+  stroke-width: 2.2;
+}
+
+.time-chart__point.is-selected .marker,
+.time-chart__point.is-selected .time-chart__bar {
+  filter: drop-shadow(0 0 6px currentColor);
+}
+
+.time-chart__bar {
+  fill: currentColor;
+}
+
+.time-chart__empty {
+  fill: none;
+  stroke: var(--text-faint);
+  stroke-dasharray: 3 3;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .time-chart__line {
+    animation: none;
+  }
+}
+
+/* ---------- Selected entry ---------- */
+
+.pain-detail {
+  max-width: 640px;
+  display: grid;
+  gap: var(--s-3);
+  padding: var(--s-4);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.pain-detail__top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-3);
+}
+
+.pain-detail__score {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.pain-detail__step {
+  display: flex;
+  gap: var(--s-2);
+  margin-left: auto;
+}
+
+.pain-detail__step .icon-button:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.pain-detail__facts {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+}
+
+.pain-detail__facts > div {
+  display: grid;
+  grid-template-columns: 6.5em minmax(0, 1fr);
+  gap: var(--s-3);
+}
+
+.pain-detail__facts dt {
+  color: var(--text-dim);
+  font-size: 13.5px;
+  padding-top: 1px;
+}
+
+.pain-detail__facts dd {
+  margin: 0;
+}
+
+@media (max-width: 359px) {
+  .pain-detail__word {
+    display: none;
+  }
+}
+
+@media (max-width: 420px) {
+  .pain-detail__facts > div {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+  }
+}
+
+.pain-detail__note {
+  margin: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.pain-detail__note blockquote {
+  margin: 0;
+  font-size: 16px;
+  color: var(--text);
+}
+
+.pain-detail__note figcaption {
+  font-size: 13px;
+  color: var(--text-dim);
+}
+
+.pain-detail__confirmed {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 14px;
+  color: var(--aqua);
+}
+
+.pain-detail__confirmed svg {
+  flex: none;
+  margin-top: 3px;
+}
+
+.panel-detail {
+  font-size: 14.5px;
+  color: var(--text-soft);
+}
+
+.panel-detail strong {
+  color: var(--text);
+}
+
+/* ---------- Range of motion groups ---------- */
+
+.rom-groups {
+  display: grid;
+  gap: var(--s-8);
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr));
+}
+
+.rom-group {
+  display: grid;
+  gap: var(--s-2);
+  align-content: start;
+  min-width: 0;
+}
+
+.rom-group__title {
+  font-size: 17px;
+}
+
+.rom-group__method {
+  font-size: 13px;
+  color: var(--text-dim);
+}
+
+/* ---------- Prototype engine facts ---------- */
+
+.engine-facts {
+  display: grid;
+  margin: var(--s-2) 0 0;
+  border-top: 1px solid var(--line);
+}
+
+.engine-facts > div {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 4px var(--s-3);
+  padding: 10px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.engine-facts dt {
+  color: var(--text-dim);
+  font-size: 14px;
+}
+
+.engine-facts dd {
+  margin: 0;
+  font-weight: 600;
+  text-align: right;
+}
+
+.engine-facts__code {
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  font-weight: 500;
+}
+
+/* ---------- Table alternative ---------- */
+
+.data-table {
+  display: grid;
+  gap: var(--s-3);
+  justify-items: start;
+  min-width: 0;
+}
+
+.data-table__toggle {
+  min-height: var(--touch);
+  padding: 0 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-pill);
+  background: var(--glass-hi);
+  color: var(--text-soft);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.data-table__toggle:hover {
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.data-table__scroll {
+  width: 100%;
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+}
+
+.data-table table {
+  width: max-content;
+  min-width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.data-table th,
+.data-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+  vertical-align: top;
+}
+
+.data-table tbody tr:last-child > * {
+  border-bottom: 0;
+}
+
+.data-table thead th {
+  color: var(--text-dim);
+  font-size: 12.5px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.data-table tbody th {
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.data-table td {
+  color: var(--text-soft);
+  max-width: 20em;
+}

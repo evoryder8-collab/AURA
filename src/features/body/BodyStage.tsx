@@ -188,6 +188,7 @@ export function BodyStage({
         {placed.map((item) => (
           <span
             key={`dot-${item.id}`}
+            data-area={item.id}
             className={clsx('body-dot', !item.visible && 'is-hidden-side', item.data.tone && `is-${item.data.tone}`)}
             style={{ left: item.marker.x, top: item.marker.y, '--pain': painHex(item.data.pain) } as CSSProperties}
           />
@@ -195,6 +196,7 @@ export function BodyStage({
         {placed.map((item) => (
           <span
             key={`label-${item.id}`}
+            data-area={item.id}
             className={clsx('body-label', !item.visible && 'is-hidden-side', item.data.tone && `is-${item.data.tone}`)}
             style={{ left: item.label.x, top: item.label.y, '--pain': painHex(item.data.pain) } as CSSProperties}
           >

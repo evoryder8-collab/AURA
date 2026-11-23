@@ -113,7 +113,7 @@ export async function createBodyRuntime(
   const renderer = new WebGLRenderer({ canvas, antialias: true, alpha: true, powerPreference: 'high-performance' })
   renderer.outputColorSpace = SRGBColorSpace
   renderer.toneMapping = ACESFilmicToneMapping
-  renderer.toneMappingExposure = 1.05
+  renderer.toneMappingExposure = 0.92
   renderer.setClearColor(0x000000, 0)
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2))
 
@@ -121,15 +121,16 @@ export async function createBodyRuntime(
   const pmrem = new PMREMGenerator(renderer)
   const environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture
   scene.environment = environment
+  scene.environmentIntensity = 0.45
 
   // Lights live in camera space so the figure is always lit like a calm room, whichever way it turns.
-  const key = new DirectionalLight(0xffe2bd, 2.3)
-  key.position.set(-1.2, 1.6, 2.4)
-  const rim = new DirectionalLight(0x86e6d6, 2.1)
-  rim.position.set(1.8, -0.6, -2.2)
-  const rimWarm = new DirectionalLight(0xf3cf8e, 0.9)
-  rimWarm.position.set(-1.9, -1.2, -1.4)
-  const fill = new HemisphereLight(0xd4ecf4, 0x14262a, 0.75)
+  const key = new DirectionalLight(0xffdfb4, 2.8)
+  key.position.set(-1.7, 2.3, 1.5)
+  const rim = new DirectionalLight(0x7fe3d2, 3.2)
+  rim.position.set(2.6, 0.5, -1.1)
+  const rimWarm = new DirectionalLight(0xf3c27e, 1.7)
+  rimWarm.position.set(-2.6, -0.9, -0.9)
+  const fill = new HemisphereLight(0xbcd8e4, 0x0a181b, 0.38)
   scene.add(key, rim, rimWarm, fill)
 
   const camera = new OrthographicCamera(-1, 1, 1, -1, 0.1, 20)
@@ -145,15 +146,15 @@ export async function createBodyRuntime(
 
   const model = (await loadModel()).clone(true)
   const material = new MeshPhysicalMaterial({
-    color: 0xf1e8dc,
-    roughness: 0.52,
+    color: 0xd9cdbd,
+    roughness: 0.6,
     metalness: 0,
-    sheen: 0.7,
-    sheenColor: new Color(0xffd6ad),
-    sheenRoughness: 0.55,
-    clearcoat: 0.1,
-    clearcoatRoughness: 0.7,
-    envMapIntensity: 0.55,
+    sheen: 0.45,
+    sheenColor: new Color(0xffc796),
+    sheenRoughness: 0.5,
+    clearcoat: 0.06,
+    clearcoatRoughness: 0.65,
+    envMapIntensity: 0.32,
   })
   const meshes: Mesh[] = []
   model.traverse((node) => {

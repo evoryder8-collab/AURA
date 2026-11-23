@@ -1,0 +1,103 @@
+.slot-picker {
+  display: grid;
+  gap: var(--s-6);
+}
+
+.slot-picker__block {
+  display: grid;
+  gap: var(--s-3);
+}
+
+.slot-picker__label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-soft);
+}
+
+.slot-days {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(56px, 1fr));
+  gap: var(--s-2);
+}
+
+.slot-day,
+.slot-time {
+  min-height: var(--touch);
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  background: rgba(255, 255, 255, 0.035);
+  color: var(--text-soft);
+  transition:
+    background var(--t-fast) var(--ease),
+    border-color var(--t-fast) var(--ease),
+    color var(--t-fast) var(--ease),
+    transform var(--t-fast) var(--ease);
+  touch-action: manipulation;
+}
+
+.slot-day {
+  display: grid;
+  justify-items: center;
+  gap: 1px;
+  padding: 8px 2px;
+  line-height: 1.15;
+}
+
+.slot-day__weekday,
+.slot-day__month {
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--text-dim);
+}
+
+.slot-day__date {
+  font-size: 19px;
+  font-weight: 650;
+  color: var(--text);
+}
+
+.slot-times {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(78px, 1fr));
+  gap: var(--s-2);
+}
+
+.slot-time {
+  min-height: 48px;
+  font-size: 15.5px;
+  font-weight: 600;
+}
+
+.slot-day:hover:not(:disabled),
+.slot-time:hover {
+  border-color: var(--line-strong);
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.slot-day:active:not(:disabled),
+.slot-time:active {
+  transform: scale(0.96);
+}
+
+/* Chosen: brighter glass, aqua edge and bolder type — not colour alone. */
+.slot-day[aria-pressed='true'],
+.slot-time[aria-pressed='true'] {
+  border-color: rgba(138, 230, 214, 0.65);
+  background: linear-gradient(180deg, rgba(138, 230, 214, 0.2), rgba(138, 230, 214, 0.08));
+  color: var(--text);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.12) inset,
+    0 8px 22px rgba(63, 181, 163, 0.18);
+}
+
+.slot-day[aria-pressed='true'] .slot-day__weekday,
+.slot-day[aria-pressed='true'] .slot-day__month {
+  color: var(--aqua);
+}
+
+.slot-day:disabled {
+  cursor: not-allowed;
+  opacity: 0.42;
+  border-style: dashed;
+}

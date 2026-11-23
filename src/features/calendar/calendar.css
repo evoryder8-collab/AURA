@@ -1,0 +1,437 @@
+/* ---------- Week navigation ---------- */
+
+.calendar__nav {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+}
+
+.calendar__step.button {
+  width: var(--touch);
+  padding: 0;
+  flex: none;
+}
+
+.calendar__week {
+  font-size: 18px;
+  min-width: 9.5ch;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.calendar__status:empty {
+  display: none;
+}
+
+.calendar__status {
+  color: var(--aqua);
+  font-weight: 600;
+}
+
+/* ---------- Week grid (tablet and laptop) ---------- */
+
+.week {
+  --hour: 64px;
+  --head: 68px;
+  display: grid;
+  grid-template-columns: 52px repeat(7, minmax(0, 1fr));
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.01)), var(--glass);
+  backdrop-filter: blur(22px) saturate(1.15);
+  -webkit-backdrop-filter: blur(22px) saturate(1.15);
+  box-shadow: var(--shadow-1);
+}
+
+.week__corner,
+.week__dayhead {
+  height: var(--head);
+  border-bottom: 1px solid var(--line);
+}
+
+.week__hours {
+  position: relative;
+  height: calc(var(--hour) * var(--hours));
+}
+
+.week__hours span {
+  position: absolute;
+  right: 8px;
+  transform: translateY(3px);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-faint);
+}
+
+.week__col {
+  min-width: 0;
+  border-left: 1px solid var(--line);
+}
+
+.week__col.is-today {
+  background: linear-gradient(180deg, rgba(138, 230, 214, 0.09), rgba(138, 230, 214, 0.025) 40%);
+}
+
+.week__dayhead {
+  display: grid;
+  align-content: start;
+  padding-top: 10px;
+  justify-items: center;
+  gap: 2px;
+  font-size: inherit;
+  letter-spacing: 0;
+}
+
+.week__weekday {
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+.week__date {
+  min-width: 34px;
+  padding: 0 8px;
+  border-radius: var(--r-pill);
+  font-size: 20px;
+  line-height: 1.35;
+  text-align: center;
+}
+
+.is-today .week__date {
+  color: var(--ink-950);
+  background: var(--aqua);
+  box-shadow: 0 6px 18px var(--aqua-glow);
+}
+
+.week__today {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--aqua);
+}
+
+.week__lane {
+  position: relative;
+  height: calc(var(--hour) * var(--hours));
+  background-image: repeating-linear-gradient(180deg, var(--line) 0 1px, transparent 1px var(--hour));
+}
+
+/* Days off are hatched, so they read without colour. */
+.week__lane.is-off {
+  background-image:
+    repeating-linear-gradient(180deg, var(--line) 0 1px, transparent 1px var(--hour)),
+    repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.025) 0 6px, transparent 6px 14px);
+}
+
+.week__visits {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.week__visits li {
+  position: absolute;
+  left: 3px;
+  right: 3px;
+  z-index: 1;
+}
+
+.cal-block {
+  display: grid;
+  align-content: start;
+  gap: 1px;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  padding: 6px 7px;
+  border: 1px solid rgba(138, 230, 214, 0.32);
+  border-radius: 12px;
+  background:
+    linear-gradient(180deg, rgba(138, 230, 214, 0.17), rgba(138, 230, 214, 0.06)),
+    rgba(14, 34, 40, 0.72);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.09) inset,
+    0 8px 20px rgba(0, 0, 0, 0.28);
+  color: var(--text);
+  text-align: left;
+  transition:
+    transform var(--t-fast) var(--ease),
+    border-color var(--t-fast) var(--ease);
+}
+
+.cal-block:hover {
+  border-color: rgba(138, 230, 214, 0.6);
+}
+
+.cal-block:active {
+  transform: scale(0.98);
+}
+
+.cal-block__name,
+.cal-block__service {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.cal-block__name {
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.cal-block__time {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  overflow: hidden;
+  white-space: nowrap;
+  font-size: 11.5px;
+  color: var(--text-soft);
+}
+
+.cal-block__time svg {
+  flex: none;
+}
+
+.cal-block__time span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cal-block__service {
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+.cal-block--live {
+  border-color: rgba(243, 207, 142, 0.6);
+  background:
+    linear-gradient(180deg, rgba(243, 207, 142, 0.22), rgba(243, 207, 142, 0.07)),
+    rgba(14, 34, 40, 0.72);
+}
+
+.cal-block--arrived {
+  border-color: rgba(138, 230, 214, 0.55);
+}
+
+.cal-block--pending {
+  border-style: dashed;
+  border-color: rgba(243, 207, 142, 0.5);
+  background: rgba(14, 34, 40, 0.6);
+}
+
+.cal-block--done {
+  border-color: var(--line-strong);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.cal-block.is-past {
+  opacity: 0.62;
+}
+
+.week__now {
+  position: absolute;
+  left: 0;
+  right: 0;
+  z-index: 2;
+  height: 2px;
+  margin-top: -1px;
+  background: var(--lantern);
+  box-shadow: 0 0 10px var(--lantern-glow);
+  pointer-events: none;
+}
+
+.week__now::before {
+  content: '';
+  position: absolute;
+  left: -4px;
+  top: -4px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--lantern);
+}
+
+/* ---------- Agenda (phones) ---------- */
+
+.agenda {
+  display: grid;
+  gap: var(--s-5);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.agenda__date {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  margin-bottom: var(--s-2);
+  font-size: 15px;
+  color: var(--text-soft);
+}
+
+.agenda__day.is-today .agenda__date {
+  color: var(--text);
+}
+
+.agenda__list {
+  display: grid;
+  gap: var(--s-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.agenda-item {
+  display: grid;
+  grid-template-columns: 54px minmax(0, 1fr);
+  align-items: center;
+  column-gap: var(--s-3);
+  row-gap: 4px;
+  width: 100%;
+  min-height: 64px;
+  padding: var(--s-3) var(--s-4);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.015)), var(--glass);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  color: var(--text);
+  text-align: left;
+}
+
+.agenda-item:active {
+  transform: scale(0.985);
+}
+
+.agenda-item.is-past {
+  opacity: 0.62;
+}
+
+.agenda-item__time {
+  display: grid;
+  grid-row: span 2;
+  align-self: start;
+  font-size: 16px;
+  font-weight: 650;
+  line-height: 1.2;
+}
+
+.agenda-item__time small {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-dim);
+}
+
+.agenda-item__body {
+  display: grid;
+  min-width: 0;
+}
+
+.agenda-item__body strong,
+.agenda-item__body span {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.agenda-item__body span {
+  font-size: 14px;
+  color: var(--text-dim);
+}
+
+.agenda-item__cue {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-soft);
+}
+
+.agenda-item.cal-block--live .agenda-item__cue,
+.agenda-item.cal-block--pending .agenda-item__cue {
+  color: var(--lantern);
+}
+
+.agenda-item.cal-block--arrived .agenda-item__cue,
+.agenda-item.cal-block--confirmed .agenda-item__cue {
+  color: var(--aqua);
+}
+
+@media (min-width: 420px) {
+  .agenda-item {
+    grid-template-columns: 54px minmax(0, 1fr) auto;
+  }
+
+  .agenda-item__time {
+    grid-row: auto;
+    align-self: center;
+  }
+}
+
+.agenda__empty {
+  padding: var(--s-1) 0;
+  font-size: 14px;
+  color: var(--text-faint);
+}
+
+/* ---------- Sheets ---------- */
+
+.cal-sheet,
+.new-appointment {
+  display: grid;
+  gap: var(--s-5);
+}
+
+.cal-sheet__facts {
+  display: grid;
+  gap: var(--s-3);
+  margin: 0;
+}
+
+.cal-sheet__facts div {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--s-4);
+  padding-top: var(--s-3);
+  border-top: 1px solid var(--line);
+}
+
+.cal-sheet__facts dt {
+  color: var(--text-dim);
+}
+
+.cal-sheet__facts dd {
+  margin: 0;
+  font-weight: 600;
+  text-align: right;
+}
+
+.cal-sheet__cue {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.cal-sheet__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-3);
+}
+
+.cal-sheet__actions .button {
+  flex: 1 1 200px;
+}
+
+.new-appointment .segmented {
+  display: grid;
+  width: 100%;
+}

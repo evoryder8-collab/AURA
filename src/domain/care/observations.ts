@@ -14,6 +14,12 @@ import type {
   PainEntry,
 } from './types'
 
+/**
+ * More than a week with no entry at all is a gap in the record. Charts and the doctor report
+ * both draw it as a gap and never bridge it; a weekly rhythm of visits is not a gap.
+ */
+export const GAP_DAYS = 8
+
 export type PainSelection = { readonly region: RegionId; readonly side: ChosenSide; readonly pain: number }
 
 export function assertPainScore(value: number): number {

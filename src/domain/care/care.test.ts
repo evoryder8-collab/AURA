@@ -206,6 +206,7 @@ describe('doctor report', () => {
     expect(figureViews(['chest:left', 'calf:right'], 'auto')).toEqual(['front', 'back'])
     expect(hiddenAreas(['calf:right'], ['front'])).toEqual(['calf:right'])
     expect(hiddenAreas(['shoulder:left'], ['back'])).toEqual([])
+    expect(hiddenAreas(['neck:left', 'neck:centre'], ['front'])).toEqual(['neck:centre'])
   })
 
   it('offers only report notes, never private ones', () => {

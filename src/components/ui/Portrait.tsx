@@ -1,8 +1,8 @@
 import { clsx } from 'clsx'
 import { useState } from 'react'
 import type { DemoPortrait } from '@/data/demo/model'
+import { assetUrl } from './assets'
 
-export const assetUrl = (path: string) => `${import.meta.env.BASE_URL}${path}`
 
 const initialsOf = (name: string) =>
   name

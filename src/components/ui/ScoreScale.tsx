@@ -1,6 +1,6 @@
 import { clsx } from 'clsx'
 import { useId, type CSSProperties, type KeyboardEvent } from 'react'
-import { painColor } from './PainChip'
+import { painColor } from './pain'
 
 /**
  * A 0–10 picker built as a radio group: one tap per score, arrow keys to move,

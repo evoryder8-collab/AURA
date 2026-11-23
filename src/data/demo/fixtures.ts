@@ -344,7 +344,7 @@ export function createDemoState(now: Date = new Date()): DemoState {
       createdAt: iso(dayAt(now, -7, 11, 15)),
       updatedAt: iso(dayAt(now, -7, 11, 15)),
       visibility: 'report',
-      body: 'Left shoulder discomfort has been reported at 5–6/10 at each of the last six visits, and left neck rotation has measured between 52° and 60°. The discomfort has not settled with regular massage.',
+      body: 'Left shoulder discomfort has been reported at 5–6/10 at each of the last six visits, and left neck rotation has measured between 52° and 60°. The discomfort has continued between visits.',
       appointmentId: 'appointment-mira-v6',
     },
   ]

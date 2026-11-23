@@ -43,6 +43,8 @@ export default defineConfig(({ mode }) => {
         workbox: {
           navigateFallbackDenylist: [/\/handoff\//],
           globPatterns: ['**/*.{js,css,html,svg,woff2}'],
+          // The PDF renderer loads only when a report is exported; keep it out of the offline shell.
+          globIgnores: ['**/render-*.js'],
           runtimeCaching: [],
           cleanupOutdatedCaches: true,
         },

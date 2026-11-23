@@ -40,6 +40,8 @@ export type BodyRegionDefinition = {
   readonly sides: readonly AnatomicalSide[]
   /** Where the region is seen; `edge` reads from both the front and the back. */
   readonly surface: BodySurface
+  /** Overrides `surface` for particular sides (the sides of the neck show from both views). */
+  readonly sideSurface?: Partial<Record<AnatomicalSide, BodySurface>>
   readonly group: 'head_neck' | 'upper_body' | 'back' | 'arms' | 'hips_legs'
 }
 
@@ -49,7 +51,7 @@ const midlineAndSides = ['centre', 'left', 'right'] as const
 
 export const BODY_REGIONS: readonly BodyRegionDefinition[] = [
   { id: 'head', label: 'Head', plural: 'Head', sides: midline, surface: 'front', group: 'head_neck' },
-  { id: 'neck', label: 'Neck', plural: 'Neck', sides: midlineAndSides, surface: 'back', group: 'head_neck' },
+  { id: 'neck', label: 'Neck', plural: 'Neck', sides: midlineAndSides, surface: 'back', sideSurface: { left: 'edge', right: 'edge' }, group: 'head_neck' },
   { id: 'shoulder', label: 'Shoulder', plural: 'Shoulders', sides: lateral, surface: 'edge', group: 'upper_body' },
   { id: 'shoulder_blade', label: 'Shoulder blade', plural: 'Shoulder blades', sides: lateral, surface: 'back', group: 'back' },
   { id: 'upper_back', label: 'Upper back', plural: 'Upper back', sides: midline, surface: 'back', group: 'back' },
@@ -81,6 +83,12 @@ export function getRegion(id: RegionId): BodyRegionDefinition {
   const region = regionById.get(id)
   if (!region) throw new RangeError(`Unknown body region: ${id}`)
   return region
+}
+
+/** Where one side of a region is seen from. */
+export function surfaceOf(region: RegionId, side: AnatomicalSide): BodySurface {
+  const definition = getRegion(region)
+  return definition.sideSurface?.[side] ?? definition.surface
 }
 
 /** A specific place on one side of the body, e.g. `shoulder:left`. */

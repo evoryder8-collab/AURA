@@ -1,0 +1,716 @@
+/* Prepare report for a doctor: builder, client review and the on-screen paper preview. */
+
+.report-page {
+  align-content: start;
+}
+
+.report-head .lead {
+  max-width: 62ch;
+}
+
+.report-status {
+  display: grid;
+  gap: var(--s-3);
+  padding: var(--s-4) var(--s-5);
+}
+
+.report-message {
+  color: var(--aqua);
+  font-weight: 600;
+}
+
+.report-warning {
+  display: flex;
+  gap: var(--s-2);
+  align-items: flex-start;
+  color: var(--lantern);
+  font-weight: 600;
+  font-size: 14.5px;
+}
+
+.report-warning svg {
+  flex: none;
+  margin-top: 2px;
+}
+
+.report-builder {
+  display: grid;
+  gap: var(--s-8);
+  align-items: start;
+}
+
+.report-form {
+  min-width: 0;
+}
+
+.report-fieldset {
+  display: grid;
+  gap: var(--s-3);
+  margin: 0;
+  padding: var(--s-5);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  background: var(--glass);
+  min-width: 0;
+}
+
+/* Floated, the legend becomes an ordinary heading inside the panel instead of cutting its border. */
+.report-fieldset legend {
+  float: left;
+  width: 100%;
+  padding: 0;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 17px;
+  letter-spacing: -0.01em;
+}
+
+.report-segmented {
+  display: grid;
+  width: 100%;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  border-radius: var(--r-md);
+}
+
+.report-segmented button {
+  min-height: var(--touch);
+  padding: 6px 8px;
+  white-space: normal;
+  line-height: 1.2;
+  border-radius: var(--r-sm);
+}
+
+.report-options {
+  display: grid;
+  gap: var(--s-2);
+}
+
+.report-check {
+  display: flex;
+  gap: var(--s-3);
+  align-items: flex-start;
+  min-height: var(--touch);
+  padding: 10px var(--s-3);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  cursor: pointer;
+}
+
+.report-check:has(input:checked) {
+  border-color: rgba(138, 230, 214, 0.45);
+  background: rgba(138, 230, 214, 0.06);
+}
+
+.report-check:has(input:disabled) {
+  cursor: not-allowed;
+  opacity: 0.72;
+}
+
+.report-check input {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  margin: 1px 0 0;
+  accent-color: var(--aqua-deep);
+}
+
+.report-check > span {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.report-check:focus-within {
+  outline: 2px solid var(--lantern);
+  outline-offset: 2px;
+}
+
+.report-check input:focus-visible {
+  outline: none;
+}
+
+.report-note-body {
+  color: var(--text-soft);
+  font-size: 14.5px;
+}
+
+.report-errors {
+  padding: var(--s-4) var(--s-5);
+  border: 1px solid rgba(242, 161, 150, 0.4);
+  border-radius: var(--r-md);
+  color: var(--rose);
+}
+
+.report-errors ul {
+  margin: var(--s-2) 0 0;
+  padding-left: 1.2em;
+}
+
+.report-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-3);
+}
+
+.report-actions .button {
+  white-space: normal;
+  text-align: center;
+  line-height: 1.25;
+  padding-block: 10px;
+}
+
+.report-preview-pane {
+  display: grid;
+  gap: var(--s-3);
+  min-width: 0;
+}
+
+.report-preview-head {
+  display: grid;
+  gap: 2px;
+}
+
+@media (min-width: 1000px) {
+  .report-builder {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.08fr);
+  }
+
+  .report-preview-pane {
+    position: sticky;
+    top: 56px; /* clears the test-build badge */
+    max-height: calc(100dvh - 72px);
+    overflow: auto;
+    overscroll-behavior: contain;
+    padding-right: 2px;
+  }
+}
+
+/* ---------- Client review ---------- */
+
+.report-review {
+  gap: var(--s-6);
+}
+
+.report-facts {
+  display: grid;
+  gap: var(--s-3);
+  margin: var(--s-4) 0;
+}
+
+.report-facts div {
+  display: grid;
+  grid-template-columns: 7.5em minmax(0, 1fr);
+  gap: var(--s-3);
+}
+
+.report-facts dt {
+  color: var(--text-dim);
+  font-weight: 600;
+}
+
+.report-facts dd {
+  margin: 0;
+  color: var(--text);
+}
+
+.report-subtitle {
+  font-size: 15px;
+  color: var(--text-soft);
+}
+
+.report-list {
+  margin: var(--s-2) 0 var(--s-4);
+  padding-left: 1.2em;
+  display: grid;
+  gap: 4px;
+  color: var(--text-soft);
+}
+
+.report-never {
+  display: flex;
+  gap: var(--s-2);
+  align-items: center;
+  color: var(--aqua);
+  font-weight: 600;
+  font-size: 14.5px;
+}
+
+.report-never svg {
+  flex: none;
+}
+
+.report-agree {
+  white-space: normal;
+  text-align: left;
+  line-height: 1.3;
+  padding-block: 12px;
+  height: auto;
+}
+
+.report-withdraw {
+  padding: var(--s-4);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-md);
+}
+
+.report-export {
+  display: grid;
+  gap: var(--s-2);
+}
+
+.report-print-frame {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  width: 0;
+  height: 0;
+  border: 0;
+}
+
+/* ---------- Full-screen review on the therapist's device ---------- */
+
+.report-sheet__overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  background: rgba(3, 10, 12, 0.7);
+}
+
+.report-sheet {
+  position: fixed;
+  inset: 0;
+  z-index: 81;
+  overflow: auto;
+  overscroll-behavior: contain;
+  background:
+    radial-gradient(120% 70% at 85% -10%, rgba(63, 181, 163, 0.14), transparent 60%),
+    linear-gradient(180deg, var(--ink-900), var(--ink-950) 70%);
+}
+
+.report-sheet__bar {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-3);
+  padding: calc(var(--s-3) + var(--safe-top)) var(--gutter) var(--s-3);
+  border-bottom: 1px solid var(--line);
+  background: rgba(8, 21, 26, 0.92);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+
+.report-sheet__title {
+  font-size: 16px;
+}
+
+.report-sheet__body {
+  width: min(100%, 860px);
+  margin: 0 auto;
+  padding: var(--s-6) var(--gutter) calc(var(--s-10) + var(--safe-bottom));
+}
+
+/* ---------- Client list ---------- */
+
+.report-links {
+  display: grid;
+  gap: var(--s-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.report-links > li + li {
+  border: 0;
+}
+
+.report-link {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  min-height: 64px;
+  padding: var(--s-3) var(--s-4);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--glass);
+  color: var(--text);
+  text-decoration: none;
+}
+
+.report-link:hover {
+  border-color: var(--line-strong);
+}
+
+.report-link > svg {
+  flex: none;
+  color: var(--text-dim);
+}
+
+.report-link__text {
+  display: grid;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.report-link__text span {
+  color: var(--text-dim);
+  font-size: 14px;
+}
+
+@media (max-width: 420px) {
+  .report-link {
+    flex-wrap: wrap;
+  }
+}
+
+/* ---------- Paper: the document as it will be shared ---------- */
+
+.paper {
+  display: grid;
+  gap: 18px;
+  padding: clamp(18px, 4.4vw, 40px);
+  border-radius: 6px;
+  background: var(--p-paper);
+  color: var(--p-text);
+  font-family: Helvetica, Arial, sans-serif;
+  font-size: 14px;
+  line-height: 1.45;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.35);
+  min-width: 0;
+  container-type: inline-size;
+}
+
+.paper h2,
+.paper h3 {
+  font-family: Helvetica, Arial, sans-serif;
+  letter-spacing: 0;
+  color: var(--p-ink);
+}
+
+.paper h3 {
+  font-size: 17px;
+  margin-bottom: 4px;
+}
+
+.paper section {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+.paper p {
+  max-width: 72ch;
+}
+
+.paper__brand {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 6px 16px;
+}
+
+.paper__wordmark {
+  font-weight: 700;
+  letter-spacing: 0.27em;
+  color: var(--p-ink);
+}
+
+.paper__eyebrow {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--p-muted);
+}
+
+.paper__rule {
+  height: 2px;
+  margin-top: -8px;
+  background: linear-gradient(90deg, var(--p-aqua), #7dbfb4 65%, var(--p-gold));
+}
+
+.paper__name {
+  font-size: clamp(24px, 5vw, 32px);
+  line-height: 1.1;
+  font-weight: 700;
+}
+
+.paper .paper__name + .paper__muted {
+  margin-top: -14px;
+}
+
+.paper__muted {
+  color: var(--p-muted);
+  font-size: 13px;
+}
+
+.paper__facts {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding-top: 14px;
+  border-top: 1px solid var(--p-line);
+}
+
+.paper__facts div {
+  display: grid;
+  gap: 4px;
+}
+
+.paper__facts dt {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--p-muted);
+}
+
+.paper__facts dd {
+  display: grid;
+  margin: 0;
+}
+
+.paper__facts strong {
+  color: var(--p-ink);
+}
+
+@container (min-width: 480px) {
+  .paper__facts {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.paper__panel {
+  padding: 14px 16px;
+  border-radius: 6px;
+  border: 1px solid;
+}
+
+.paper__panel--gold {
+  background: var(--p-gold-tint);
+  border-color: #e7d6b6;
+}
+
+.paper__panel--gold .paper__eyebrow {
+  color: var(--p-gold);
+}
+
+.paper__panel--aqua {
+  background: var(--p-aqua-tint);
+  border-color: #cde2dd;
+}
+
+.paper__panel--aqua .paper__eyebrow {
+  color: var(--p-aqua);
+}
+
+.paper__lead {
+  font-size: 17px;
+  line-height: 1.4;
+  color: var(--p-ink);
+}
+
+.paper__note {
+  font-size: 15px;
+  color: var(--p-ink);
+}
+
+.paper__table-wrap {
+  overflow-x: auto;
+}
+
+.paper__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13.5px;
+}
+
+.paper__table th,
+.paper__table td {
+  padding: 7px 10px 7px 0;
+  text-align: left;
+  vertical-align: middle;
+  border-bottom: 1px solid var(--p-grid);
+}
+
+.paper__table thead th {
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--p-muted);
+  border-bottom-color: var(--p-line);
+}
+
+.paper__table tbody th {
+  color: var(--p-ink);
+}
+
+/* On narrow paper each area becomes a short labelled list instead of a squeezed row. */
+@container (max-width: 479px) {
+  .paper__table--areas thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+  }
+
+  .paper__table--areas tr {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 2px 12px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--p-grid);
+  }
+
+  .paper__table--areas th,
+  .paper__table--areas td {
+    padding: 0;
+    border: 0;
+  }
+
+  .paper__table--areas td:not(.paper__score) {
+    grid-column: 1 / -1;
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .paper__table--areas td:not(.paper__score)::before {
+    content: attr(data-label);
+    color: var(--p-muted);
+  }
+}
+
+.paper__score {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--p-ink);
+  white-space: nowrap;
+}
+
+.paper__quote {
+  margin: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.paper__quote p {
+  font-family: 'Times New Roman', Times, serif;
+  font-style: italic;
+  font-size: 16px;
+  color: var(--p-ink);
+}
+
+.paper__quote footer {
+  color: var(--p-muted);
+  font-size: 12.5px;
+}
+
+.paper__page-break {
+  padding-top: 18px;
+  border-top: 1px dashed var(--p-line);
+}
+
+.paper__figures {
+  display: grid;
+  gap: 16px;
+}
+
+@container (min-width: 480px) {
+  .paper__figures--pair {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.paper__figure {
+  margin: 0;
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.paper__figure figcaption {
+  text-align: center;
+  color: var(--p-muted);
+  font-size: 12.5px;
+}
+
+.paper__figure--text {
+  padding: 14px;
+  border: 1px solid var(--p-line);
+  border-radius: 6px;
+}
+
+.paper__figure--text figcaption {
+  text-align: left;
+}
+
+.paper__body {
+  position: relative;
+  width: 100%;
+}
+
+.paper__body img {
+  position: absolute;
+  object-fit: fill;
+  max-width: none;
+}
+
+.paper__body svg {
+  position: absolute;
+  inset: 0;
+}
+
+.paper__chart {
+  margin: 6px 0 0;
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.paper__chart figcaption {
+  display: grid;
+  gap: 1px;
+}
+
+.paper__chart figcaption strong {
+  color: var(--p-ink);
+}
+
+.paper__chart figcaption span {
+  color: var(--p-muted);
+  font-size: 12.5px;
+}
+
+.paper__pair {
+  display: grid;
+  gap: 16px;
+}
+
+@container (min-width: 620px) {
+  .paper__pair {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.paper__photo {
+  margin: 0;
+}
+
+.paper__photo img {
+  width: 100%;
+  border-radius: 4px;
+}
+
+.paper__footer {
+  padding-top: 10px;
+  border-top: 1px solid var(--p-line);
+  color: var(--p-muted);
+  font-size: 12px;
+}

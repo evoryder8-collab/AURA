@@ -28,8 +28,8 @@ import { dayPhrase, daysBetween, fmtDay, fmtShortDate, fmtTime } from '@/lib/for
 
 export const DAY_MS = 86_400_000
 /** A stretch longer than this with no entry is drawn as "No entries" and never bridged. */
-/** More than a week with no entry at all is drawn as a gap; a weekly rhythm is not. */
-export const GAP_DAYS = 8
+import { GAP_DAYS } from '@/domain/care'
+export { GAP_DAYS }
 
 export type Audience = 'client' | 'therapist'
 

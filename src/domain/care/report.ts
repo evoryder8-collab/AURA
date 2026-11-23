@@ -1,4 +1,4 @@
-import { areaKeyLabel, getRegion, parseAreaKey, type AreaKey } from './regions'
+import { areaKeyLabel, parseAreaKey, surfaceOf, type AreaKey } from './regions'
 import { areaSeries, latestByArea, type AreaPoint } from './observations'
 import type {
   ArrivalConfirmation,
@@ -20,7 +20,7 @@ export function figureViews(areas: readonly AreaKey[], view: ReportFigureView): 
   const surfaces = new Set(
     areas.map((key) => {
       const parsed = parseAreaKey(key)
-      return parsed ? getRegion(parsed.region).surface : 'edge'
+      return parsed ? surfaceOf(parsed.region, parsed.side) : 'edge'
     }),
   )
   if (surfaces.has('front') && surfaces.has('back')) return ['front', 'back']
@@ -33,7 +33,7 @@ export function hiddenAreas(areas: readonly AreaKey[], views: ReadonlyArray<'fro
   return areas.filter((key) => {
     const parsed = parseAreaKey(key)
     if (!parsed) return true
-    const surface = getRegion(parsed.region).surface
+    const surface = surfaceOf(parsed.region, parsed.side)
     return surface !== 'edge' && !views.includes(surface)
   })
 }

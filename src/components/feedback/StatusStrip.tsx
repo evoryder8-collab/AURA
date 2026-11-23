@@ -1,5 +1,6 @@
 import { AlertTriangle, CheckCircle2, Info, ShieldAlert } from 'lucide-react'
 import type { ReactNode } from 'react'
+import './status-strip.css'
 
 const icons = {
   info: Info,

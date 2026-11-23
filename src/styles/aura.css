@@ -741,7 +741,8 @@ h3 {
 .page {
   width: min(100%, 1180px);
   margin: 0 auto;
-  padding: calc(var(--s-8) + var(--safe-top)) var(--gutter) calc(var(--tabbar-h) + var(--s-10) + var(--safe-bottom));
+  /* top room clears the fixed test-build badge */
+  padding: calc(48px + var(--safe-top)) var(--gutter) calc(var(--tabbar-h) + var(--s-10) + var(--safe-bottom));
   display: grid;
   gap: var(--s-6);
 }

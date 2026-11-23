@@ -23,6 +23,7 @@ import { therapistCanAccessClient, therapistsForClient } from '@/data/demo/team'
 import { useAuth } from '@/features/auth/auth-context'
 import { BodyStage, type BodyMarker } from '@/features/body/BodyStage'
 import { anchorFor } from '@/features/body/anchors'
+import { ProgressPhotos } from '@/features/photos/ProgressPhotos'
 import { ProgressExplorer } from '@/features/progress/ProgressExplorer'
 import { daysBetween, fmtDate, fmtDay, fmtTime, minutesLabel, relativeDay, relativeWhen } from '@/lib/formatting/time'
 import './profile.css'
@@ -96,7 +97,12 @@ export function ClientProfilePage() {
         ]}
       />
 
-      {tab === 'overview' ? <Overview clientId={client.id} state={state} onTab={setTab} /> : null}
+      {tab === 'overview' ? (
+        <>
+          <Overview clientId={client.id} state={state} onTab={setTab} />
+          <ProgressPhotos client={client} />
+        </>
+      ) : null}
       {tab === 'history' ? <History clientId={client.id} state={state} /> : null}
       {tab === 'progress' ? <ProgressExplorer clientId={client.id} audience="therapist" /> : null}
       {tab === 'notes' ? <Notes clientId={client.id} state={state} therapistId={auth.demoTherapistId ?? ''} /> : null}

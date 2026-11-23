@@ -1,0 +1,204 @@
+/* Therapist client list (demo and connected). */
+
+.client-search {
+  position: relative;
+  max-width: 520px;
+}
+
+.client-search > svg {
+  position: absolute;
+  left: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-dim);
+  pointer-events: none;
+}
+
+.client-search .input {
+  padding-left: 44px;
+}
+
+.client-rows {
+  display: grid;
+  gap: var(--s-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.client-row {
+  position: relative;
+  display: grid;
+  gap: var(--s-3);
+  padding: var(--s-4) calc(var(--s-4) + 24px) var(--s-4) var(--s-4);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.012)), var(--glass);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  color: var(--text);
+  text-decoration: none;
+  transition:
+    border-color var(--t-fast) var(--ease),
+    background var(--t-fast) var(--ease);
+}
+
+.client-row:hover {
+  border-color: var(--line-strong);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.02)), var(--glass);
+}
+
+.client-row:focus-visible {
+  border-radius: var(--r-lg);
+}
+
+.client-row__who {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.client-row__name {
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  overflow-wrap: anywhere;
+}
+
+.client-row__team {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.client-row__portraits {
+  display: flex;
+}
+
+.client-row__portraits .portrait + .portrait {
+  margin-left: -8px;
+}
+
+.client-row__portraits .portrait {
+  box-shadow: 0 0 0 2px var(--ink-850);
+}
+
+.client-row__fact {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+  font-size: 14.5px;
+}
+
+.client-row__fact .eyebrow {
+  font-size: 11px;
+}
+
+.client-row__update {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.client-row__update > span:last-child {
+  min-width: 0;
+  padding-top: 2px;
+}
+
+.client-row__go {
+  position: absolute;
+  right: var(--s-4);
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-faint);
+}
+
+@media (min-width: 760px) {
+  .client-row {
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr) minmax(0, 1.2fr);
+    align-items: center;
+    gap: var(--s-5);
+    padding-right: calc(var(--s-5) + 24px);
+  }
+}
+
+/* Connected directory cards */
+
+.connected-client {
+  display: grid;
+  gap: var(--s-3);
+}
+
+.connected-client__top {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+}
+
+.connected-client__avatar {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 1px solid var(--line-strong);
+  background: linear-gradient(180deg, var(--ink-600), var(--ink-800));
+  color: var(--text-soft);
+  font-weight: 600;
+}
+
+.connected-client__identity {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.connected-client__identity h2 {
+  font-size: 18px;
+}
+
+.connected-client__identity span {
+  overflow-wrap: anywhere;
+}
+
+.connected-client__facts {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  font-size: 14.5px;
+}
+
+.connected-client__facts div {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  color: var(--text-dim);
+}
+
+.connected-client__facts dt {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.connected-client__facts dd {
+  margin: 0;
+  color: var(--text);
+}
+
+.connected-grid {
+  display: grid;
+  gap: var(--s-3);
+}
+
+@media (min-width: 760px) {
+  .connected-grid {
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  }
+}

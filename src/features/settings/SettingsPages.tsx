@@ -1,112 +1,123 @@
-import { Bell, Database, RotateCcw, ShieldCheck, Smartphone } from 'lucide-react'
-import { useState } from 'react'
+import { Clock3, Database, LogOut, ShieldCheck, Sparkles } from 'lucide-react'
+import { useSyncExternalStore, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Badge } from '@/components/design-system/Badge'
 import { Button } from '@/components/design-system/Button'
 import { Card } from '@/components/design-system/Card'
 import { PageHeader } from '@/components/design-system/PageHeader'
 import { env } from '@/config/env'
-import { useDemoStore } from '@/data/demo/store'
 import { useAuth, type AuraRole } from '@/features/auth/auth-context'
+import { fmtTime, PRACTICE_TIME_ZONE } from '@/lib/formatting/time'
 import { MfaSettings } from './MfaSettings'
+import { ResetDemoData } from './ResetDemoData'
+import './settings.css'
+
+const REDUCED_MOTION = '(prefers-reduced-motion: reduce)'
+
+/** Follows the device's reduce-motion setting live. */
+function usePrefersReducedMotion() {
+  return useSyncExternalStore(
+    (onChange) => {
+      const query = window.matchMedia(REDUCED_MOTION)
+      query.addEventListener('change', onChange)
+      return () => query.removeEventListener('change', onChange)
+    },
+    () => window.matchMedia(REDUCED_MOTION).matches,
+    () => false,
+  )
+}
+
+function SettingRow({
+  icon,
+  title,
+  children,
+}: {
+  icon: ReactNode
+  title: string
+  children: ReactNode
+}) {
+  return (
+    <div className="setting-row">
+      <span className="setting-row__icon" aria-hidden="true">
+        {icon}
+      </span>
+      <div className="setting-row__copy">
+        <strong>{title}</strong>
+        <span>{children}</span>
+      </div>
+    </div>
+  )
+}
 
 export function SettingsPage({ role }: { role: AuraRole }) {
   const auth = useAuth()
-  const resetDemo = useDemoStore((state) => state.resetDemo)
   const navigate = useNavigate()
-  const [resetDone, setResetDone] = useState(false)
+  const reducedMotion = usePrefersReducedMotion()
   const signOut = async () => {
     await auth.signOut()
     navigate('/')
   }
+
   return (
-    <div>
+    <div className="page settings-page">
       <PageHeader
-        eyebrow={`${role === 'therapist' ? 'Practice' : 'Personal'} settings`}
-        title={
-          <>
-            Quiet controls,
-            <br />
-            clear boundaries.
-          </>
+        eyebrow={role === 'therapist' ? 'Practice' : 'Personal'}
+        title="Settings"
+        lead={
+          env.demoMode
+            ? 'This is a synthetic demo. Its fictional data stays in this browser.'
+            : 'Your protected AURA account.'
         }
-        lead="Feature flags and public build configuration are visible here. Secrets never belong in frontend settings."
       />
-      <section className="settings-grid">
-        <Card eyebrow="Security" title="Account safeguards">
-          <MfaSettings role={role} />
-          {env.flags.passkeys && (
-            <div className="setting-row">
-              <Smartphone size={19} />
-              <div>
-                <strong>Passkeys</strong>
-                <span>
-                  WebAuthn enrollment is visible only in connected deployments whose authentication
-                  provider has enabled it.
-                </span>
-              </div>
-              <Badge>{env.demoMode ? 'Demo preview' : 'Provider controlled'}</Badge>
-            </div>
-          )}
-          <div className="setting-row">
-            <ShieldCheck size={19} />
-            <div>
-              <strong>Fresh authentication</strong>
-              <span>
-                Required before photos, handoffs, exports, consent changes, and deletion requests.
-              </span>
-            </div>
-            <Badge tone="favourable">Enforced flow</Badge>
-          </div>
-          <Button variant="secondary" onClick={() => void signOut()}>
-            Sign out everywhere
-          </Button>
+
+      <div className="settings-grid">
+        <Card as="section" title="This device" aria-label="This device">
+          <SettingRow icon={<Sparkles size={19} />} title="Motion">
+            {reducedMotion
+              ? 'Your device asks for reduced motion, so AURA’s animations settle to still frames.'
+              : 'Animations are on. Turn on Reduce motion in your device’s accessibility settings and AURA will hold still.'}
+          </SettingRow>
+          <SettingRow icon={<Clock3 size={19} />} title="Practice time zone">
+            Times are shown in{' '}
+            <strong className="nowrap">{PRACTICE_TIME_ZONE.replaceAll('_', ' ')}</strong>, where it
+            is now <span className="num">{fmtTime(Date.now())}</span>.
+          </SettingRow>
+          <SettingRow icon={<Database size={19} />} title="Where your data lives">
+            {env.demoMode
+              ? 'Fictional demo data is stored in this browser only (IndexedDB). Nothing is sent to a server or synced.'
+              : 'Your records load from your protected AURA account each time you open the app.'}
+          </SettingRow>
         </Card>
-        <Card eyebrow="Environment" title="Test-build status">
-          <div className="setting-row">
-            <Database size={19} />
-            <div>
-              <strong>Data source</strong>
-              <span>
-                {env.demoMode
-                  ? 'IndexedDB-backed synthetic fixtures'
-                  : 'Protected Supabase data adapter'}
-              </span>
-            </div>
-            <Badge tone={env.demoMode ? 'pending' : 'favourable'}>{env.mode}</Badge>
-          </div>
-          <div className="setting-row">
-            <Bell size={19} />
-            <div>
-              <strong>Browser notifications</strong>
-              <span>Provider abstraction and in-app outbox are ready.</span>
-            </div>
-            <Badge>{env.flags.browserNotifications ? 'Enabled' : 'Feature off'}</Badge>
+
+        <Card as="section" title="Security" aria-label="Security">
+          {env.demoMode ? null : <MfaSettings role={role} />}
+          <SettingRow icon={<ShieldCheck size={19} />} title="Confirm it’s you">
+            {role === 'client'
+              ? 'AURA asks you to confirm it’s you before you take or view progress photos and before you change a consent choice.'
+              : 'AURA asks you to confirm it’s you before you take or view a client’s progress photos.'}
+            {env.demoMode ? ' In this demo you type DEMO.' : ''}
+          </SettingRow>
+          <div>
+            <Button
+              variant="secondary"
+              icon={<LogOut size={16} aria-hidden="true" />}
+              onClick={() => void signOut()}
+            >
+              {env.demoMode ? 'Sign out' : 'Sign out everywhere'}
+            </Button>
           </div>
           {env.setupErrors.map((error) => (
-            <p key={error} className="form-error">
+            <p key={error} className="form-error" role="alert">
               {error}
             </p>
           ))}
         </Card>
-        {env.demoMode && (
-          <Card tone="gold" eyebrow="Synthetic state" title="Reset the demo">
-            <p>
-              Restores fictional clients, graphs, appointments, session records, consent choices,
-              and handoffs to their initial state.
-            </p>
-            <Button
-              icon={<RotateCcw size={16} />}
-              onClick={() => {
-                resetDemo()
-                setResetDone(true)
-              }}
-            >
-              {resetDone ? 'Demo restored' : 'Reset synthetic data'}
-            </Button>
+
+        {env.demoMode ? (
+          <Card as="section" title="Demo data" aria-label="Demo data">
+            <ResetDemoData />
           </Card>
-        )}
-      </section>
+        ) : null}
+      </div>
     </div>
   )
 }

@@ -30,16 +30,18 @@ export function AppStatus() {
       )}
       {!online && (
         <div className="connection-toast" role="status">
-          <WifiOff size={16} /> Offline · local session state remains available
+          <WifiOff size={16} aria-hidden="true" /> Offline. What is on this device stays available.
         </div>
       )}
       {needRefresh && (
         <div className="update-toast" role="status">
-          <RefreshCw size={17} />
+          <RefreshCw size={17} aria-hidden="true" />
           <span>A refreshed version of AURA is ready.</span>
-          <button onClick={() => void updateServiceWorker(true)}>Update</button>
-          <button aria-label="Dismiss update" onClick={() => setNeedRefresh(false)}>
-            <X size={16} />
+          <button type="button" onClick={() => void updateServiceWorker(true)}>
+            Update
+          </button>
+          <button type="button" aria-label="Dismiss update" onClick={() => setNeedRefresh(false)}>
+            <X size={16} aria-hidden="true" />
           </button>
         </div>
       )}

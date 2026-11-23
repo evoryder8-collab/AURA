@@ -1,0 +1,101 @@
+/* Settings rows, shared by settings pages and the MFA panel. */
+
+.settings-grid {
+  display: grid;
+  gap: var(--s-4);
+  align-items: start;
+}
+
+@media (min-width: 900px) {
+  .settings-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.settings-grid > .card {
+  display: grid;
+  gap: var(--s-4);
+}
+
+.settings-grid > .card > .card__header {
+  margin-bottom: 0;
+}
+
+.setting-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: var(--s-3);
+}
+
+.setting-row + .setting-row {
+  padding-top: var(--s-4);
+  border-top: 1px solid var(--line);
+}
+
+.setting-row__icon {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  background: var(--glass-hi);
+  color: var(--aqua);
+}
+
+.setting-row__copy {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.setting-row__copy > span {
+  color: var(--text-dim);
+  font-size: 14.5px;
+}
+
+.setting-row__copy strong strong,
+.setting-row__copy span strong {
+  color: var(--text-soft);
+}
+
+.setting-row__action {
+  grid-column: 2;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-2);
+}
+
+@media (min-width: 520px) {
+  .setting-row:has(.setting-row__action) {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+  }
+
+  .setting-row__action {
+    grid-column: auto;
+    justify-content: flex-end;
+  }
+}
+
+.mfa-setup {
+  display: grid;
+  gap: var(--s-4);
+}
+
+.mfa-setup img {
+  width: min(220px, 100%);
+  border-radius: var(--r-md);
+  background: #fff;
+  padding: 10px;
+}
+
+.mfa-setup code {
+  overflow-wrap: anywhere;
+  font-family: var(--font-mono);
+  padding: 10px 12px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--line);
+  background: rgba(3, 12, 14, 0.45);
+}

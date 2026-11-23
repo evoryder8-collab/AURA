@@ -1,0 +1,249 @@
+/* Progress-photo camera flow and gallery. */
+
+.capture {
+  display: grid;
+  gap: var(--s-5);
+}
+
+@media (min-width: 760px) {
+  .capture:not(.capture--done, .capture--blocked) {
+    grid-template-columns: minmax(0, 0.9fr) minmax(0, 1fr);
+    align-items: start;
+  }
+}
+
+.capture__stage {
+  position: relative;
+  /* Phones: a small guide preview while setting up, a larger viewfinder once live,
+     always leaving the shutter on screen. */
+  width: min(100%, calc(24dvh * 0.75));
+  aspect-ratio: 3 / 4;
+  justify-self: center;
+  overflow: hidden;
+  border-radius: var(--r-lg);
+  border: 1px solid var(--line-strong);
+  background:
+    radial-gradient(80% 60% at 50% 35%, rgba(63, 181, 163, 0.12), transparent 70%),
+    linear-gradient(180deg, var(--ink-800), var(--ink-950));
+  isolation: isolate;
+}
+
+.capture__stage--live,
+.capture__stage--preview {
+  width: min(100%, calc(40dvh * 0.75));
+}
+
+@media (min-width: 760px) {
+  .capture__stage,
+  .capture__stage--live,
+  .capture__stage--preview {
+    width: min(100%, calc(62dvh * 0.75));
+  }
+}
+
+.capture__video,
+.capture__image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.capture__guide {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+  fill: none;
+  stroke: rgba(238, 245, 242, 0.62);
+  stroke-width: 1.6;
+  stroke-dasharray: 5 6;
+  stroke-linecap: round;
+  filter: drop-shadow(0 0 3px rgba(5, 13, 15, 0.9));
+  pointer-events: none;
+}
+
+.capture__guide rect {
+  fill: rgba(138, 230, 214, 0.22);
+  stroke: rgba(138, 230, 214, 0.75);
+  stroke-dasharray: none;
+}
+
+.capture__plumb {
+  stroke: rgba(138, 230, 214, 0.8);
+}
+
+.capture__countdown {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  font-family: var(--font-display);
+  font-size: clamp(72px, 22vw, 128px);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+  text-shadow: 0 6px 30px rgba(0, 0, 0, 0.6);
+  background: rgba(5, 13, 15, 0.25);
+}
+
+.capture__panel {
+  display: grid;
+  gap: var(--s-4);
+  align-content: start;
+}
+
+.capture__heading:focus {
+  outline: none;
+}
+
+.capture__tips {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding-left: 1.1em;
+  color: var(--text-soft);
+}
+
+.capture__options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-4);
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+
+.capture__option {
+  display: grid;
+  gap: 6px;
+}
+
+.capture__note {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  color: var(--text-dim);
+}
+
+.capture__note svg {
+  flex: none;
+  margin-top: 3px;
+  color: var(--aqua);
+}
+
+.capture__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-3);
+}
+
+@media (max-width: 480px) {
+  .capture__actions > * {
+    flex: 1 1 100%;
+  }
+}
+
+.capture__file {
+  cursor: pointer;
+}
+
+.capture__file:has(input:focus-visible) {
+  outline: 2px solid var(--lantern);
+  outline-offset: 3px;
+}
+
+.capture--done,
+.capture--blocked {
+  justify-items: start;
+  gap: var(--s-4);
+}
+
+.capture__done-mark,
+.capture__blocked-mark {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+}
+
+.capture__done-mark {
+  color: var(--ink-950);
+  background: var(--aqua);
+  box-shadow: 0 8px 26px var(--aqua-glow);
+}
+
+.capture__blocked-mark {
+  color: var(--lantern);
+  border: 1px solid rgba(243, 207, 142, 0.3);
+  background: rgba(243, 207, 142, 0.08);
+}
+
+.capture__thumb {
+  width: 120px;
+  aspect-ratio: 3 / 4;
+  object-fit: cover;
+  border-radius: var(--r-md);
+  border: 1px solid var(--line-strong);
+}
+
+/* ---------- Gallery ---------- */
+
+.photos-local {
+  margin-top: var(--s-3);
+}
+
+.photo-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(132px, 1fr));
+  gap: var(--s-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.photo-tile {
+  position: relative;
+  display: grid;
+  gap: 6px;
+}
+
+.photo-tile img {
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  object-fit: cover;
+  border-radius: var(--r-md);
+  border: 1px solid var(--line);
+  background: var(--ink-800);
+}
+
+.photo-tile__meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+  min-width: 0;
+}
+
+.photo-tile__meta span {
+  min-width: 0;
+  font-size: 13px;
+  color: var(--text-soft);
+}
+
+.photo-tile__meta .icon-button {
+  flex: none;
+}
+
+.photo-delete-preview {
+  width: 140px;
+  aspect-ratio: 3 / 4;
+  object-fit: cover;
+  border-radius: var(--r-md);
+  border: 1px solid var(--line-strong);
+}

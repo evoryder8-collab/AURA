@@ -1,0 +1,35 @@
+/* Connected-mode therapist day view. */
+
+.connected-today__list {
+  display: grid;
+  gap: var(--s-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.connected-today__item {
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr);
+  gap: var(--s-3);
+  align-items: start;
+}
+
+.connected-today__time {
+  display: grid;
+  gap: 2px;
+  padding-top: var(--s-4);
+  font-size: 17px;
+}
+
+.connected-today__card {
+  display: grid;
+  gap: var(--s-2);
+}
+
+.connected-today__card p {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}

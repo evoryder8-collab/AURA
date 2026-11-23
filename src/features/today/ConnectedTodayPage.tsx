@@ -1,12 +1,15 @@
 import { useQuery } from '@tanstack/react-query'
 import { format, isSameDay } from 'date-fns'
-import { Clock3, ShieldCheck, UserRound } from 'lucide-react'
+import { Clock3 } from 'lucide-react'
 import { useMemo } from 'react'
 import { Badge } from '@/components/design-system/Badge'
 import { Card } from '@/components/design-system/Card'
 import { PageHeader } from '@/components/design-system/PageHeader'
+import { Spinner } from '@/components/design-system/Spinner'
+import { StatusStrip } from '@/components/feedback/StatusStrip'
 import { createAuraRepositories } from '@/data/repositories'
 import { useAuth } from '@/features/auth/auth-context'
+import './connected-today.css'
 
 export function ConnectedTodayPage() {
   const auth = useAuth()
@@ -36,95 +39,73 @@ export function ConnectedTodayPage() {
   const failed = clientsQuery.isError || appointmentsQuery.isError
 
   return (
-    <div className="today-page">
+    <div className="page connected-today">
       <PageHeader
-        eyebrow={`Protected team account · ${format(today, 'EEEE · d MMMM yyyy')}`}
-        title={
-          <>
-            A clear view
-            <br />
-            of your day.
-          </>
-        }
-        lead={`${todayAppointments.length} appointments today · ${requests.length} client-selected ${requests.length === 1 ? 'request' : 'requests'} awaiting review`}
+        eyebrow={format(today, 'EEEE d MMMM yyyy')}
+        title="Today"
+        lead={`${todayAppointments.length} ${todayAppointments.length === 1 ? 'appointment' : 'appointments'} today · ${requests.length} ${requests.length === 1 ? 'request' : 'requests'} from clients awaiting review`}
       />
 
-      <Card className="care-continuity" tone="soft">
-        <span className="care-continuity__icon" aria-hidden="true">
-          <ShieldCheck size={20} />
-        </span>
-        <div>
-          <p className="eyebrow">Assignment-scoped team view</p>
-          <h2>Only clients in your active care team appear here</h2>
-          <p>
-            Each appointment preserves the delivering practitioner while the client’s outcome record
-            stays continuous across the practice.
-          </p>
-        </div>
-      </Card>
+      <StatusStrip title="Only clients assigned to you appear here">
+        Each appointment keeps the practitioner who gave it, while the client’s record stays
+        continuous across the practice.
+      </StatusStrip>
 
       {loading ? (
-        <Card tone="soft" role="status">
-          <p>Loading your assigned clients and protected schedule…</p>
-        </Card>
+        <Spinner label="Loading your schedule" />
       ) : failed ? (
-        <Card tone="soft" role="alert">
-          <h2>Your protected schedule is temporarily unavailable</h2>
-          <p>No synthetic fallback data has been shown in this connected session.</p>
+        <Card tone="concern" role="alert">
+          <h2 className="title-md">Your schedule could not be loaded</h2>
+          <p className="muted">
+            No synthetic fallback data has been shown in this connected session.
+          </p>
         </Card>
       ) : (
-        <section className="timeline" aria-labelledby="connected-timeline-heading">
-          <div className="section-heading">
-            <div>
-              <p className="eyebrow">Your treatment timeline</p>
-              <h2 id="connected-timeline-heading">Appointments</h2>
-            </div>
-            <Badge tone="favourable">{clients.length} assigned clients</Badge>
+        <section className="stack" aria-labelledby="connected-timeline-heading">
+          <div className="row row--between row--wrap">
+            <h2 id="connected-timeline-heading" className="title-md">
+              Appointments
+            </h2>
+            <Badge tone="favourable">
+              {clients.length} assigned {clients.length === 1 ? 'client' : 'clients'}
+            </Badge>
           </div>
           {todayAppointments.length === 0 ? (
-            <Card tone="soft">
-              <p>No appointments are set for you today.</p>
-            </Card>
-          ) : null}
-          {todayAppointments.map((appointment) => {
-            const client = clients.find((candidate) => candidate.id === appointment.clientId)
-            return (
-              <article className="timeline-item" key={appointment.id}>
-                <div className="timeline-item__time">
-                  <strong>{format(new Date(appointment.startsAt), 'HH:mm')}</strong>
-                  <span>{appointment.durationMinutes} min</span>
-                </div>
-                <div className="timeline-item__rail">
-                  <i />
-                </div>
-                <Card className="appointment-card">
-                  <div className="appointment-card__top">
-                    <div>
-                      <div className="appointment-card__badges">
+            <div className="empty">
+              <span>No appointments are set for you today.</span>
+            </div>
+          ) : (
+            <ol className="connected-today__list">
+              {todayAppointments.map((appointment) => {
+                const client = clients.find((candidate) => candidate.id === appointment.clientId)
+                return (
+                  <li className="connected-today__item" key={appointment.id}>
+                    <div className="connected-today__time">
+                      <strong className="num">
+                        {format(new Date(appointment.startsAt), 'HH:mm')}
+                      </strong>
+                      <span className="small muted">{appointment.durationMinutes} min</span>
+                    </div>
+                    <Card className="connected-today__card">
+                      <div className="row row--wrap">
                         <Badge tone={appointment.status === 'requested' ? 'pending' : 'favourable'}>
                           {appointment.status}
                         </Badge>
                         {client?.intakeStatus !== 'complete' ? (
-                          <Badge tone="pending">Pending intake</Badge>
+                          <Badge tone="pending">Intake pending</Badge>
                         ) : null}
                       </div>
-                      <h3>{client?.preferredName ?? 'Assigned client'}</h3>
-                      <p>
-                        {appointment.sessionType} · {appointment.room ?? 'Room to confirm'}
+                      <h3 className="title-md">{client?.preferredName ?? 'Assigned client'}</h3>
+                      <p className="small muted">
+                        <Clock3 size={13} aria-hidden="true" /> {appointment.sessionType} ·{' '}
+                        {appointment.room ?? 'Room to confirm'}
                       </p>
-                    </div>
-                    <div className="appointment-card__phase">
-                      <UserRound size={17} />
-                      <span>Client-owned record</span>
-                      <small>
-                        <Clock3 size={12} /> Your appointment
-                      </small>
-                    </div>
-                  </div>
-                </Card>
-              </article>
-            )
-          })}
+                    </Card>
+                  </li>
+                )
+              })}
+            </ol>
+          )}
         </section>
       )}
     </div>

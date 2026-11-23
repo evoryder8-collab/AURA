@@ -94,14 +94,16 @@ export function MfaSettings({ role }: { role: AuraRole }) {
   return (
     <>
       <div className="setting-row">
-        <KeyRound size={19} />
-        <div>
-          <strong>Multi-factor authentication</strong>
+        <span className="setting-row__icon" aria-hidden="true">
+          <KeyRound size={19} />
+        </span>
+        <div className="setting-row__copy">
+          <strong>Two-step sign-in</strong>
           <span>
             {env.demoMode
-              ? `${role === 'therapist' ? 'Required therapist' : 'Optional client'} TOTP flow is available in connected mode.`
+              ? `${role === 'therapist' ? 'Required for therapists' : 'Optional for clients'} in the connected app.`
               : verifiedCount > 0
-                ? `${verifiedCount} verified authenticator${verifiedCount === 1 ? '' : 's'} enrolled.`
+                ? `${verifiedCount} verified authenticator ${verifiedCount === 1 ? 'app' : 'apps'} set up.`
                 : 'Add an authenticator app for a second sign-in step.'}
           </span>
           {error && (
@@ -110,12 +112,10 @@ export function MfaSettings({ role }: { role: AuraRole }) {
             </span>
           )}
         </div>
-        {env.demoMode ? (
-          <Badge tone="attention">Demo</Badge>
-        ) : (
+        {env.demoMode ? null : (
           <div className="setting-row__action">
             <Badge tone={verifiedCount > 0 ? 'favourable' : 'attention'}>
-              {loading ? 'Checking' : verifiedCount > 0 ? 'Enrolled' : 'Not enrolled'}
+              {loading ? 'Checking' : verifiedCount > 0 ? 'On' : 'Not set up'}
             </Badge>
             <Button
               variant="secondary"
@@ -139,7 +139,9 @@ export function MfaSettings({ role }: { role: AuraRole }) {
         {enrollment && (
           <div className="mfa-setup">
             <img src={enrollment.qrCodeUrl} alt="Authenticator enrollment QR code" />
-            <p className="microcopy">Cannot scan it? Enter this setup key in your authenticator:</p>
+            <p className="small muted">
+              Cannot scan it? Enter this setup key in your authenticator:
+            </p>
             <code>{enrollment.secret}</code>
             <Field label="Six-digit verification code">
               <Input

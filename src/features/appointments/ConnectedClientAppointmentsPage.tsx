@@ -1,14 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { addDays, format } from 'date-fns'
-import {
-  CalendarCheck,
-  CalendarPlus,
-  Check,
-  Clock3,
-  ShieldCheck,
-  Sparkles,
-  UserRound,
-} from 'lucide-react'
+import { CalendarCheck, CalendarPlus, Check, Clock3, UserRound } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Badge } from '@/components/design-system/Badge'
 import { Button } from '@/components/design-system/Button'
@@ -16,9 +8,12 @@ import { Card } from '@/components/design-system/Card'
 import { Field, Input, Select } from '@/components/design-system/FormField'
 import { Modal } from '@/components/design-system/Modal'
 import { PageHeader } from '@/components/design-system/PageHeader'
+import { Spinner } from '@/components/design-system/Spinner'
+import { StatusStrip } from '@/components/feedback/StatusStrip'
 import { env } from '@/config/env'
 import { createAuraRepositories, type AppointmentStatus } from '@/data/repositories'
 import { useAuth } from '@/features/auth/auth-context'
+import './connected-visits.css'
 
 function publicPortraitUrl(path: string | null) {
   if (!path || !env.supabase) return null
@@ -98,20 +93,14 @@ export function ConnectedClientAppointmentsPage() {
   const failed = clientQuery.isError || appointmentsQuery.isError || therapistsQuery.isError
 
   return (
-    <div>
+    <div className="page connected-visits">
       <PageHeader
-        eyebrow="Appointments · protected account"
-        title={
-          <>
-            Time set aside
-            <br />
-            for you.
-          </>
-        }
-        lead="Choose any available practitioner in your practice. Every visit remains part of your one continuous progress record."
+        eyebrow="Visits"
+        title="Your visits"
+        lead="Choose any available practitioner in your practice. Every visit stays part of your one continuous record."
         actions={
           <Button
-            icon={<CalendarPlus size={17} />}
+            icon={<CalendarPlus size={17} aria-hidden="true" />}
             disabled={loading || failed || !clientQuery.data || therapists.length === 0}
             onClick={() => {
               setSubmitted(false)
@@ -126,65 +115,63 @@ export function ConnectedClientAppointmentsPage() {
       />
 
       {loading ? (
-        <Card tone="soft" role="status">
-          <p>Loading your protected appointments and care team…</p>
-        </Card>
+        <Spinner label="Loading your visits and care team" />
       ) : failed || !clientQuery.data ? (
-        <Card tone="soft" role="alert">
-          <h2>Appointments are temporarily unavailable</h2>
-          <p>
+        <Card tone="concern" role="alert">
+          <h2 className="title-md">Your visits could not be loaded</h2>
+          <p className="muted">
             Your protected records could not be loaded. No local demo data has been substituted.
           </p>
         </Card>
       ) : (
         <>
-          <Card className="care-continuity" tone="soft">
-            <span className="care-continuity__icon" aria-hidden="true">
-              <ShieldCheck size={20} />
-            </span>
-            <div>
-              <p className="eyebrow">One continuous record</p>
-              <h2>Your progress belongs to you</h2>
-              <p>
-                Practitioner attribution stays on each appointment while outcomes and feedback
-                continue to aggregate around your client record.
-              </p>
+          <StatusStrip title="Your progress belongs to you">
+            Each visit keeps the practitioner who gave it, while your feedback and progress stay
+            together on your own record.
+          </StatusStrip>
+          {appointments.length === 0 ? (
+            <div className="empty">
+              <span>No appointments are recorded yet.</span>
             </div>
-          </Card>
-          <div className="appointment-list">
-            {appointments.length === 0 ? (
-              <Card tone="soft">
-                <p>No appointments are recorded yet.</p>
-              </Card>
-            ) : null}
-            {appointments.map((appointment) => {
-              const therapist = therapists.find(
-                (candidate) => candidate.userId === appointment.therapistUserId,
-              )
-              return (
-                <Card key={appointment.id} className="client-appointment-row">
-                  <div className="client-appointment-date">
-                    <span>{format(new Date(appointment.startsAt), 'MMM')}</span>
-                    <strong>{format(new Date(appointment.startsAt), 'd')}</strong>
-                    <small>{format(new Date(appointment.startsAt), 'EEE')}</small>
-                  </div>
-                  <div>
-                    <Badge tone={statusTone(appointment.status)}>{appointment.status}</Badge>
-                    <h2>{appointment.sessionType}</h2>
-                    <p>
-                      <Clock3 size={14} /> {format(new Date(appointment.startsAt), 'HH:mm')} ·{' '}
-                      {appointment.durationMinutes} minutes
-                    </p>
-                    <p className="client-appointment-therapist">
-                      <UserRound size={14} /> With{' '}
-                      {therapist?.professionalName ?? 'your assigned practitioner'}
-                    </p>
-                  </div>
-                  <CalendarCheck size={22} />
-                </Card>
-              )
-            })}
-          </div>
+          ) : (
+            <ul className="connected-visits__list">
+              {appointments.map((appointment) => {
+                const therapist = therapists.find(
+                  (candidate) => candidate.userId === appointment.therapistUserId,
+                )
+                return (
+                  <li key={appointment.id}>
+                    <Card className="connected-visit">
+                      <div className="connected-visit__date" aria-hidden="true">
+                        <span>{format(new Date(appointment.startsAt), 'MMM')}</span>
+                        <strong className="num">
+                          {format(new Date(appointment.startsAt), 'd')}
+                        </strong>
+                        <small>{format(new Date(appointment.startsAt), 'EEE')}</small>
+                      </div>
+                      <div className="connected-visit__body">
+                        <Badge tone={statusTone(appointment.status)}>{appointment.status}</Badge>
+                        <h2 className="title-md">{appointment.sessionType}</h2>
+                        <p className="small muted">
+                          <CalendarCheck size={14} aria-hidden="true" />{' '}
+                          {format(new Date(appointment.startsAt), 'EEEE d MMMM')} ·{' '}
+                          <Clock3 size={14} aria-hidden="true" />{' '}
+                          <span className="num">
+                            {format(new Date(appointment.startsAt), 'HH:mm')}
+                          </span>{' '}
+                          · {appointment.durationMinutes} minutes
+                        </p>
+                        <p className="small">
+                          <UserRound size={14} aria-hidden="true" /> With{' '}
+                          {therapist?.professionalName ?? 'your assigned practitioner'}
+                        </p>
+                      </div>
+                    </Card>
+                  </li>
+                )
+              })}
+            </ul>
+          )}
         </>
       )}
 
@@ -202,34 +189,29 @@ export function ConnectedClientAppointmentsPage() {
         {submitted ? (
           <div
             ref={completeRef}
-            className="followup-complete"
+            className="connected-visits__done"
             role="status"
             aria-live="polite"
             tabIndex={-1}
           >
-            <span>
+            <span className="connected-visits__done-mark" aria-hidden="true">
               <Check size={24} />
             </span>
-            <h3>Request sent</h3>
-            <p>
-              Your preferred time with {selectedTherapist?.professionalName ?? 'your care team'}
-              is now awaiting confirmation.
+            <h3 className="title-md">Request sent</h3>
+            <p className="muted">
+              Your preferred time with {selectedTherapist?.professionalName ?? 'your care team'} is
+              now awaiting confirmation.
             </p>
             <Button onClick={() => setOpen(false)}>Done</Button>
           </div>
         ) : (
-          <div className="form-stack">
-            <section className="booking-therapists" aria-labelledby="connected-therapist-title">
-              <div className="booking-therapists__intro">
-                <span className="booking-therapists__sparkle" aria-hidden="true">
-                  <Sparkles size={17} />
-                </span>
-                <div>
-                  <h3 id="connected-therapist-title">Who would you like to see?</h3>
-                  <p>Your goals and progress stay together whichever practitioner you choose.</p>
-                </div>
-              </div>
-              <div className="therapist-choice-grid">
+          <div className="stack">
+            <fieldset className="therapist-choices">
+              <legend className="title-md">Who would you like to see?</legend>
+              <p className="small muted">
+                Your goals and progress stay together whichever practitioner you choose.
+              </p>
+              <div className="therapist-choices__grid">
                 {therapists.map((therapist) => {
                   const selected = therapist.userId === therapistId
                   const initials = therapist.professionalName
@@ -244,15 +226,15 @@ export function ConnectedClientAppointmentsPage() {
                       className={`therapist-choice${selected ? ' is-selected' : ''}`}
                     >
                       <input
-                        className="sr-only"
+                        className="visually-hidden"
                         type="radio"
                         name="connected-preferred-therapist"
                         value={therapist.userId}
                         checked={selected}
                         onChange={() => setTherapistId(therapist.userId)}
                       />
-                      <span className="therapist-choice__portrait" aria-hidden="true">
-                        <span>{initials}</span>
+                      <span className="portrait portrait--md" aria-hidden="true">
+                        <span className="portrait__monogram">{initials}</span>
                         {portrait ? (
                           <img
                             src={portrait}
@@ -264,20 +246,19 @@ export function ConnectedClientAppointmentsPage() {
                         ) : null}
                       </span>
                       <span className="therapist-choice__detail">
-                        <span className="therapist-choice__topline">
-                          <strong>{therapist.professionalName}</strong>
-                          <span className="therapist-choice__check" aria-hidden="true">
-                            <Check size={13} />
-                          </span>
-                        </span>
-                        <small>{therapist.professionalTitle ?? 'Massage practitioner'}</small>
-                        <Badge tone="favourable">Available for online requests</Badge>
+                        <strong>{therapist.professionalName}</strong>
+                        <small className="muted">
+                          {therapist.professionalTitle ?? 'Massage practitioner'}
+                        </small>
+                      </span>
+                      <span className="therapist-choice__check" aria-hidden="true">
+                        <Check size={14} />
                       </span>
                     </label>
                   )
                 })}
               </div>
-            </section>
+            </fieldset>
             <Field label="Preferred date and time">
               <Input
                 type="datetime-local"
@@ -286,7 +267,7 @@ export function ConnectedClientAppointmentsPage() {
                 onChange={(event) => setDate(event.target.value)}
               />
             </Field>
-            <div className="form-grid">
+            <div className="connected-visits__form-grid">
               <Field label="Session type">
                 <Select
                   value={sessionType}
@@ -312,6 +293,7 @@ export function ConnectedClientAppointmentsPage() {
             ) : null}
             <Button
               fullWidth
+              size="lg"
               disabled={!therapistId || requestMutation.isPending}
               onClick={() => requestMutation.mutate()}
             >

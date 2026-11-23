@@ -21,6 +21,7 @@ import {
   type SecureHandoffInspection,
 } from '@/data/supabase/secureHandoff'
 import { useAuth } from '@/features/auth/auth-context'
+import './public-pages.css'
 
 export function AuthCallbackPage() {
   const auth = useAuth()
@@ -39,7 +40,9 @@ export function AuthCallbackPage() {
   return (
     <main id="main-content" className="public-state">
       <Card>
-        <ShieldCheck size={28} />
+        <span className="public-state__mark" aria-hidden="true">
+          <ShieldCheck size={28} />
+        </span>
         <h1>Secure sign-in could not be completed</h1>
         <p>
           The link may be invalid or expired. Return to the entrance and request a new sign-in link.
@@ -57,7 +60,9 @@ export function OfflinePage() {
   return (
     <main id="main-content" className="public-state">
       <Card>
-        <CloudOff size={28} />
+        <span className="public-state__mark" aria-hidden="true">
+          <CloudOff size={28} />
+        </span>
         <h1>AURA is offline</h1>
         <p>
           The app shell and minimal pending Session Mode state remain available. Private media and
@@ -146,7 +151,9 @@ export function PublicHandoffPage() {
     return (
       <main id="main-content" className="public-state">
         <Card>
-          <FileWarning size={28} />
+          <span className="public-state__mark" aria-hidden="true">
+            <FileWarning size={28} />
+          </span>
           <h1>Secure handoff link</h1>
           <p>
             {!token || error
@@ -167,7 +174,9 @@ export function PublicHandoffPage() {
   return (
     <main id="main-content" className="public-state public-handoff">
       <Card>
-        <FileCheck2 size={28} />
+        <span className="public-state__mark" aria-hidden="true">
+          <FileCheck2 size={28} />
+        </span>
         <p className="eyebrow">Scoped professional handoff</p>
         <h1>Secure document access</h1>
         <dl className="handoff-summary">
@@ -204,13 +213,13 @@ export function PublicHandoffPage() {
         )}
         <Button
           size="lg"
-          icon={<Download size={17} />}
+          icon={<Download size={17} aria-hidden="true" />}
           disabled={working}
           onClick={() => void download()}
         >
           {working ? 'Preparing…' : 'Download PDF'}
         </Button>
-        <div className="divider" />
+        <hr className="divider" />
         {submitted ? (
           <div role="status">
             <strong>Response submitted</strong>
@@ -218,14 +227,14 @@ export function PublicHandoffPage() {
           </div>
         ) : (
           <form
-            className="form-stack"
+            className="stack"
             onSubmit={(event) => {
               event.preventDefault()
               void respond()
             }}
           >
-            <h2>Send a scoped response</h2>
-            <div className="form-grid">
+            <h2 className="title-md">Send a scoped response</h2>
+            <div className="public-form-grid">
               <Field label="Your name (optional)">
                 <Input
                   value={respondentName}
@@ -262,7 +271,7 @@ export function PublicHandoffPage() {
             <Button
               type="submit"
               variant="secondary"
-              icon={<Send size={16} />}
+              icon={<Send size={16} aria-hidden="true" />}
               disabled={working || !message.trim()}
             >
               Submit response
@@ -285,7 +294,7 @@ export function PrivacyPlaceholderPage() {
           privacy notice.
         </p>
         <Link className="button button--secondary button--md" to="/">
-          <ArrowLeft size={15} /> Return
+          <ArrowLeft size={15} aria-hidden="true" /> Return
         </Link>
       </Card>
     </main>

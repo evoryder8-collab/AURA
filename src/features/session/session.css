@@ -280,4 +280,16 @@
   .session__stage {
     margin-top: 118px;
   }
+  .session__unconfirmed {
+    top: 46px;
+    bottom: auto;
+    left: 10px;
+    right: 10px;
+    gap: 2px 8px;
+    padding: 6px 10px;
+    font-size: 13px;
+  }
+  .session__unconfirmed a {
+    min-height: 32px;
+  }
 }

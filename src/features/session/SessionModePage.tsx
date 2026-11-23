@@ -18,7 +18,7 @@ import { therapistCanAccessClient } from '@/data/demo/team'
 import { useAuth } from '@/features/auth/auth-context'
 import { BodyStage, type BodyMarker } from '@/features/body/BodyStage'
 import type { FigureFace } from '@/features/body/anchors'
-import { fmtTime, minutesLabel, relativeWhen, whenPhrase } from '@/lib/formatting/time'
+import { fmtTime, minutesLabel, relativeDay, relativeWhen, whenPhrase } from '@/lib/formatting/time'
 import { useWakeLock } from './useWakeLock'
 import './session.css'
 
@@ -59,8 +59,8 @@ function useNow(active: boolean) {
 }
 
 function markerDetail(point: SessionPainPoint, now: number) {
-  if (point.status === 'unconfirmed') return `${relativeWhen(point.observedAt, now)} · not yet confirmed`
-  if (point.status === 'confirmed') return `Recorded ${whenPhrase(point.observedAt, now)} · confirmed`
+  if (point.status === 'unconfirmed') return relativeWhen(point.observedAt, now)
+  if (point.status === 'confirmed') return `${relativeDay(point.observedAt, now)} · confirmed`
   if (point.status === 'new') return 'New today'
   return 'Updated today'
 }

@@ -29,3 +29,6 @@ test-results
 *.njsproj
 *.sln
 *.sw?
+
+# Python bytecode from the body build scripts
+__pycache__/

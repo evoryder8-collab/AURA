@@ -1,0 +1,22 @@
+{
+  "width": 1400,
+  "height": 3000,
+  "units": "metres, glTF axes of aura-body.glb (+Y up, figure faces +Z, anatomical left +X)",
+  "mapping": "imageX = (x - left) / (right - left) * width; imageY = (top - y) / (top - bottom) * height; pixel (0,0) is the top-left corner",
+  "front": {
+    "left": -0.486967,
+    "right": 0.486967,
+    "bottom": -0.184119,
+    "top": 1.90288,
+    "lookFrom": "+Z",
+    "imageXIncreasesWith": "+X (model +X, the anatomical left, is on the image's right)"
+  },
+  "back": {
+    "left": 0.486967,
+    "right": -0.486967,
+    "bottom": -0.184119,
+    "top": 1.90288,
+    "lookFrom": "-Z",
+    "imageXIncreasesWith": "-X (model +X, the anatomical left, is on the image's left)"
+  }
+}

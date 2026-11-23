@@ -47,9 +47,11 @@ export async function freshDemo(page: Page, at: Date = DAY_SEVEN) {
 /** Horizontal offset of a marker dot from the figure's centre: positive means right of centre. */
 export async function dotOffset(page: Page, area: string) {
   const figure = page.locator('.body-stage').first()
-  await expect(figure).toHaveClass(/is-ready/, { timeout: 20_000 })
+  // Works for the live WebGL figure and for the print-render fallback alike.
+  const dot = figure.locator(`.body-dot[data-area="${area}"]`)
+  await expect(dot).toBeVisible({ timeout: 20_000 })
   const box = await figure.boundingBox()
-  const dotBox = await figure.locator(`.body-dot[data-area="${area}"]`).boundingBox()
+  const dotBox = await dot.boundingBox()
   if (!box || !dotBox) throw new Error('No marker on the figure')
   return dotBox.x + dotBox.width / 2 - (box.x + box.width / 2)
 }

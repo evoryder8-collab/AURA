@@ -265,3 +265,21 @@
     font-size: 16px;
   }
 }
+
+/* Check-in on phones: small labels beside the figure, never over the face */
+@media (max-width: 480px) {
+  .body-stage--picker .body-label {
+    gap: 6px;
+    padding: 3px 10px 3px 3px;
+    border-radius: 10px;
+  }
+  .body-stage--picker .body-label b {
+    min-width: 28px;
+    height: 28px;
+    font-size: 16px;
+    border-radius: 8px;
+  }
+  .body-stage--picker .body-label__text {
+    font-size: 13px;
+  }
+}

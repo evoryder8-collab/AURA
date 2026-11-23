@@ -171,12 +171,16 @@ export function BodyStage({
       markers: items.map(({ marker, point }) => ({ id: marker.area, x: point.x, y: point.y })),
       center: projected.center,
       axis: projected.axis,
-      offset: compact ? Math.min(projected.width, projected.height) * 0.3 : horizontal ? projected.height * 0.3 : projected.width * 0.31,
+      offset: compact
+        ? Math.min(projected.width, projected.height) * 0.3
+        : horizontal
+          ? projected.height * 0.3
+          : projected.width * (variant === 'picker' ? 0.35 : 0.31),
       gap: horizontal ? (compact ? 130 : variant === 'session' ? 250 : 220) : compact ? 30 : variant === 'session' ? 76 : 64,
       bounds: {
         width: projected.width,
         height: projected.height,
-        marginX: compact ? 70 : variant === 'session' ? 140 : 115,
+        marginX: compact ? 70 : variant === 'session' ? 140 : projected.width < 480 ? 66 : 115,
         marginY: compact ? 22 : variant === 'session' ? 44 : 34,
       },
     })

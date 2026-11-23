@@ -115,7 +115,7 @@ export async function createBodyRuntime(
   const renderer = new WebGLRenderer({ canvas, antialias: true, alpha: true, powerPreference: 'high-performance' })
   renderer.outputColorSpace = SRGBColorSpace
   renderer.toneMapping = ACESFilmicToneMapping
-  renderer.toneMappingExposure = 0.92
+  renderer.toneMappingExposure = 0.86
   renderer.setClearColor(0x000000, 0)
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2))
 
@@ -123,16 +123,17 @@ export async function createBodyRuntime(
   const pmrem = new PMREMGenerator(renderer)
   const environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture
   scene.environment = environment
-  scene.environmentIntensity = 0.45
+  scene.environmentIntensity = 0.34
 
   // Lights live in camera space so the figure is always lit like a calm room, whichever way it turns.
-  const key = new DirectionalLight(0xffdfb4, 2.8)
-  key.position.set(-1.7, 2.3, 1.5)
+  // A low, grazing key light brings out muscle relief; the fill stays low so forms keep their shadows.
+  const key = new DirectionalLight(0xffdfb4, 3.4)
+  key.position.set(-2.6, 1.6, 0.85)
   const rim = new DirectionalLight(0x7fe3d2, 3.2)
   rim.position.set(2.6, 0.5, -1.1)
   const rimWarm = new DirectionalLight(0xf3c27e, 1.7)
   rimWarm.position.set(-2.6, -0.9, -0.9)
-  const fill = new HemisphereLight(0xbcd8e4, 0x0a181b, 0.38)
+  const fill = new HemisphereLight(0xbcd8e4, 0x0a181b, 0.26)
   scene.add(key, rim, rimWarm, fill)
 
   const camera = new OrthographicCamera(-1, 1, 1, -1, 0.1, 20)
@@ -148,7 +149,7 @@ export async function createBodyRuntime(
 
   const model = (await loadModel()).clone(true)
   const material = new MeshPhysicalMaterial({
-    color: 0xd9cdbd,
+    color: 0xd4c6b4,
     roughness: 0.6,
     metalness: 0,
     sheen: 0.45,

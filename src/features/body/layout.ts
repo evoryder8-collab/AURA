@@ -22,7 +22,8 @@ export function layoutLabels(input: {
   readonly offset: number
   /** Minimum distance between neighbouring label centres along the axis, in px. */
   readonly gap: number
-  readonly bounds: { readonly width: number; readonly height: number; readonly margin: number }
+  /** `marginX` and `marginY` are half a label's width and height plus breathing room. */
+  readonly bounds: { readonly width: number; readonly height: number; readonly marginX: number; readonly marginY: number }
 }): PlacedLabel[] {
   const { center, axis, offset, gap, bounds } = input
   const perp: Point = { x: -axis.y, y: axis.x }
@@ -46,7 +47,14 @@ export function layoutLabels(input: {
   for (const side of [1, -1] as const) {
     const group = withSide.filter((item) => item.side === side).sort((a, b) => a.along - b.along)
     const positions = group.map((item) => item.along)
-    for (let pass = 0; pass < 24; pass += 1) {
+    // The stretch of the axis a label centre may occupy without leaving the stage.
+    const horizontal = Math.abs(axis.x) >= Math.abs(axis.y)
+    const [low, high] = horizontal
+      ? [(bounds.marginX - center.x) / axis.x, (bounds.width - bounds.marginX - center.x) / axis.x]
+      : [(bounds.marginY - center.y) / axis.y, (bounds.height - bounds.marginY - center.y) / axis.y]
+    const minAlong = Math.min(low, high)
+    const maxAlong = Math.max(low, high)
+    for (let pass = 0; pass < 32; pass += 1) {
       for (let index = 1; index < positions.length; index += 1) {
         const previous = positions[index - 1] as number
         const current = positions[index] as number
@@ -55,6 +63,9 @@ export function layoutLabels(input: {
           positions[index - 1] = previous - push
           positions[index] = current + push
         }
+      }
+      for (let index = 0; index < positions.length; index += 1) {
+        positions[index] = Math.min(maxAlong, Math.max(minAlong, positions[index] as number))
       }
     }
     group.forEach((item, index) => {
@@ -65,8 +76,8 @@ export function layoutLabels(input: {
         id: item.marker.id,
         marker: { x: item.marker.x, y: item.marker.y },
         label: {
-          x: Math.min(bounds.width - bounds.margin, Math.max(bounds.margin, x)),
-          y: Math.min(bounds.height - bounds.margin, Math.max(bounds.margin, y)),
+          x: Math.min(bounds.width - bounds.marginX, Math.max(bounds.marginX, x)),
+          y: Math.min(bounds.height - bounds.marginY, Math.max(bounds.marginY, y)),
         },
         side,
       })

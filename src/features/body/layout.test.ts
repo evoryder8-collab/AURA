@@ -3,7 +3,7 @@ import { anchorFor, anchorVisible, nearestAnchor } from './anchors'
 import { layoutLabels } from './layout'
 
 describe('body label layout', () => {
-  const bounds = { width: 800, height: 600, margin: 40 }
+  const bounds = { width: 800, height: 600, marginX: 60, marginY: 30 }
 
   it('puts labels beside the side of the body their marker is on, without overlaps', () => {
     const placed = layoutLabels({
@@ -36,6 +36,27 @@ describe('body label layout', () => {
       bounds,
     })
     expect(placed[0]?.label.y).toBeLessThan(300)
+  })
+
+  it('keeps every label on the stage when labels crowd one end of the axis', () => {
+    const placed = layoutLabels({
+      markers: [
+        { id: 'a', x: 700, y: 250 },
+        { id: 'b', x: 720, y: 255 },
+        { id: 'c', x: 740, y: 260 },
+      ],
+      center: { x: 400, y: 300 },
+      axis: { x: 1, y: 0 },
+      offset: 150,
+      gap: 200,
+      bounds,
+    })
+    for (const item of placed) {
+      expect(item.label.x).toBeGreaterThanOrEqual(60)
+      expect(item.label.x).toBeLessThanOrEqual(740)
+    }
+    const xs = placed.map((item) => item.label.x).sort((a, b) => a - b)
+    expect((xs[1] ?? 0) - (xs[0] ?? 0)).toBeGreaterThanOrEqual(199)
   })
 })
 

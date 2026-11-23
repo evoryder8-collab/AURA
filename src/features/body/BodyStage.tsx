@@ -5,6 +5,7 @@ import { anchorFor, anchorVisible, type BodyAnchor, type FigureFace } from './an
 import { layoutLabels, type PlacedLabel, type Point } from './layout'
 import type { BodyRuntime } from './runtime'
 import { painHex } from './colors'
+import { isBodyViews, projectOnRender, type BodyViews } from './fallback'
 import './body-stage.css'
 
 export type BodyMarker = {
@@ -117,6 +118,44 @@ export function BodyStage({
     })
   }, [face, rotation, markerKey, status]) // markerKey captures every marker change that affects the render
 
+  // Without WebGL (or the model), project onto the print renders of the same model instead.
+  const [fallbackImage, setFallbackImage] = useState<{ width: number; height: number; angle: number } | null>(null)
+  useEffect(() => {
+    if (status !== 'unavailable') return
+    const host = hostRef.current
+    if (!host) return
+    let views: BodyViews | null = null
+    let cancelled = false
+    const update = () => {
+      const rect = host.getBoundingClientRect()
+      if (!views || rect.width < 2 || rect.height < 2) return
+      const projection = projectOnRender({
+        views,
+        face,
+        rotation,
+        width: rect.width,
+        height: rect.height,
+        areas: markersRef.current.map((marker) => marker.area),
+      })
+      setProjected(projection)
+      setFallbackImage(projection.image)
+    }
+    fetch(`${import.meta.env.BASE_URL}body/views.json`)
+      .then((response) => (response.ok ? response.json() : null))
+      .then((value: unknown) => {
+        if (cancelled || !isBodyViews(value)) return
+        views = value
+        update()
+      })
+      .catch(() => undefined)
+    const observer = new ResizeObserver(update)
+    observer.observe(host)
+    return () => {
+      cancelled = true
+      observer.disconnect()
+    }
+  }, [status, face, rotation, markerKey]) // markerKey captures marker changes
+
   const placed = useMemo<Array<PlacedLabel & { data: BodyMarker; visible: boolean }>>(() => {
     if (!projected) return []
     const items = markers.flatMap((marker) => {
@@ -130,8 +169,13 @@ export function BodyStage({
       center: projected.center,
       axis: projected.axis,
       offset: compact ? Math.min(projected.width, projected.height) * 0.3 : horizontal ? projected.height * 0.3 : projected.width * 0.31,
-      gap: horizontal ? (compact ? 110 : 170) : compact ? 30 : 64,
-      bounds: { width: projected.width, height: projected.height, margin: compact ? 36 : 70 },
+      gap: horizontal ? (compact ? 130 : variant === 'session' ? 250 : 220) : compact ? 30 : variant === 'session' ? 76 : 64,
+      bounds: {
+        width: projected.width,
+        height: projected.height,
+        marginX: compact ? 70 : variant === 'session' ? 140 : 115,
+        marginY: compact ? 22 : variant === 'session' ? 44 : 34,
+      },
     })
     return layout.flatMap((item) => {
       const entry = items.find(({ marker }) => marker.area === item.id)
@@ -157,8 +201,17 @@ export function BodyStage({
     >
       <div className="body-stage__pool" aria-hidden="true" />
       <canvas ref={canvasRef} className={clsx('body-stage__canvas', onPick && 'is-pickable')} aria-hidden="true" />
-      {status === 'unavailable' ? (
-        <p className="body-stage__fallback">The 3D figure is not available on this device. Areas are listed below.</p>
+      {status === 'unavailable' && fallbackImage ? (
+        <img
+          className="body-stage__render"
+          src={`${import.meta.env.BASE_URL}body/${face}.png`}
+          alt=""
+          style={{
+            width: fallbackImage.width,
+            height: fallbackImage.height,
+            transform: `translate(-50%, -50%) rotate(${fallbackImage.angle}deg)`,
+          }}
+        />
       ) : null}
       {status === 'loading' ? <span className="body-stage__loading" aria-hidden="true" /> : null}
 

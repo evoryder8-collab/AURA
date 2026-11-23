@@ -56,12 +56,14 @@
   animation: pool-breathe 1.6s var(--ease-soft) infinite alternate;
 }
 
-.body-stage__fallback {
+.body-stage__render {
   position: absolute;
-  inset: auto 16px 16px;
-  color: var(--text-dim);
-  font-size: 14px;
-  text-align: center;
+  left: 50%;
+  top: 50%;
+  max-width: none;
+  opacity: 0.92;
+  filter: sepia(0.18) brightness(0.92);
+  pointer-events: none;
 }
 
 .body-stage__leaders {

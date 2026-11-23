@@ -1,202 +1,189 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import { createDemoState, DEMO_THERAPIST_IDS } from './fixtures'
-import type { IntakeDraft } from './model'
-import { getClientProgressAcrossTherapists, mergePersistedDemoState, useDemoStore } from './store'
+import { areaSeries, bonusSummary } from '@/domain/care'
+import { createDemoState, DEMO_CLIENT_IDS, DEMO_THERAPIST_IDS } from './fixtures'
+import { clientBonus, clientRecovery, preVisitUpdates, sessionPointsFor } from './selectors'
+import { mergePersistedDemoState, useDemoStore } from './store'
 
-const draft: IntakeDraft = {
-  step: 4,
-  preferredName: 'Noa Updated',
-  email: 'noa.updated@example.invalid',
-  phone: '+00 000 000 2222',
-  dateOfBirth: '1987-09-23',
-  healthNotes: 'Synthetic relevant detail',
-  healthFlags: ['allergy'],
-  hasRecentProcedure: true,
-  procedureRegion: 'right_shoulder',
-  procedureType: 'synthetic procedure',
-  procedureDate: '2026-06-01',
-  clearance: 'missing',
-  medications: 'Synthetic medication context',
-  restrictions: 'Recorded synthetic restriction',
-  goalWording: 'Reach a shelf with more ease',
-  goalCategory: 'Daily activity',
-  goalScore: 4,
-  bodyRegions: ['right_shoulder'],
-  painScore: 5,
-  consents: {
-    healthData: true,
-    photography: false,
-    reminders: true,
-    handoff: false,
-    aiProcessing: false,
-  },
-  guardianName: '',
-  guardianRelationship: '',
-  guardianConfirmed: false,
-  savedAt: '2026-07-13T12:00:00.000Z',
-}
+const mira = DEMO_CLIENT_IDS.mira
+const pratana = DEMO_THERAPIST_IDS.amara
+const wassana = DEMO_THERAPIST_IDS.sora
 
-describe('demo intake persistence', () => {
-  beforeEach(() => {
-    useDemoStore.setState({ ...createDemoState(), hydrated: true })
+describe('demo fixtures tell one continuous story', () => {
+  beforeEach(() => useDemoStore.setState({ ...createDemoState(), hydrated: true }))
+
+  it('gives Mira history across both therapists and 35 bonus minutes from Pratana so far', () => {
+    const state = useDemoStore.getState()
+    const therapists = new Set(
+      state.appointments.filter((item) => item.clientId === mira && item.status === 'completed').map((item) => item.therapistId),
+    )
+    expect(therapists).toEqual(new Set([pratana, wassana]))
+    expect(clientBonus(state, mira).byTherapist.find((item) => item.therapistId === pratana)?.minutes).toBe(35)
   })
 
-  it('persists a partial draft and retains the structured record on completion', () => {
-    const store = useDemoStore.getState()
-    store.saveIntakeDraft('demo-client-noa', draft)
+  it('keeps one shoulder point per visit even when a visit only confirmed an earlier report', () => {
+    const state = useDemoStore.getState()
+    const series = areaSeries(
+      state.observations.filter((item) => item.clientId === mira),
+      state.confirmations,
+      'shoulder:left',
+    )
+    const ids = series.map((point) => point.observationId)
+    expect(new Set(ids).size).toBe(ids.length)
+    expect(series.some((point) => point.confirmedAt.length === 1)).toBe(true)
+  })
 
-    let client = useDemoStore.getState().clients.find((item) => item.id === 'demo-client-noa')
-    expect(client).toMatchObject({
-      preferredName: 'Noa Updated',
-      intakeStatus: 'partial',
-      intakeDraft: { medications: 'Synthetic medication context', step: 4 },
-    })
-    expect(
-      useDemoStore.getState().appointments.find((item) => item.clientId === 'demo-client-noa'),
-    ).toMatchObject({ intakeStatus: 'partial' })
-
-    useDemoStore.getState().completeIntake('demo-client-noa', undefined, { ...draft, step: 8 })
-    client = useDemoStore.getState().clients.find((item) => item.id === 'demo-client-noa')
-    expect(client).toMatchObject({
-      intakeStatus: 'complete',
-      intakeRecord: {
-        procedureType: 'synthetic procedure',
-        restrictions: 'Recorded synthetic restriction',
-      },
-      caution: { label: 'Clearance to confirm', region: 'right_shoulder' },
-    })
+  it('feeds the deterministic engine one row per completed visit', () => {
+    const { measures } = clientRecovery(useDemoStore.getState(), mira)
+    expect(measures).toHaveLength(6)
+    expect(measures.every((row) => row.pain !== null)).toBe(true)
   })
 })
 
-describe('demo team continuity', () => {
-  beforeEach(() => {
-    useDemoStore.setState({ ...createDemoState(), hydrated: true })
-  })
+describe('acceptance: Pratana, 90-minute booking finished at 102 minutes', () => {
+  beforeEach(() => useDemoStore.setState({ ...createDemoState(), hydrated: true }))
 
-  it('seeds overlapping therapist assignments and keeps Pratana available to every client', () => {
-    const state = createDemoState()
-
-    expect(state.therapists).toHaveLength(3)
-    expect(
-      state.clients.every((client) =>
-        client.assignedTherapistIds.includes(DEMO_THERAPIST_IDS.amara),
-      ),
-    ).toBe(true)
-    expect(
-      new Set(
-        state.appointments
-          .filter((appointment) => appointment.clientId === 'demo-client-mira')
-          .map((appointment) => appointment.therapistId),
-      ).size,
-    ).toBeGreaterThan(1)
-  })
-
-  it('aggregates metrics and goals by client even when care crosses therapists', () => {
-    const state = createDemoState()
-    const before = getClientProgressAcrossTherapists(state, 'demo-client-mira')
-
-    state.appointments = state.appointments.map((appointment) =>
-      appointment.clientId === 'demo-client-mira'
-        ? { ...appointment, therapistId: DEMO_THERAPIST_IDS.elias }
-        : appointment,
-    )
-
-    expect(getClientProgressAcrossTherapists(state, 'demo-client-mira')).toEqual(before)
-    expect(before.metrics).toHaveLength(6)
-    expect(before.goals).toHaveLength(1)
-  })
-
-  it('assigns a new client to the creating therapist', () => {
-    const id = useDemoStore.getState().addClient({
-      preferredName: 'River',
-      email: 'river@example.invalid',
-      phone: '+00 000 000 0404',
-      therapistId: DEMO_THERAPIST_IDS.sora,
+  it('credits 12 extra minutes to Pratana exactly once, even when confirmation is retried', () => {
+    const store = useDemoStore.getState()
+    const appointmentId = store.addAppointment({
+      clientId: mira,
+      therapistId: pratana,
+      startsAt: '2026-11-23T09:00:00.000Z',
+      durationMinutes: 90,
+      sessionType: 'Deep restorative · 90 min',
+      status: 'confirmed',
+      intakeStatus: 'complete',
+      room: 'Garden room',
     })
-    const state = useDemoStore.getState()
+    store.completeArrival({ appointmentId, confirm: [], updates: [{ region: 'shoulder', side: 'left', pain: 6 }] })
+    store.startSession(appointmentId, '2026-11-23T09:00:00.000Z')
+    store.finishSession(appointmentId, '2026-11-23T10:42:00.000Z')
+    expect(useDemoStore.getState().appointments.find((item) => item.id === appointmentId)?.session?.summary).toEqual({
+      bookedMinutes: 90,
+      actualMinutes: 102,
+      extraMinutes: 12,
+    })
+    useDemoStore.getState().confirmBonus(appointmentId, 12)
+    useDemoStore.getState().confirmBonus(appointmentId, 12)
+    const summary = bonusSummary(useDemoStore.getState().bonusCredits, mira)
+    expect(summary.credits.filter((credit) => credit.appointmentId === appointmentId)).toHaveLength(1)
+    expect(summary.byTherapist.find((item) => item.therapistId === pratana)?.minutes).toBe(47)
+  })
 
-    expect(state.clients.find((client) => client.id === id)?.assignedTherapistIds).toEqual([
-      DEMO_THERAPIST_IDS.sora,
+  it('moves the test clock by shifting the recorded start, never past a finished session', () => {
+    const store = useDemoStore.getState()
+    store.startSession('appointment-noa-today', '2026-11-23T09:00:00.000Z')
+    store.advanceSessionClock('appointment-noa-today', 10)
+    expect(useDemoStore.getState().appointments.find((item) => item.id === 'appointment-noa-today')?.session?.startedAt).toBe(
+      '2026-11-23T08:50:00.000Z',
+    )
+  })
+})
+
+describe('acceptance: day-seven update reaches Wassana before day eight', () => {
+  beforeEach(() => useDemoStore.setState({ ...createDemoState(), hydrated: true }))
+
+  it('shows the dated update, then maps confirmed and new areas after arrival', () => {
+    const store = useDemoStore.getState()
+    const observationId = store.logObservation({
+      clientId: mira,
+      source: 'home',
+      selections: [{ region: 'shoulder', side: 'left', pain: 7 }],
+      note: 'Turning to look behind the car still hurts.',
+    })
+    const appointment = useDemoStore.getState().appointments.find((item) => item.id === 'appointment-mira-tomorrow')
+    if (!appointment) throw new Error('fixture missing')
+    expect(appointment.therapistId).toBe(wassana)
+
+    const updates = preVisitUpdates(useDemoStore.getState(), appointment, Date.now())
+    expect(updates[0]).toMatchObject({ id: observationId, note: 'Turning to look behind the car still hurts.' })
+
+    const before = sessionPointsFor(useDemoStore.getState(), appointment)
+    expect(before.find((point) => point.area === 'shoulder:left')).toMatchObject({ pain: 7, status: 'unconfirmed' })
+
+    useDemoStore.getState().completeArrival({
+      appointmentId: appointment.id,
+      confirm: [{ observationId, area: 'shoulder:left' }],
+      updates: [{ region: 'calf', side: 'right', pain: 3 }],
+    })
+    const arrived = useDemoStore.getState().appointments.find((item) => item.id === appointment.id)
+    if (!arrived) throw new Error('missing')
+    const points = sessionPointsFor(useDemoStore.getState(), arrived)
+    expect(points.map((point) => [point.area, point.pain, point.status])).toEqual([
+      ['shoulder:left', 7, 'confirmed'],
+      ['calf:right', 3, 'new'],
     ])
-    expect(
-      state.therapists
-        .find((therapist) => therapist.id === DEMO_THERAPIST_IDS.sora)
-        ?.assignedClientIds.includes(id),
-    ).toBe(true)
+
+    const series = areaSeries(useDemoStore.getState().observations, useDemoStore.getState().confirmations, 'shoulder:left')
+    expect(series.filter((point) => point.pain === 7)).toHaveLength(1)
   })
 
-  it('backfills team assignments and a required therapist when hydrating legacy state', () => {
-    const fixture = createDemoState()
-    const legacyClients = fixture.clients.map(
-      ({ assignedTherapistIds: _assigned, ...client }) => client,
-    )
-    const legacyAppointments = fixture.appointments.map(
-      ({ therapistId: _therapist, ...item }) => item,
-    )
-    const merged = mergePersistedDemoState(
-      { clients: legacyClients, appointments: legacyAppointments },
-      useDemoStore.getState(),
-    )
+  it('re-running arrival replaces the visit record instead of adding to it', () => {
+    const store = useDemoStore.getState()
+    const update = { region: 'calf' as const, side: 'right' as const, pain: 3 }
+    store.completeArrival({ appointmentId: 'appointment-mira-tomorrow', confirm: [], updates: [update] })
+    store.completeArrival({ appointmentId: 'appointment-mira-tomorrow', confirm: [], updates: [{ ...update, pain: 4 }] })
+    const arrivals = useDemoStore
+      .getState()
+      .observations.filter((item) => item.appointmentId === 'appointment-mira-tomorrow' && item.source === 'arrival')
+    expect(arrivals).toHaveLength(1)
+    expect(arrivals[0]?.entries[0]?.pain).toBe(4)
+  })
+})
 
-    expect(merged.therapists).toHaveLength(3)
-    expect(merged.clients.every((client) => client.assignedTherapistIds.length > 0)).toBe(true)
-    expect(merged.appointments.every((appointment) => appointment.therapistId.length > 0)).toBe(
-      true,
-    )
+describe('notes and reports', () => {
+  beforeEach(() => useDemoStore.setState({ ...createDemoState(), hydrated: true }))
+
+  it('requires fresh consent after any edit and records exactly what was agreed', () => {
+    const store = useDemoStore.getState()
+    const id = store.saveReport({
+      clientId: mira,
+      preparedBy: wassana,
+      recipient: 'Family doctor',
+      purpose: 'Discuss persistent left shoulder pain',
+      dateFrom: '2026-10-01T00:00:00.000Z',
+      dateTo: '2026-11-30T00:00:00.000Z',
+      areas: ['shoulder:left'],
+      sections: ['bodyMap', 'painTrend'],
+      view: 'auto',
+      noteText: 'For the doctor',
+      recommendation: 'I recommend discussing the persistent left shoulder pain with your doctor.',
+      includePhotos: false,
+    })
+    useDemoStore.getState().consentToReport(id, mira)
+    expect(useDemoStore.getState().reports[0]?.status).toBe('draft')
+    useDemoStore.getState().requestReportConsent(id)
+    useDemoStore.getState().consentToReport(id, 'demo-client-noa')
+    expect(useDemoStore.getState().reports[0]?.status).toBe('awaiting_consent')
+    useDemoStore.getState().consentToReport(id, mira)
+    expect(useDemoStore.getState().reports[0]).toMatchObject({
+      status: 'consented',
+      consent: { recipient: 'Family doctor', includesPhotos: false },
+    })
   })
 
-  it('adds newly configured demo portraits to an already persisted therapist roster', () => {
-    const fixture = createDemoState()
-    const therapistsWithoutPortraits = fixture.therapists.map(
-      ({ portraitUrl: _portrait, portraitScale: _scale, ...therapist }) =>
-        therapist.id === DEMO_THERAPIST_IDS.amara
-          ? {
-              ...therapist,
-              preferredName: 'Amara',
-              displayName: 'Amara Vale — fictional demo',
-              dateOfBirth: '1988-02-10',
-            }
-          : therapist.id === DEMO_THERAPIST_IDS.sora
-            ? {
-                ...therapist,
-                preferredName: 'Sora',
-                displayName: 'Sora Bell — fictional demo',
-                dateOfBirth: '1984-05-18',
-              }
-            : therapist,
-    )
-    const merged = mergePersistedDemoState(
-      { therapists: therapistsWithoutPortraits },
-      useDemoStore.getState(),
-    )
+  it('keeps private and report notes apart', () => {
+    const notes = useDemoStore.getState().notes.filter((note) => note.clientId === mira)
+    expect(notes.filter((note) => note.visibility === 'private')).toHaveLength(2)
+    expect(notes.filter((note) => note.visibility === 'report')).toHaveLength(1)
+  })
+})
 
-    expect(
-      merged.therapists.find((therapist) => therapist.id === DEMO_THERAPIST_IDS.amara)?.portraitUrl,
-    ).toContain('pratana-halstrick-demo.png')
-    expect(
-      merged.therapists.find((therapist) => therapist.id === DEMO_THERAPIST_IDS.amara)
-        ?.portraitScale,
-    ).toBe(2.15)
-    expect(
-      merged.therapists.find((therapist) => therapist.id === DEMO_THERAPIST_IDS.amara),
-    ).toMatchObject({
-      preferredName: 'Pratana',
-      displayName: 'Pratana Halstrick — fictional demo',
-      dateOfBirth: '1991-01-15',
+describe('persistence', () => {
+  it('ignores state from an older build instead of mixing shapes', () => {
+    const current = { ...useDemoStore.getState(), ...createDemoState() }
+    expect(mergePersistedDemoState({ clients: [] }, current)).toBe(current)
+  })
+
+  it('restores saved records and refreshes portraits from the current build', () => {
+    const current = { ...useDemoStore.getState(), ...createDemoState() }
+    const saved = createDemoState()
+    saved.therapists = saved.therapists.map((therapist) => {
+      const { portrait: _removed, ...rest } = therapist
+      return rest
     })
-    expect(
-      merged.therapists.find((therapist) => therapist.id === DEMO_THERAPIST_IDS.sora)?.portraitUrl,
-    ).toContain('wassana-schlaepfer-demo.png')
-    expect(
-      merged.therapists.find((therapist) => therapist.id === DEMO_THERAPIST_IDS.sora)
-        ?.portraitScale,
-    ).toBe(1.5)
-    expect(
-      merged.therapists.find((therapist) => therapist.id === DEMO_THERAPIST_IDS.sora),
-    ).toMatchObject({
-      preferredName: 'Wassana',
-      displayName: 'Wassana Schlaepfer — fictional demo',
-      dateOfBirth: '1971-01-15',
-    })
+    saved.notes = []
+    const merged = mergePersistedDemoState({ ...saved, version: 2 }, current)
+    expect(merged.notes).toEqual([])
+    expect(merged.therapists[0]?.portrait?.avatar).toBe('portraits/pratana-avatar.webp')
   })
 })

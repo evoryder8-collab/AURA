@@ -1,8 +1,12 @@
-import { lazy, Suspense } from 'react'
-import { HashRouter, Route, Routes } from 'react-router-dom'
-import { PortalLayout } from '@/app/layouts/PortalLayout'
+import { lazy, Suspense, type ComponentType } from 'react'
+import { HashRouter, Navigate, Route, Routes } from 'react-router-dom'
+import { AppShell } from '@/app/layouts/AppShell'
 import { RootLayout } from '@/app/layouts/RootLayout'
 import { Spinner } from '@/components/design-system/Spinner'
+import { env } from '@/config/env'
+import { EntrancePage } from '@/features/entrance/EntrancePage'
+import { LoginPage } from '@/features/auth/LoginPage'
+import { ProtectedRoute } from '@/features/auth/ProtectedRoute'
 import {
   AuthCallbackPage,
   NotFoundPage,
@@ -10,61 +14,43 @@ import {
   PrivacyPlaceholderPage,
   PublicHandoffPage,
 } from './PublicPages'
-import { EntrancePage } from '@/features/entrance/EntrancePage'
-import { LoginPage } from '@/features/auth/LoginPage'
-import { ProtectedRoute } from '@/features/auth/ProtectedRoute'
 
-const CalendarPage = lazy(() =>
-  import('@/features/appointments/CalendarPage').then((module) => ({
-    default: module.CalendarPage,
-  })),
-)
-const ClientAppointmentsPage = lazy(() =>
-  import('@/features/appointments/ClientAppointmentsPage').then((module) => ({
-    default: module.ClientAppointmentsPage,
-  })),
-)
-const ClientHistoryPage = lazy(() =>
-  import('@/features/appointments/ClientHistoryPage').then((module) => ({
-    default: module.ClientHistoryPage,
-  })),
-)
-const ClientDashboardPage = lazy(() =>
-  import('@/features/clients/ClientDashboardPage').then((module) => ({
-    default: module.ClientDashboardPage,
-  })),
-)
-const ClientsPage = lazy(() =>
-  import('@/features/clients/ClientsPage').then((module) => ({ default: module.ClientsPage })),
-)
-const ConsentsPage = lazy(() =>
-  import('@/features/consent/ConsentsPage').then((module) => ({ default: module.ConsentsPage })),
-)
-const CheckInPage = lazy(() =>
-  import('@/features/follow-up/CheckInPage').then((module) => ({ default: module.CheckInPage })),
-)
-const ClientProgressPage = lazy(() =>
-  import('@/features/progress/ClientProgressPage').then((module) => ({
-    default: module.ClientProgressPage,
-  })),
-)
-const SessionPage = lazy(() =>
-  import('@/features/session/SessionPage').then((module) => ({ default: module.SessionPage })),
+function page<T extends Record<string, ComponentType>>(load: () => Promise<T>, name: keyof T) {
+  return lazy(() => load().then((module) => ({ default: module[name] as ComponentType })))
+}
+
+const ClientHomePage = page(() => import('@/features/client-home/ClientHomePage'), 'ClientHomePage')
+const LogHowIFeelPage = page(() => import('@/features/check-in/LogHowIFeelPage'), 'LogHowIFeelPage')
+const ProgressPage = page(() => import('@/features/progress/ProgressPage'), 'ProgressPage')
+const VisitsPage = page(() => import('@/features/visits/VisitsPage'), 'VisitsPage')
+const BookVisitPage = page(() => import('@/features/visits/BookVisitPage'), 'BookVisitPage')
+const ArrivalPage = page(() => import('@/features/arrival/ArrivalPage'), 'ArrivalPage')
+const FollowUpPage = page(() => import('@/features/follow-up/FollowUpPage'), 'FollowUpPage')
+const MePage = page(() => import('@/features/me/MePage'), 'MePage')
+const ClientReportPage = page(() => import('@/features/reports/ClientReportPage'), 'ClientReportPage')
+const TodayPage = page(() => import('@/features/therapist-home/TodayPage'), 'TodayPage')
+const ClientsPage = page(() => import('@/features/clients/ClientsPage'), 'ClientsPage')
+const ClientProfilePage = page(() => import('@/features/clients/ClientProfilePage'), 'ClientProfilePage')
+const ReportBuilderPage = page(() => import('@/features/reports/ReportBuilderPage'), 'ReportBuilderPage')
+const SessionModePage = page(() => import('@/features/session/SessionModePage'), 'SessionModePage')
+const FinishSessionPage = page(() => import('@/features/session/FinishSessionPage'), 'FinishSessionPage')
+const CalendarPage = page(() => import('@/features/calendar/CalendarPage'), 'CalendarPage')
+const ConnectedTodayPage = page(() => import('@/features/today/ConnectedTodayPage'), 'ConnectedTodayPage')
+const ConnectedClientsPage = page(() => import('@/features/clients/ConnectedClientsPage'), 'ConnectedClientsPage')
+const ConnectedClientAppointmentsPage = page(
+  () => import('@/features/appointments/ConnectedClientAppointmentsPage'),
+  'ConnectedClientAppointmentsPage',
 )
 const SettingsPage = lazy(() =>
   import('@/features/settings/SettingsPages').then((module) => ({ default: module.SettingsPage })),
 )
-const ClientHomePage = lazy(() =>
-  import('@/features/today/ClientHomePage').then((module) => ({ default: module.ClientHomePage })),
-)
-const TodayPage = lazy(() =>
-  import('@/features/today/TodayPage').then((module) => ({ default: module.TodayPage })),
-)
+
+const demo = env.demoMode
 
 export function AppRouter() {
   return (
     <HashRouter>
-      <Suspense fallback={<Spinner label="Preparing your private view" fullPage />}>
+      <Suspense fallback={<Spinner label="Opening AURA" fullPage />}>
         <Routes>
           <Route element={<RootLayout />}>
             <Route index element={<EntrancePage />} />
@@ -75,24 +61,53 @@ export function AppRouter() {
             <Route path="privacy-placeholder" element={<PrivacyPlaceholderPage />} />
 
             <Route element={<ProtectedRoute role="therapist" />}>
-              <Route element={<PortalLayout role="therapist" />}>
-                <Route path="therapist/today" element={<TodayPage />} />
-                <Route path="therapist/clients" element={<ClientsPage />} />
-                <Route path="therapist/clients/:clientId" element={<ClientDashboardPage />} />
-                <Route path="therapist/session/:appointmentId" element={<SessionPage />} />
-                <Route path="therapist/calendar" element={<CalendarPage />} />
+              {demo ? (
+                <>
+                  <Route path="therapist/session/:appointmentId" element={<SessionModePage />} />
+                  <Route path="therapist/arrival/:appointmentId" element={<ArrivalPage />} />
+                </>
+              ) : null}
+              <Route element={<AppShell role="therapist" />}>
+                <Route path="therapist/today" element={demo ? <TodayPage /> : <ConnectedTodayPage />} />
+                <Route path="therapist/clients" element={demo ? <ClientsPage /> : <ConnectedClientsPage />} />
+                {demo ? (
+                  <>
+                    <Route path="therapist/clients/:clientId" element={<ClientProfilePage />} />
+                    <Route path="therapist/clients/:clientId/report" element={<ReportBuilderPage />} />
+                    <Route path="therapist/clients/:clientId/report/:reportId" element={<ReportBuilderPage />} />
+                    <Route path="therapist/session/:appointmentId/finish" element={<FinishSessionPage />} />
+                    <Route path="therapist/calendar" element={<CalendarPage />} />
+                  </>
+                ) : null}
                 <Route path="therapist/settings" element={<SettingsPage role="therapist" />} />
               </Route>
             </Route>
 
             <Route element={<ProtectedRoute role="client" />}>
-              <Route element={<PortalLayout role="client" />}>
-                <Route path="client/home" element={<ClientHomePage />} />
-                <Route path="client/check-in/:appointmentId" element={<CheckInPage />} />
-                <Route path="client/progress" element={<ClientProgressPage />} />
-                <Route path="client/history" element={<ClientHistoryPage />} />
-                <Route path="client/appointments" element={<ClientAppointmentsPage />} />
-                <Route path="client/consents" element={<ConsentsPage />} />
+              {demo ? (
+                <>
+                  <Route path="client/log" element={<LogHowIFeelPage />} />
+                  <Route path="client/arrival/:appointmentId" element={<ArrivalPage />} />
+                  <Route path="client/follow-up/:appointmentId" element={<FollowUpPage />} />
+                </>
+              ) : null}
+              <Route element={<AppShell role="client" />}>
+                {demo ? (
+                  <>
+                    <Route path="client/home" element={<ClientHomePage />} />
+                    <Route path="client/progress" element={<ProgressPage />} />
+                    <Route path="client/visits" element={<VisitsPage />} />
+                    <Route path="client/visits/book" element={<BookVisitPage />} />
+                    <Route path="client/me" element={<MePage />} />
+                    <Route path="client/reports/:reportId" element={<ClientReportPage />} />
+                  </>
+                ) : (
+                  <>
+                    <Route path="client/visits" element={<ConnectedClientAppointmentsPage />} />
+                    <Route path="client/home" element={<Navigate to="/client/visits" replace />} />
+                  </>
+                )}
+                <Route path="client/appointments" element={<Navigate to="/client/visits" replace />} />
                 <Route path="client/settings" element={<SettingsPage role="client" />} />
               </Route>
             </Route>

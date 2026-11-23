@@ -1,5 +1,5 @@
 import { format, formatDistanceToNowStrict } from 'date-fns'
-import type { PatternType } from '@/data/demo/model'
+import type { PatternType } from '@/domain/engine'
 
 export const patternLabel: Record<PatternType, string> = {
   building_baseline: 'Building baseline',

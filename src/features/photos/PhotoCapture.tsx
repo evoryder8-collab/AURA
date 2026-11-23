@@ -157,7 +157,7 @@ export function PhotoCapture({
 
   const saveCapture = () => {
     if (!preview) return
-    addPhoto(client.id, view, phase)
+    addPhoto({ clientId: client.id, view, dataUrl: preview })
     replacePreview(null)
     stopCamera()
     onOpenChange(false)

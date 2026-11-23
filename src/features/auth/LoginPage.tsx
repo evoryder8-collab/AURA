@@ -57,16 +57,15 @@ export function LoginPage() {
               name: therapist.displayName.replace(' — fictional demo', ''),
               dateOfBirth: therapist.dateOfBirth,
               subtitle: therapist.professionalTitle,
-              ...(therapist.portraitUrl ? { portraitUrl: therapist.portraitUrl } : {}),
-              ...(therapist.portraitScale ? { portraitScale: therapist.portraitScale } : {}),
+              ...(therapist.portrait
+                ? { portraitUrl: `${import.meta.env.BASE_URL}${therapist.portrait.hero}` }
+                : {}),
             }))
           : clients.map((client) => ({
               id: client.id,
-              name: client.preferredName,
               dateOfBirth: client.dateOfBirth,
-              subtitle: client.phase,
-              ...(client.portraitUrl ? { portraitUrl: client.portraitUrl } : {}),
-              ...(client.portraitScale ? { portraitScale: client.portraitScale } : {}),
+              name: client.displayName,
+              subtitle: 'Personal care space',
             }))
         : [],
     [clients, role, therapists],

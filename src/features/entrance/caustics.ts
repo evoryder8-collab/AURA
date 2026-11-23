@@ -6,6 +6,7 @@
  * The canvas only draws light (premultiplied alpha); the dusk colours underneath are CSS,
  * so a lost context simply leaves the still composition showing.
  */
+import { isSoftwareRenderer } from '@/lib/webgl/renderer'
 
 export type CausticVariant = 'wall' | 'pool'
 
@@ -128,6 +129,11 @@ export function createCausticRenderer(
     return null
   }
   if (!gl) return null
+  // Without a GPU the shader would stall the page; the still scene is the better entrance.
+  if (isSoftwareRenderer(gl)) {
+    gl.getExtension('WEBGL_lose_context')?.loseContext()
+    return null
+  }
 
   const vertex = compile(gl, gl.VERTEX_SHADER, vertexSource)
   const fragment = compile(gl, gl.FRAGMENT_SHADER, fragmentSource(variant))

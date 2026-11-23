@@ -25,6 +25,7 @@ import {
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js'
 import { anatomicalLeftScreenDirection, type AreaKey, type TableRotation } from '@/domain/care'
+import { isSoftwareRenderer } from '@/lib/webgl/renderer'
 import { BODY_ANCHORS, anchorFor, anchorVisible, nearestAnchor, type BodyAnchor, type FigureFace } from './anchors'
 import type { ProjectedMarker } from './BodyStage'
 import type { Point } from './layout'
@@ -113,6 +114,12 @@ export async function createBodyRuntime(
   },
 ): Promise<BodyRuntime> {
   const renderer = new WebGLRenderer({ canvas, antialias: true, alpha: true, powerPreference: 'high-performance' })
+  if (isSoftwareRenderer(renderer.getContext())) {
+    // No usable GPU: the print renders of the same model are shown instead (see BodyStage).
+    renderer.dispose()
+    renderer.forceContextLoss()
+    throw new Error('Software WebGL renderer')
+  }
   renderer.outputColorSpace = SRGBColorSpace
   renderer.toneMapping = ACESFilmicToneMapping
   renderer.toneMappingExposure = 0.86

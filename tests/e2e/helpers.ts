@@ -37,6 +37,7 @@ export async function freshDemo(page: Page, at: Date = DAY_SEVEN) {
   await page.evaluate(
     () =>
       new Promise<void>((resolve) => {
+        localStorage.removeItem('aura-demo-state-v2:mirror')
         const request = indexedDB.deleteDatabase('aura-synthetic-demo')
         request.onsuccess = request.onerror = request.onblocked = () => resolve()
       }),

@@ -15,6 +15,7 @@ import {
   type SessionResponse,
 } from '@/domain/care'
 import { createDemoState, DEMO_THERAPIST_IDS } from './fixtures'
+import { mirrorStorage, newerRecord } from './mirror'
 import type { ConsentState, DemoAppointment, DemoState } from './model'
 
 const DB_NAME = 'aura-synthetic-demo'
@@ -36,10 +37,12 @@ const memory = new Map<string, string>()
 const indexedDbStorage: StateStorage = {
   async getItem(name) {
     const db = dbPromise ? await dbPromise : null
-    if (!db) return memory.get(name) ?? null
-    return ((await db.get(STORE_NAME, name)) as string | undefined) ?? null
+    const indexed = db ? (((await db.get(STORE_NAME, name)) as string | undefined) ?? null) : (memory.get(name) ?? null)
+    return newerRecord(indexed, mirrorStorage.read(name))
   },
   async setItem(name, value) {
+    // Synchronous first, so a page closed right after an action keeps it.
+    mirrorStorage.write(name, value)
     const db = dbPromise ? await dbPromise : null
     if (!db) {
       memory.set(name, value)
@@ -48,6 +51,7 @@ const indexedDbStorage: StateStorage = {
     await db.put(STORE_NAME, value, name)
   },
   async removeItem(name) {
+    mirrorStorage.remove(name)
     const db = dbPromise ? await dbPromise : null
     if (!db) {
       memory.delete(name)
@@ -113,7 +117,7 @@ type DemoActions = {
 
 export type DemoStore = DemoState & DemoActions
 
-type Persisted = Partial<DemoState> & { version?: number }
+type Persisted = Partial<DemoState> & { version?: number; savedAt?: number }
 
 export function mergePersistedDemoState(persisted: unknown, current: DemoStore): DemoStore {
   const state = (persisted ?? {}) as Persisted
@@ -525,6 +529,7 @@ export const useDemoStore = create<DemoStore>()(
       storage: createJSONStorage(() => indexedDbStorage),
       partialize: (state): Persisted => ({
         version: STATE_VERSION,
+        savedAt: Date.now(),
         therapists: state.therapists,
         clients: state.clients,
         appointments: state.appointments,

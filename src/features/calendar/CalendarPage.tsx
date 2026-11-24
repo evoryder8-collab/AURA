@@ -1,5 +1,5 @@
 import { Check, CheckCheck, ChevronLeft, ChevronRight, CirclePlay, Clock3, Plus, UserCheck, type LucideIcon } from 'lucide-react'
-import { useEffect, useState, useSyncExternalStore, type CSSProperties } from 'react'
+import { useState, useSyncExternalStore, type CSSProperties } from 'react'
 import { Link } from 'react-router-dom'
 import { Badge } from '@/components/design-system/Badge'
 import { Button } from '@/components/design-system/Button'
@@ -12,6 +12,7 @@ import { appointmentsForTherapist, getDemoTherapist } from '@/data/demo/team'
 import { useAuth } from '@/features/auth/auth-context'
 import { addDays, formatDayKey, holdsTime, serviceName, startOfWeek, weekdayOf, zonedParts } from '@/features/visits/slots'
 import { fmtDay, fmtTime, PRACTICE_TIME_ZONE } from '@/lib/formatting/time'
+import { useNow } from '@/lib/useNow'
 import { NewAppointmentSheet } from './NewAppointmentSheet'
 import './calendar.css'
 
@@ -52,16 +53,11 @@ export function CalendarPage() {
   const clients = useDemoStore((state) => state.clients)
   const appointments = useDemoStore((state) => state.appointments)
   const wide = useWide()
-  const [now, setNow] = useState(Date.now)
+  const now = useNow()
   const [weekStart, setWeekStart] = useState(() => startOfWeek(zonedParts(Date.now(), tz).dayKey))
   const [openId, setOpenId] = useState<string | null>(null)
   const [creating, setCreating] = useState(false)
   const [message, setMessage] = useState('')
-
-  useEffect(() => {
-    const timer = window.setInterval(() => setNow(Date.now()), 60_000)
-    return () => window.clearInterval(timer)
-  }, [])
 
   if (!hydrated) return <Spinner label="Opening your calendar" fullPage />
   const therapist = getDemoTherapist({ therapists }, demoTherapistId)

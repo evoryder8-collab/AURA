@@ -1,8 +1,22 @@
 import { buildReportContent, type DoctorReport } from '@/domain/care'
+import { hasActiveConsent } from '@/domain/rules'
 import type { DemoState } from '@/data/demo/model'
-import type { ReportInputs } from './model'
+import { demoConsentRecords } from '@/lib/security/demoConsent'
+import type { ReportInputs, ReportPhoto } from './model'
 
 const time = (iso: string) => new Date(iso).getTime()
+
+/**
+ * A client's photographs in a period, only while their photography consent is on: the same
+ * consent `view_photo` requires on the progress photos.
+ */
+export function photosInPeriod(state: DemoState, clientId: string, from: string, to: string): ReportPhoto[] {
+  const client = state.clients.find((item) => item.id === clientId)
+  if (!client || !hasActiveConsent(demoConsentRecords(client), clientId, 'photography')) return []
+  return state.photos
+    .filter((photo) => photo.clientId === clientId && time(photo.capturedAt) >= time(from) && time(photo.capturedAt) <= time(to))
+    .map((photo) => ({ id: photo.id, capturedAt: photo.capturedAt, view: photo.view, src: photo.dataUrl }))
+}
 
 /**
  * Collects one client's records for a report. Note bodies never pass through here: the report
@@ -50,10 +64,6 @@ export function reportInputs(state: DemoState, report: DoctorReport): ReportInpu
           },
         }
       : {}),
-    photos: report.includePhotos
-      ? mine(state.photos)
-          .filter((photo) => time(photo.capturedAt) >= time(report.dateFrom) && time(photo.capturedAt) <= time(report.dateTo))
-          .map((photo) => ({ id: photo.id, capturedAt: photo.capturedAt, view: photo.view, src: photo.dataUrl }))
-      : [],
+    photos: report.includePhotos ? photosInPeriod(state, clientId, report.dateFrom, report.dateTo) : [],
   }
 }

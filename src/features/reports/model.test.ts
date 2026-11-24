@@ -72,6 +72,7 @@ describe('report view', () => {
 
   it('keeps photographs out unless the report includes them', () => {
     const { state, report } = miraReport()
+    state.clients = state.clients.map((client) => (client.id === DEMO_CLIENT_IDS.mira ? { ...client, consents: { ...client.consents, photography: true } } : client))
     state.photos.push({ id: 'p1', clientId: DEMO_CLIENT_IDS.mira, view: 'back', capturedAt: '2026-11-20T10:00:00.000Z', dataUrl: 'data:image/jpeg;base64,AA' })
     expect(buildReportView(reportInputs(state, report)).photos).toBeNull()
     const included = buildReportView(reportInputs(state, { ...report, includePhotos: true, sections: [...report.sections, 'photos'] }))

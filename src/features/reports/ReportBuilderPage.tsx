@@ -1,10 +1,11 @@
 import * as Dialog from '@radix-ui/react-dialog'
-import { AlertTriangle, ChevronLeft, Send, Users, X } from 'lucide-react'
+import { AlertTriangle, ChevronLeft, Lock, Send, Users, X } from 'lucide-react'
 import { useId, useMemo, useRef, useState } from 'react'
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { Button } from '@/components/design-system/Button'
 import { Spinner } from '@/components/design-system/Spinner'
 import { Field, Input, Textarea } from '@/components/design-system/FormField'
+import { Modal } from '@/components/design-system/Modal'
 import { Segmented } from '@/components/ui/Segmented'
 import type { DemoClient } from '@/data/demo/model'
 import { useDemoStore, type ReportDraft } from '@/data/demo/store'
@@ -24,7 +25,9 @@ import {
   type TherapistNote,
 } from '@/domain/care'
 import { useAuth } from '@/features/auth/auth-context'
-import { reportInputs } from './inputs'
+import { ConfirmItsYou } from '@/features/consent/ConfirmItsYou'
+import { useConsentGuard } from '@/features/consent/freshAuth'
+import { photosInPeriod, reportInputs } from './inputs'
 import {
   SECTION_LABEL,
   buildReportView,
@@ -137,6 +140,8 @@ function Builder({ client, therapistId, saved }: { client: DemoClient; therapist
   const id = useId()
   const errorsRef = useRef<HTMLDivElement>(null)
   const [now] = useState(() => new Date())
+  const [confirming, setConfirming] = useState(false)
+  const photoAccess = useConsentGuard(client)('view_photo')
   const clientId = client.id
 
   const observations = useMemo(() => state.observations.filter((item) => item.clientId === clientId), [state.observations, clientId])
@@ -216,9 +221,9 @@ function Builder({ client, therapistId, saved }: { client: DemoClient; therapist
   }
   const rangeInvalid = draft.preset === 'custom' && (!draft.fromDay || !draft.toDay || draft.fromDay > draft.toDay)
 
-  const photosInRange = state.photos.filter(
-    (photo) => photo.clientId === clientId && time(photo.capturedAt) >= time(draft.dateFrom) && time(photo.capturedAt) <= time(draft.dateTo),
-  ).length
+  const photosInRange = photosInPeriod(state, clientId, draft.dateFrom, draft.dateTo).length
+  const photographyOff = photoAccess.reason === 'consent_missing_or_inactive'
+  const mustConfirm = photoAccess.reason === 'fresh_authentication_required' && photosInRange > 0
 
   const reportDraft: ReportDraft = {
     clientId,
@@ -413,19 +418,30 @@ function Builder({ client, therapistId, saved }: { client: DemoClient; therapist
               <input
                 type="checkbox"
                 checked={draft.includePhotos}
-                disabled={!photosInRange && !draft.includePhotos}
+                disabled={(!photosInRange || !photoAccess.allowed) && !draft.includePhotos}
                 onChange={(event) => set('includePhotos', event.target.checked)}
                 aria-describedby={`${id}-photos`}
               />
               <span>
                 <strong>Include photographs</strong>
                 <span className="muted small" id={`${id}-photos`}>
-                  {photosInRange
-                    ? `Off unless you include them. ${photosInRange} in this period.`
-                    : 'No photographs were taken in this period.'}
+                  {photographyOff
+                    ? `${client.preferredName} has photography turned off, so no photographs can be included.`
+                    : !photosInRange
+                      ? 'No photographs were taken in this period.'
+                      : mustConfirm
+                        ? `${photosInRange} in this period. Confirm it’s you to see and include them.`
+                        : `Off unless you include them. ${photosInRange} in this period.`}
                 </span>
               </span>
             </label>
+            {mustConfirm ? (
+              <div>
+                <Button variant="secondary" icon={<Lock size={16} aria-hidden="true" />} onClick={() => setConfirming(true)}>
+                  Confirm it’s you
+                </Button>
+              </div>
+            ) : null}
             {draft.includePhotos ? (
               <p className="report-warning" role="alert">
                 <AlertTriangle size={18} aria-hidden="true" /> {client.preferredName} must agree to share photographs specifically. The report asks about them separately.
@@ -515,9 +531,14 @@ function Builder({ client, therapistId, saved }: { client: DemoClient; therapist
             </h2>
             <p className="muted small">What {client.preferredName} and {draft.recipient.trim() ? recipientInSentence(draft.recipient, 'the') : 'the doctor'} will read.</p>
           </div>
-          <ReportPreview view={preview} body={body} label="Live preview of the report" />
+          {/* Photographs appear only to someone the progress photos would show them to. */}
+          <ReportPreview view={photoAccess.allowed ? preview : { ...preview, photos: null }} body={body} label="Live preview of the report" />
         </section>
       </div>
+
+      <Modal open={confirming} onOpenChange={setConfirming} title="Progress photos">
+        <ConfirmItsYou reason="Progress photos are private health records." onConfirmed={() => setConfirming(false)} />
+      </Modal>
 
       <Dialog.Root open={together && saved !== undefined} onOpenChange={closeTogether}>
         <Dialog.Portal>

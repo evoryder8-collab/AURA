@@ -5,6 +5,7 @@ import { createDemoState, DEMO_CLIENT_IDS, DEMO_THERAPIST_IDS } from '@/data/dem
 import { useDemoStore } from '@/data/demo/store'
 import { reportIsExportable } from '@/domain/care'
 import { AuthContext, type AuthState } from '@/features/auth/auth-context'
+import { useFreshAuthStore } from '@/features/consent/freshAuth'
 import { ClientReportPage } from './ClientReportPage'
 import { ClientReportsList } from './ClientReportsList'
 import { ReportBuilderPage } from './ReportBuilderPage'
@@ -70,6 +71,7 @@ function awaitingReport(includePhotos = false) {
 
 beforeEach(() => {
   useDemoStore.setState({ ...createDemoState(), hydrated: true })
+  useFreshAuthStore.setState({ confirmedAt: {} })
   vi.stubGlobal('fetch', vi.fn(async () => new Response(null, { status: 404 })))
 })
 
@@ -85,15 +87,29 @@ describe('report builder', () => {
     expect(document.body.textContent).not.toContain('Prefers the room warmer')
   })
 
-  it('keeps photographs off by default and warns that they need their own agreement', async () => {
+  it('offers photographs only with photography on and a fresh confirmation, off by default, with their own agreement', async () => {
     const user = userEvent.setup()
     useDemoStore.getState().addPhoto({ clientId: MIRA, view: 'back', dataUrl: 'data:image/jpeg;base64,AA' })
+    const view = renderAt(`/therapist/clients/${MIRA}/report`, asWassana)
+    const photos = () => screen.getByRole('checkbox', { name: /include photographs/i })
+    expect(photos()).toBeDisabled()
+    expect(photos()).toHaveAccessibleDescription('Mira has photography turned off, so no photographs can be included.')
+
+    view.unmount()
+    useDemoStore.getState().updateConsent(MIRA, 'photography', true)
     renderAt(`/therapist/clients/${MIRA}/report`, asWassana)
-    const photos = screen.getByRole('checkbox', { name: /include photographs/i })
-    expect(photos).not.toBeChecked()
+    expect(photos()).toBeDisabled()
+    expect(photos()).toHaveAccessibleDescription(/1 in this period\. Confirm it’s you/)
+    await user.click(screen.getByRole('button', { name: 'Confirm it’s you' }))
+    await user.type(screen.getByRole('textbox', { name: /type demo to confirm/i }), 'DEMO')
+    await user.keyboard('{Enter}')
+
+    expect(photos()).toBeEnabled()
+    expect(photos()).not.toBeChecked()
     expect(screen.queryByText(/must agree to share photographs specifically/)).not.toBeInTheDocument()
-    await user.click(photos)
+    await user.click(photos())
     expect(screen.getByRole('alert')).toHaveTextContent(/must agree to share photographs specifically/)
+    expect(screen.getByRole('img', { name: /back view · taken/i })).toBeInTheDocument()
   })
 
   it('cannot export before the client agrees', async () => {

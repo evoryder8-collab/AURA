@@ -1,8 +1,8 @@
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { areaSeries, bonusSummary } from '@/domain/care'
 import { createDemoState, DEMO_CLIENT_IDS, DEMO_THERAPIST_IDS } from './fixtures'
 import { clientBonus, clientRecovery, preVisitUpdates, sessionPointsFor } from './selectors'
-import { mergePersistedDemoState, useDemoStore } from './store'
+import { DEMO_STORAGE_KEY, mergePersistedDemoState, useDemoStore } from './store'
 
 const mira = DEMO_CLIENT_IDS.mira
 const pratana = DEMO_THERAPIST_IDS.amara
@@ -185,5 +185,17 @@ describe('persistence', () => {
     const merged = mergePersistedDemoState({ ...saved, version: 2 }, current)
     expect(merged.notes).toEqual([])
     expect(merged.therapists[0]?.portrait?.avatar).toBe('portraits/pratana-avatar.webp')
+  })
+
+  it('takes in a record another open tab saved, without saving it back', async () => {
+    localStorage.clear()
+    vi.resetModules()
+    const { useDemoStore: otherTab } = await import('./store')
+    await vi.waitFor(() => expect(otherTab.getState().hydrated).toBe(true))
+    const setItem = vi.spyOn(Storage.prototype, 'setItem')
+    const id = useDemoStore.getState().addNote({ clientId: mira, therapistId: pratana, visibility: 'private', body: 'Prefers a warmer room.' })
+    expect(otherTab.getState().notes.some((note) => note.id === id)).toBe(true)
+    expect(setItem.mock.calls.filter(([key]) => key === `${DEMO_STORAGE_KEY}:mirror`)).toHaveLength(1)
+    setItem.mockRestore()
   })
 })

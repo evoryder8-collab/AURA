@@ -418,6 +418,7 @@ export function createDemoState(now: Date = new Date()): DemoState {
   ]
 
   return {
+    anchoredAt: iso(now),
     therapists,
     clients,
     appointments,
@@ -442,4 +443,68 @@ export function createDemoState(now: Date = new Date()): DemoState {
     reports: [],
     photos: [],
   }
+}
+
+/** The seeded collections whose records carry dates. */
+const DATED = ['clients', 'appointments', 'observations', 'confirmations', 'stiffness', 'rom', 'goals', 'goalScores', 'followUps', 'bonusCredits', 'notes'] as const
+type Linked = { id: string; appointmentId?: string; observationId?: string }
+
+/**
+ * A record saved before the anchor was kept: the earlier build always put Noa's visit an hour after
+ * the half hour the demo was made, so that time gives the anchor back. It counts only when this build
+ * regenerates the very same visit from it.
+ */
+function inferredAnchor(saved: Pick<DemoState, 'appointments'>): string | undefined {
+  const noa = saved.appointments.find((item) => item.id === 'appointment-noa-today')
+  if (!noa) return undefined
+  const candidate = new Date(Date.parse(noa.startsAt) - 60 * 60_000)
+  const regenerated = createDemoState(candidate).appointments.find((item) => item.id === noa.id)
+  return JSON.stringify(regenerated) === JSON.stringify(noa) ? iso(candidate) : undefined
+}
+
+/**
+ * Moves the untouched demo story to today. The story is generated around the day the demo was first
+ * opened; a visitor coming back by the story's next visit day (Mira's visit "tomorrow") carries on with
+ * it, but one coming back later would find every booking in the past. Then each record still identical
+ * to its version at the old anchor is replaced by its version at `now`. What the person added or changed
+ * stays as it is, and so does every seeded record tied to it through a visit or a log, so a visit never
+ * drifts away from its arrival, its notes or the log it confirmed.
+ */
+export function reanchorDemoState(saved: Omit<DemoState, 'anchoredAt'> & { anchoredAt?: string }, now: Date): DemoState {
+  const anchor = saved.anchoredAt ?? inferredAnchor(saved)
+  const day = (at: string | number) => zonedParts(at, PRACTICE_TIME_ZONE).dayKey
+  const today = day(now.getTime())
+  // A record whose anchor cannot be known is left as it is: anchored to today, none of it will match the seed again.
+  if (!anchor || day(anchor) >= today) return { ...saved, anchoredAt: anchor ?? iso(now) }
+  const before = createDemoState(new Date(anchor))
+  const nextVisitDay = before.appointments
+    .filter((item) => item.status === 'confirmed' && day(item.startsAt) > day(anchor))
+    .map((item) => day(item.startsAt))
+    .sort()[0]
+  if (nextVisitDay && today <= nextVisitDay) return { ...saved, anchoredAt: anchor }
+
+  const after = createDemoState(now)
+  const untouched = (key: (typeof DATED)[number], record: Linked) => {
+    const seeded = (before[key] as Linked[]).find((item) => item.id === record.id)
+    return seeded !== undefined && JSON.stringify(seeded) === JSON.stringify(record)
+  }
+  const movable = new Set<Linked>(DATED.flatMap((key) => (saved[key] as Linked[]).filter((record) => untouched(key, record))))
+  const staying = DATED.flatMap((key) => saved[key] as Linked[]).filter((record) => !movable.has(record))
+  const pinned = new Set(staying.flatMap((record) => [record.id, record.appointmentId, record.observationId]))
+  for (let grew = true; grew; ) {
+    grew = false
+    for (const record of movable) {
+      if (![record.id, record.appointmentId, record.observationId].some((id) => id !== undefined && pinned.has(id))) continue
+      movable.delete(record)
+      for (const id of [record.id, record.appointmentId, record.observationId]) pinned.add(id)
+      grew = true
+    }
+  }
+
+  const moved: Record<string, unknown> = { ...saved, anchoredAt: iso(now) }
+  for (const key of DATED) {
+    const fresh = new Map((after[key] as Linked[]).map((item) => [item.id, item]))
+    moved[key] = (saved[key] as Linked[]).map((record) => (movable.has(record) ? (fresh.get(record.id) ?? record) : record))
+  }
+  return moved as DemoState
 }

@@ -99,6 +99,8 @@ export type DemoPhoto = {
 }
 
 export type DemoState = {
+  /** When the seeded story was generated; its visits and logs are placed relative to this day. */
+  anchoredAt: string
   therapists: DemoTherapist[]
   clients: DemoClient[]
   appointments: DemoAppointment[]

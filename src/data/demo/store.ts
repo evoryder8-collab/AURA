@@ -14,7 +14,7 @@ import {
   type RomMeasurement,
   type SessionResponse,
 } from '@/domain/care'
-import { createDemoState, DEMO_THERAPIST_IDS } from './fixtures'
+import { createDemoState, createDemoTherapists, DEMO_THERAPIST_IDS, reanchorDemoState } from './fixtures'
 import { listedPhotos, mirrorKey, mirrorStorage, newerRecord, type MirrorState } from './mirror'
 import type { ConsentState, DemoAppointment, DemoState } from './model'
 
@@ -161,13 +161,14 @@ export function mergePersistedDemoState(persisted: unknown, current: DemoStore):
   if (state.version !== STATE_VERSION || !Array.isArray(state.clients) || !Array.isArray(state.observations)) {
     return current
   }
-  const fixture = createDemoState()
+  const identities = createDemoTherapists()
   return {
     ...current,
-    ...(state as DemoState),
+    // A record from an earlier day gets today's demo schedule, keeping what the person entered.
+    ...reanchorDemoState(state as DemoState, new Date()),
     // Identity and portraits always follow the current build; the record keeps the person's data.
-    therapists: (state.therapists ?? fixture.therapists).map((therapist) => {
-      const fresh = fixture.therapists.find((item) => item.id === therapist.id)
+    therapists: (state.therapists ?? identities).map((therapist) => {
+      const fresh = identities.find((item) => item.id === therapist.id)
       return fresh ? { ...therapist, ...fresh, assignedClientIds: therapist.assignedClientIds } : therapist
     }),
   }
@@ -580,6 +581,7 @@ export const useDemoStore = create<DemoStore>()(
       partialize: (state): Persisted => ({
         version: STATE_VERSION,
         savedAt: nextSavedAt(),
+        anchoredAt: state.anchoredAt,
         therapists: state.therapists,
         clients: state.clients,
         appointments: state.appointments,

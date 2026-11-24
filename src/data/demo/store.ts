@@ -15,7 +15,7 @@ import {
   type SessionResponse,
 } from '@/domain/care'
 import { freezeReport } from '@/features/reports/inputs'
-import { createDemoState, createDemoTherapists, DEMO_THERAPIST_IDS, reanchorDemoState } from './fixtures'
+import { createDemoState, createDemoTherapists, DEMO_THERAPIST_IDS, refreshPassedBookings } from './fixtures'
 import { listedPhotos, mirrorKey, mirrorStorage, newerRecord, type MirrorState } from './mirror'
 import type { ConsentState, DemoAppointment, DemoReport, DemoState } from './model'
 
@@ -165,8 +165,8 @@ export function mergePersistedDemoState(persisted: unknown, current: DemoStore):
   const identities = createDemoTherapists()
   return {
     ...current,
-    // A record from an earlier day gets today's demo schedule, keeping what the person entered.
-    ...reanchorDemoState(state as DemoState, new Date()),
+    // A seeded booking whose time passed untouched takes today's slot; nothing else moves.
+    ...refreshPassedBookings(state as DemoState, new Date()),
     // Identity and portraits always follow the current build; the record keeps the person's data.
     therapists: (state.therapists ?? identities).map((therapist) => {
       const fresh = identities.find((item) => item.id === therapist.id)
@@ -587,7 +587,6 @@ export const useDemoStore = create<DemoStore>()(
       partialize: (state): Persisted => ({
         version: STATE_VERSION,
         savedAt: nextSavedAt(),
-        anchoredAt: state.anchoredAt,
         therapists: state.therapists,
         clients: state.clients,
         appointments: state.appointments,

@@ -418,7 +418,6 @@ export function createDemoState(now: Date = new Date()): DemoState {
   ]
 
   return {
-    anchoredAt: iso(now),
     therapists,
     clients,
     appointments,
@@ -445,99 +444,43 @@ export function createDemoState(now: Date = new Date()): DemoState {
   }
 }
 
-/** The seeded collections whose records carry dates. */
-const DATED = ['clients', 'appointments', 'observations', 'confirmations', 'stiffness', 'rom', 'goals', 'goalScores', 'followUps', 'bonusCredits', 'notes'] as const
-type Linked = { id: string; appointmentId?: string; observationId?: string }
-
 /**
- * A record saved before the anchor was kept: the earlier build always put Noa's visit an hour after
- * the half hour the demo was made, so that time gives the anchor back. It counts only when this build
- * regenerates the very same visit from it.
+ * The story's upcoming bookings are placed around the day the demo was first opened. On load, each one
+ * whose booked time is over with nothing done for it (still confirmed, no arrival, no session, and no
+ * log, confirmation, assessment, follow-up, credit or note pointing at it) takes its slot in today's
+ * story, unless that slot breaks a booking rule against another visit for the same therapist or client.
+ * Nothing else moves: history, clients, consents and notes stay exactly as saved.
  */
-function inferredAnchor(saved: Pick<DemoState, 'appointments'>): string | undefined {
-  const noa = saved.appointments.find((item) => item.id === 'appointment-noa-today')
-  if (!noa) return undefined
-  const candidate = new Date(Date.parse(noa.startsAt) - 60 * 60_000)
-  const regenerated = createDemoState(candidate).appointments.find((item) => item.id === noa.id)
-  return JSON.stringify(regenerated) === JSON.stringify(noa) ? iso(candidate) : undefined
-}
-
-/**
- * Moves the untouched demo story to today. The story is generated around the day the demo was first
- * opened; a visitor coming back by the story's next visit day (Mira's visit "tomorrow") carries on with
- * it, but one coming back later would find every booking in the past. Then each record still identical
- * to its version at the old anchor is replaced by its version at `now`. What the person added or changed
- * stays as it is, and so does every seeded record tied to it through a visit or a log, so a visit never
- * drifts away from its arrival, its notes or the log it confirmed.
- */
-export function reanchorDemoState(saved: Omit<DemoState, 'anchoredAt'> & { anchoredAt?: string | undefined }, now: Date): DemoState {
-  const day = (at: string | number) => zonedParts(at, PRACTICE_TIME_ZONE).dayKey
-  const today = day(now.getTime())
-  const anchor = saved.anchoredAt ?? inferredAnchor(saved)
-  if (!anchor) return refreshUnanchored(saved, now, day, today)
-  if (day(anchor) >= today) return { ...saved, anchoredAt: anchor }
-  const before = createDemoState(new Date(anchor))
-  const nextVisitDay = before.appointments
-    .filter((item) => item.status === 'confirmed' && day(item.startsAt) > day(anchor))
-    .map((item) => day(item.startsAt))
-    .sort()[0]
-  if (nextVisitDay && today <= nextVisitDay) return { ...saved, anchoredAt: anchor }
-  const untouched = (key: (typeof DATED)[number], record: Linked) => {
-    const seeded = (before[key] as Linked[]).find((item) => item.id === record.id)
-    return seeded !== undefined && JSON.stringify(seeded) === JSON.stringify(record)
+export function refreshPassedBookings(saved: DemoState, now: Date): DemoState {
+  const pointedAt = new Set(
+    [saved.observations, saved.confirmations, saved.stiffness, saved.rom, saved.followUps, saved.bonusCredits, saved.notes]
+      .flat()
+      .map((record) => record.appointmentId),
+  )
+  const passedUntouched = (item: DemoAppointment) =>
+    item.status === 'confirmed' &&
+    !item.arrival &&
+    !item.session &&
+    !pointedAt.has(item.id) &&
+    Date.parse(item.startsAt) + item.durationMinutes * 60_000 <= now.getTime()
+  const today = createDemoState(now)
+  let appointments = saved.appointments
+  for (const booking of today.appointments.filter((item) => item.status === 'confirmed')) {
+    const kept = appointments.find((item) => item.id === booking.id)
+    if (!kept || !passedUntouched(kept)) continue
+    const local = zonedParts(booking.startsAt, PRACTICE_TIME_ZONE)
+    const problem = startProblem({
+      dayKey: local.dayKey,
+      minutes: local.minutes,
+      durationMinutes: booking.durationMinutes,
+      busy: appointments.filter(
+        (item) => item.id !== booking.id && (item.therapistId === booking.therapistId || item.clientId === booking.clientId),
+      ),
+      now: now.getTime(),
+      timeZone: PRACTICE_TIME_ZONE,
+      workingDays: today.therapists.find((therapist) => therapist.id === booking.therapistId)?.workingDays ?? [],
+    })
+    if (!problem) appointments = appointments.map((item) => (item.id === booking.id ? booking : item))
   }
-  return moveSeeded(saved, createDemoState(now), untouched, now)
-}
-
-/**
- * A record saved before anchors were kept, by a build that placed the story differently, so its
- * anchor cannot be recovered. It carries on as saved until its story's next visit day has passed;
- * then every seeded record is replaced by today's version, once. What the person added stays, and so
- * does every seeded record tied to it. Until then it stays unanchored, so a later day can still refresh it.
- */
-function refreshUnanchored(
-  saved: Omit<DemoState, 'anchoredAt'>,
-  now: Date,
-  day: (at: string | number) => string,
-  today: string,
-): DemoState {
-  const story = ['appointment-mira-tomorrow', 'appointment-noa-today']
-    .map((id) => saved.appointments.find((item) => item.id === id)?.startsAt)
-    .find((at) => at !== undefined)
-  if (!story || day(story) >= today) return { ...saved, anchoredAt: undefined }
-  const after = createDemoState(now)
-  const seeded = new Set(DATED.flatMap((key) => (after[key] as Linked[]).map((item) => item.id)))
-  return moveSeeded(saved, after, (_key, record) => seeded.has(record.id), now)
-}
-
-/**
- * Replaces each movable record with its version in `after`. A movable record tied to one that stays
- * (through its id, its visit or its log) stays too, so a visit never drifts from its arrival, notes or
- * the log it confirmed.
- */
-function moveSeeded(
-  saved: Omit<DemoState, 'anchoredAt'>,
-  after: DemoState,
-  isMovable: (key: (typeof DATED)[number], record: Linked) => boolean,
-  now: Date,
-): DemoState {
-  const movable = new Set<Linked>(DATED.flatMap((key) => (saved[key] as Linked[]).filter((record) => isMovable(key, record))))
-  const staying = DATED.flatMap((key) => saved[key] as Linked[]).filter((record) => !movable.has(record))
-  const pinned = new Set(staying.flatMap((record) => [record.id, record.appointmentId, record.observationId]))
-  for (let grew = true; grew; ) {
-    grew = false
-    for (const record of movable) {
-      if (![record.id, record.appointmentId, record.observationId].some((id) => id !== undefined && pinned.has(id))) continue
-      movable.delete(record)
-      for (const id of [record.id, record.appointmentId, record.observationId]) pinned.add(id)
-      grew = true
-    }
-  }
-
-  const moved: Record<string, unknown> = { ...saved, anchoredAt: iso(now) }
-  for (const key of DATED) {
-    const fresh = new Map((after[key] as Linked[]).map((item) => [item.id, item]))
-    moved[key] = (saved[key] as Linked[]).map((record) => (movable.has(record) ? (fresh.get(record.id) ?? record) : record))
-  }
-  return moved as DemoState
+  return appointments === saved.appointments ? saved : { ...saved, appointments }
 }

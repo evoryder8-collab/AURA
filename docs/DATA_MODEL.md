@@ -34,6 +34,8 @@ The published demo runs on the local store in `src/data/demo/store.ts` (IndexedD
 | `reports` | Doctor report draft; from sending onwards, the content frozen for the client (photos by id only); client consent for recipient + purpose + photos | `handoff_exports`, `handoff_export_approvals`, `consents` |
 | `photos` | Downscaled JPEG kept only in this browser | `progress_photos` in private storage |
 
+The seeded story is generated around the moment the demo first loads. On every load, each seeded upcoming booking whose booked time is over with nothing done for it (still confirmed, no arrival or session, and no observation, confirmation, assessment, follow-up, Bonus Care credit or note pointing at it) is replaced by its slot in the current day's story, unless that slot overlaps another visit that holds time for the same therapist or client. No other record moves: past visits, clients, consents, notes and reports stay exactly as saved.
+
 ## Constrained values
 
 | Type                    | Values                                                                                                                            |

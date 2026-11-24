@@ -113,8 +113,6 @@ export type ReportSnapshot = Omit<ReportInputs, 'content' | 'photos'> & {
 export type DemoReport = DoctorReport & { readonly snapshot?: ReportSnapshot }
 
 export type DemoState = {
-  /** When the seeded story was generated; its visits and logs are placed relative to this day. Unknown for records saved before it was kept. */
-  anchoredAt?: string | undefined
   therapists: DemoTherapist[]
   clients: DemoClient[]
   appointments: DemoAppointment[]

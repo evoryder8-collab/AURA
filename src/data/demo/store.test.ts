@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { areaSeries, bonusSummary } from '@/domain/care'
-import { createDemoState, DEMO_CLIENT_IDS, DEMO_THERAPIST_IDS, reanchorDemoState } from './fixtures'
+import { createDemoState, DEMO_CLIENT_IDS, DEMO_THERAPIST_IDS, refreshPassedBookings } from './fixtures'
+import type { DemoAppointment, DemoState } from './model'
 import { clientBonus, clientRecovery, preVisitUpdates, sessionPointsFor } from './selectors'
 import { DEMO_STORAGE_KEY, mergePersistedDemoState, useDemoStore } from './store'
 
@@ -187,87 +188,125 @@ describe('persistence', () => {
     expect(merged.therapists[0]?.portrait?.avatar).toBe('portraits/pratana-avatar.webp')
   })
 
-  it('moves the untouched story to today but keeps a visit the person worked on with the log it confirmed', () => {
+  describe('a seeded booking whose time passed untouched', () => {
+    // Opened on Friday 20 November at 08:00, back on Tuesday 24 November at 09:00 (practice time).
     const friday = new Date(2026, 10, 20, 8, 0)
     const tuesday = new Date(2026, 10, 24, 9, 0)
-    const saved = createDemoState(friday)
-    const noaToday = saved.appointments.find((item) => item.id === 'appointment-noa-today')!
-    saved.appointments = saved.appointments.map((item) =>
-      item.id === noaToday.id ? { ...item, arrival: { completedAt: noaToday.startsAt } } : item,
-    )
-    saved.confirmations.push({
-      id: 'confirm-by-the-person',
-      clientId: DEMO_CLIENT_IDS.noa,
-      appointmentId: noaToday.id,
-      observationId: 'obs-noa-h1',
-      area: 'lower_back:centre',
-      confirmedAt: noaToday.startsAt,
+    const local = (day: number, hour: number, minute = 0) => new Date(2026, 10, day, hour, minute).toISOString()
+    const startsOf = (state: Pick<DemoState, 'appointments'>) =>
+      Object.fromEntries(state.appointments.filter((item) => item.status === 'confirmed').map((item) => [item.id, item.startsAt]))
+    const noaToday = 'appointment-noa-today'
+    const booking = (saved: DemoState, id = noaToday) => saved.appointments.find((item) => item.id === id)!
+
+    it('takes its slot in today’s story; a booking still ahead keeps its time', () => {
+      expect(startsOf(refreshPassedBookings(createDemoState(friday), tuesday))).toEqual({
+        // Friday 09:00, passed: now from the half hour after next.
+        'appointment-noa-today': local(24, 10),
+        // Monday 10:00 (Wassana's next working day after Friday), passed: now Wednesday 10:00.
+        'appointment-mira-tomorrow': local(25, 10),
+        // Monday 15:00, passed: now three days on.
+        'appointment-sage-later': local(27, 15),
+        // Thursday and Friday, still ahead: unchanged.
+        'appointment-mira-next-week': local(26, 14),
+        'appointment-noa-next-week': local(27, 9, 30),
+      })
     })
 
-    const moved = reanchorDemoState(saved, tuesday)
-    const today = createDemoState(tuesday)
-    const startOf = (state: { appointments: Array<{ id: string; startsAt: string }> }, id: string) =>
-      state.appointments.find((item) => item.id === id)?.startsAt
-    const observedAt = (state: { observations: Array<{ id: string; observedAt: string }> }, id: string) =>
-      state.observations.find((item) => item.id === id)?.observedAt
-    expect({
-      anchoredAt: moved.anchoredAt,
-      noaToday: startOf(moved, noaToday.id),
-      confirmedLog: observedAt(moved, 'obs-noa-h1'),
-      miraTomorrow: startOf(moved, 'appointment-mira-tomorrow'),
-      noaLastVisit: startOf(moved, 'appointment-noa-v2'),
-    }).toEqual({
-      anchoredAt: tuesday.toISOString(),
-      noaToday: noaToday.startsAt,
-      confirmedLog: observedAt(saved, 'obs-noa-h1'),
-      miraTomorrow: startOf(today, 'appointment-mira-tomorrow'),
-      noaLastVisit: startOf(today, 'appointment-noa-v2'),
+    it.each([
+      ['an arrival', (saved: DemoState) => ({ ...saved, appointments: saved.appointments.map((item) => (item.id === noaToday ? { ...item, arrival: { completedAt: item.startsAt } } : item)) })],
+      ['a session', (saved: DemoState) => ({ ...saved, appointments: saved.appointments.map((item) => (item.id === noaToday ? { ...item, session: { startedAt: item.startsAt } } : item)) })],
+      ['a cancellation', (saved: DemoState) => ({ ...saved, appointments: saved.appointments.map((item) => (item.id === noaToday ? { ...item, status: 'cancelled' as const } : item)) })],
+      ['a log pointing at it', (saved: DemoState) => ({ ...saved, observations: [...saved.observations, { ...saved.observations[0]!, id: 'obs-mine', appointmentId: noaToday }] })],
+      ['a note pointing at it', (saved: DemoState) => ({ ...saved, notes: [...saved.notes, { ...saved.notes[0]!, id: 'note-mine', appointmentId: noaToday }] })],
+    ])('stays where it is once it has %s', (_touch, touch) => {
+      const saved = touch(createDemoState(friday))
+      expect(booking(refreshPassedBookings(saved, tuesday))).toEqual(booking(saved))
     })
-  })
 
-  it('lets a visitor coming back the next day carry on with the story', () => {
-    const saved = createDemoState(new Date(2026, 10, 23, 8, 30))
-    expect(reanchorDemoState(saved, new Date(2026, 10, 24, 9, 50))).toEqual(saved)
-  })
+    it('stays where it is when today’s slot would overlap another visit for the same client', () => {
+      const saved = createDemoState(friday)
+      const mine: DemoAppointment = {
+        ...booking(saved),
+        id: 'appointment-mine',
+        therapistId: wassana,
+        startsAt: local(24, 10, 30),
+        durationMinutes: 60,
+        createdAt: friday.toISOString(),
+      }
+      const clash = refreshPassedBookings({ ...saved, appointments: [...saved.appointments, mine] }, tuesday)
+      const released = refreshPassedBookings({ ...saved, appointments: [...saved.appointments, { ...mine, status: 'cancelled' }] }, tuesday)
+      expect({ clash: booking(clash).startsAt, released: booking(released).startsAt }).toEqual({
+        clash: booking(saved).startsAt,
+        released: local(24, 10),
+      })
+    })
 
-  it('finds the anchor of a record saved before anchors were kept, from Noa’s untouched visit', () => {
-    const { anchoredAt: _unknown, ...saved } = createDemoState(new Date(2026, 10, 20, 8, 0))
-    const tuesday = new Date(2026, 10, 24, 9, 0)
-    expect(reanchorDemoState(saved, tuesday).appointments).toEqual(createDemoState(tuesday).appointments)
-  })
+    it('leaves history, clients, consents, notes and cancelled visits exactly as saved after a load', () => {
+      const seeded = createDemoState(friday)
+      const saved: DemoState = {
+        ...seeded,
+        clients: seeded.clients.map((client) => (client.id === mira ? { ...client, consents: { ...client.consents, healthData: false } } : client)),
+        notes: seeded.notes.map((note, index) => (index === 0 ? { ...note, body: 'Edited by Wassana.', updatedAt: friday.toISOString() } : note)),
+        appointments: seeded.appointments.map((item) => (item.id === 'appointment-mira-next-week' ? { ...item, status: 'cancelled' } : item)),
+      }
+      const records = (state: DemoState) =>
+        JSON.stringify([
+          state.clients,
+          state.appointments.filter((item) => item.status !== 'confirmed'),
+          state.observations,
+          state.confirmations,
+          state.stiffness,
+          state.rom,
+          state.goals,
+          state.goalScores,
+          state.followUps,
+          state.bonusCredits,
+          state.notes,
+          state.reports,
+          state.photos,
+        ])
+      vi.useFakeTimers({ toFake: ['Date'] })
+      vi.setSystemTime(tuesday)
+      try {
+        const loaded = mergePersistedDemoState({ ...saved, version: 2 }, { ...useDemoStore.getState(), ...createDemoState(tuesday) })
+        expect(records(loaded)).toBe(records(saved))
+        expect(loaded.clients.find((client) => client.id === mira)?.consents.healthData).toBe(false)
+      } finally {
+        vi.useRealTimers()
+      }
+    })
 
-  it('refreshes a record from an older build whose anchor cannot be recovered, keeping what the person added', () => {
-    // An older build placed Noa's visit at another slot, so the anchor cannot be inferred from it.
-    const { anchoredAt: _unknown, ...seeded } = createDemoState(new Date(2026, 10, 16, 8, 0))
-    const saved = {
-      ...seeded,
-      appointments: seeded.appointments.map((item) =>
-        item.id === 'appointment-noa-today' ? { ...item, startsAt: new Date(Date.parse(item.startsAt) + 15 * 60_000).toISOString() } : item,
-      ),
-      observations: [
-        ...seeded.observations,
-        { ...seeded.observations[0]!, id: 'observation-mine', observedAt: '2026-11-17T18:00:00.000Z', recordedAt: '2026-11-17T18:00:00.000Z' },
-      ],
-    }
-    const tuesday = new Date(2026, 10, 24, 9, 0)
-    const moved = reanchorDemoState(saved, tuesday)
-    const noa = moved.appointments.find((item) => item.id === 'appointment-noa-today')
-    expect(noa).toEqual(createDemoState(tuesday).appointments.find((item) => item.id === 'appointment-noa-today'))
-    expect(moved.observations.find((item) => item.id === 'observation-mine')).toEqual(saved.observations.at(-1))
-    expect(moved.anchoredAt).toBe(tuesday.toISOString())
-  })
+    it('moves a passed booking from an older build that placed it elsewhere, keeping that build’s history and the person’s log', () => {
+      const seeded = createDemoState(new Date(2026, 10, 16, 8, 0))
+      const saved: DemoState = {
+        ...seeded,
+        appointments: seeded.appointments.map((item) =>
+          item.id === noaToday ? { ...item, startsAt: new Date(Date.parse(item.startsAt) + 15 * 60_000).toISOString() } : item,
+        ),
+        observations: [...seeded.observations, { ...seeded.observations[0]!, id: 'observation-mine', observedAt: local(17, 19), recordedAt: local(17, 19) }],
+      }
+      const refreshed = refreshPassedBookings(saved, tuesday)
+      expect({
+        noaToday: booking(refreshed).startsAt,
+        history: refreshed.appointments.filter((item) => item.status === 'completed'),
+        observations: refreshed.observations,
+      }).toEqual({
+        noaToday: local(24, 10),
+        history: saved.appointments.filter((item) => item.status === 'completed'),
+        observations: saved.observations,
+      })
+    })
 
-  it('leaves an unanchored record from today as it is, and unanchored so a later day can still refresh it', () => {
-    const { anchoredAt: _unknown, ...seeded } = createDemoState(new Date(2026, 10, 24, 8, 0))
-    const saved = {
-      ...seeded,
-      appointments: seeded.appointments.map((item) =>
-        item.id === 'appointment-noa-today' ? { ...item, startsAt: new Date(Date.parse(item.startsAt) + 15 * 60_000).toISOString() } : item,
-      ),
-    }
-    const kept = reanchorDemoState(saved, new Date(2026, 10, 24, 9, 0))
-    expect(kept.appointments).toEqual(saved.appointments)
-    expect(kept.anchoredAt).toBeUndefined()
+    it('lets a visitor coming back the next day carry on with Mira’s visit, which is still ahead', () => {
+      const saved = createDemoState(new Date(2026, 10, 23, 8, 30))
+      const refreshed = refreshPassedBookings(saved, new Date(2026, 10, 24, 9, 50))
+      expect(booking(refreshed, 'appointment-mira-tomorrow')).toEqual(booking(saved, 'appointment-mira-tomorrow'))
+    })
+
+    it('leaves a record from earlier today as it is while its bookings are still ahead', () => {
+      const saved = createDemoState(new Date(2026, 10, 24, 8, 0))
+      expect(refreshPassedBookings(saved, new Date(2026, 10, 24, 9, 0))).toEqual(saved)
+    })
   })
 
   it('takes in a record another open tab saved, without saving it back', async () => {

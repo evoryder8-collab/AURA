@@ -11,7 +11,8 @@ import {
   type ReportSection,
   type RomMeasurement,
 } from '@/domain/care'
-import { PRACTICE_TIME_ZONE } from '@/lib/formatting/time'
+import { addDays, practiceMidnight } from '@/lib/dates/practice'
+import { dayKey, PRACTICE_TIME_ZONE } from '@/lib/formatting/time'
 
 /**
  * Everything the preview and the PDF print, computed once from `buildReportContent()`.
@@ -42,49 +43,13 @@ export function fmtPeriod(from: string, to: string) {
   return `${sameYear ? fmtDayMonth(from) : fmtMed(from)} – ${fmtMed(to)}`
 }
 
-const zonedParts = formatter({
-  year: 'numeric',
-  month: 'numeric',
-  day: 'numeric',
-  hour: 'numeric',
-  minute: 'numeric',
-  hourCycle: 'h23',
-})
-
-function zoneOffset(at: number) {
-  const parts = Object.fromEntries(
-    zonedParts
-      .formatToParts(new Date(at))
-      .filter((part) => part.type !== 'literal')
-      .map((part) => [part.type, Number(part.value)]),
-  ) as Record<'year' | 'month' | 'day' | 'hour' | 'minute', number>
-  return Date.UTC(parts.year, parts.month - 1, parts.day, parts.hour, parts.minute) - Math.floor(at / 60_000) * 60_000
-}
-
-/** UTC instant of midnight at the start of `day` (yyyy-mm-dd) in the practice time zone. */
-export function practiceMidnight(day: string): string {
-  const guess = Date.parse(`${day}T00:00:00Z`)
-  if (!Number.isFinite(guess)) throw new RangeError('A date must look like 2026-11-23.')
-  let at = guess - zoneOffset(guess)
-  at = guess - zoneOffset(at)
-  return new Date(at).toISOString()
-}
-
 /** yyyy-mm-dd of `iso` in the practice time zone, for date inputs. */
-export function practiceDay(iso: string) {
-  const parts = formatter({ year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(new Date(iso))
-  const get = (type: string) => parts.find((part) => part.type === type)?.value ?? '00'
-  return `${get('year')}-${get('month')}-${get('day')}`
-}
+export const practiceDay = (iso: string) => dayKey(iso)
 
 const time = (iso: string) => new Date(iso).getTime()
 
 /** Whole calendar days from `a` to `b`; a daylight-saving hour never tips a two-week gap over. */
 export const daysApart = (a: string, b: string) => Math.round((time(b) - time(a)) / DAY)
-
-/** yyyy-mm-dd plus `days`. */
-export const addDays = (day: string, days: number) =>
-  new Date(Date.parse(`${day}T00:00:00Z`) + days * DAY).toISOString().slice(0, 10)
 
 export type RangePreset = 'visits' | 'months' | 'custom'
 

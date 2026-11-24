@@ -1,12 +1,11 @@
 import type { AreaKey } from '@/domain/care'
+import { addDays, practiceMidnight } from '@/lib/dates/practice'
 import {
   GAP_DAYS,
-  addDays,
   daysApart,
   fmtDayMonth,
   fmtMed,
   practiceDay,
-  practiceMidnight,
   type FigureMarker,
   type ReportChart,
   type SeriesPoint,

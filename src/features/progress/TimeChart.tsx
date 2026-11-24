@@ -1,5 +1,6 @@
 import { clsx } from 'clsx'
 import { useId, useLayoutEffect, useRef, useState, type KeyboardEvent, type MouseEvent } from 'react'
+import { practiceDayStart } from '@/lib/dates/practice'
 import { fmtShortDate } from '@/lib/formatting/time'
 import { DAY_MS, lineSegments, type Gap, type Marker, type TimeWindow, type Tone, type Visit } from './model'
 import { MarkerShape } from './SourceMarker'
@@ -61,16 +62,18 @@ function useWidth(fallback: number) {
   return [ref, width] as const
 }
 
-/** Day ticks at local midnight, spaced so labels never touch. */
+/** Day ticks at practice midnight, the same days the labels name, spaced so labels never touch. */
 function dayTicks(window: TimeWindow, plotWidth: number) {
   const days = Math.max(1, (window.to - window.from) / DAY_MS)
   const fit = Math.max(1, Math.floor(plotWidth / 70))
   const step = [1, 2, 3, 7, 14, 21, 28, 56, 91].find((value) => days / value <= fit) ?? Math.ceil(days / fit)
   const ticks: number[] = []
-  const first = new Date(window.from)
-  first.setHours(0, 0, 0, 0)
-  if (first.getTime() < window.from) first.setDate(first.getDate() + 1)
-  for (const day = first; day.getTime() <= window.to; day.setDate(day.getDate() + step)) ticks.push(day.getTime())
+  const skip = practiceDayStart(window.from) < window.from ? 1 : 0
+  for (let index = 0; ; index += 1) {
+    const at = practiceDayStart(window.from, skip + index * step)
+    if (at > window.to) break
+    ticks.push(at)
+  }
   return ticks
 }
 
@@ -268,7 +271,7 @@ export function TimeChart({
               <g key={tick}>
                 <line x1={tx} x2={tx} y1={bottom} y2={bottom + 4} />
                 <text x={tx} y={bottom + 17} textAnchor={crowded ? 'start' : 'middle'}>
-                  {fmtShortDate(tick + DAY_MS / 2)}
+                  {fmtShortDate(tick)}
                 </text>
               </g>
             )

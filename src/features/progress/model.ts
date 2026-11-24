@@ -2,7 +2,6 @@
  * Pure helpers behind the progress charts. Every figure on the page (headline answer,
  * chart, summary, table) is read from the series these functions return, so they agree.
  */
-import { startOfDay } from 'date-fns'
 import {
   areaKeyLabel,
   areaSeries,
@@ -24,6 +23,7 @@ import {
   type StiffnessAssessment,
 } from '@/domain/care'
 import type { DemoAppointment, DemoTherapist } from '@/data/demo/model'
+import { practiceDayStart } from '@/lib/dates/practice'
 import { dayPhrase, daysBetween, fmtDay, fmtShortDate, fmtTime } from '@/lib/formatting/time'
 
 export const DAY_MS = 86_400_000
@@ -120,19 +120,20 @@ export type TimeWindow = {
   readonly startsAtFirstEntry: boolean
 }
 
+/** Every range starts at a practice midnight, counted in calendar days, so the hour and a DST change never move it. */
 export function rangeWindow(
   range: RangeKey,
   visits: readonly Visit[],
   firstRecordAt: number | undefined,
   now: number,
 ): TimeWindow {
-  const first = firstRecordAt === undefined ? undefined : startOfDay(firstRecordAt).getTime()
+  const first = firstRecordAt === undefined ? undefined : practiceDayStart(firstRecordAt)
   const sixth = visits.slice(-VISIT_RANGE_COUNT)[0]
   let from: number
-  if (range === 'visits' && sixth) from = startOfDay(sixth.at).getTime()
-  else if (range === 'days30') from = startOfDay(now - 30 * DAY_MS).getTime()
-  else if (range === 'days90') from = startOfDay(now - 90 * DAY_MS).getTime()
-  else from = first ?? startOfDay(now - 30 * DAY_MS).getTime()
+  if (range === 'visits' && sixth) from = practiceDayStart(sixth.at)
+  else if (range === 'days30') from = practiceDayStart(now, -30)
+  else if (range === 'days90') from = practiceDayStart(now, -90)
+  else from = first ?? practiceDayStart(now, -30)
   const startsAtFirstEntry = first !== undefined && from < first
   return { from: startsAtFirstEntry && first !== undefined ? first : from, to: now, startsAtFirstEntry }
 }

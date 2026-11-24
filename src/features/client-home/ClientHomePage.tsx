@@ -12,6 +12,7 @@ import { clientAppointments, clientBonus, clientObservations, followUpOpen, getC
 import { useDemoStore } from '@/data/demo/store'
 import { useAuth } from '@/features/auth/auth-context'
 import { daysBetween, fmtLongDay, fmtTime, greeting, minutesLabel, relativeDay, relativeWhen, whenPhrase } from '@/lib/formatting/time'
+import { useNow } from '@/lib/useNow'
 import { bonusSentence, latestBonusCredit } from './bonusSentence'
 import './client-home.css'
 
@@ -20,7 +21,7 @@ export function ClientHomePage() {
   const navigate = useNavigate()
   const clientId = auth.demoClientId ?? ''
   const state = useDemoStore()
-  const now = Date.now()
+  const now = useNow()
   const client = getClient(state, clientId)
   const appointments = useMemo(() => clientAppointments(state, clientId), [state, clientId])
   const observations = useMemo(() => clientObservations(state, clientId), [state, clientId])

@@ -242,7 +242,7 @@ describe('FINDINGS: session timing, Bonus Care and follow-ups', () => {
     expect(summary).toMatchObject({ actualMinutes: 91, extraMinutes: 1 })
     renderFinish(id)
     const suggested = suggestBonusCareMinutes(91, 90).suggestedConfirmationMinutes
-    expect(screen.getByRole('button', { name: /^Confirm \d/ })).toHaveTextContent(`Confirm ${minutesLabel(suggested)}`)
+    expect(screen.getByRole('button', { name: /^Confirm \d/ })).toHaveTextContent(`Confirm ${minutesLabel(suggested)}`.replace(/\s/g, ' '))
   })
 
   it('F10 the finish header time range agrees with the Actual minutes', () => {

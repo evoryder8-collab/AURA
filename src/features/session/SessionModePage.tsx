@@ -14,11 +14,11 @@ import {
 } from '@/domain/care'
 import { getAppointment, getClient, sessionPointsFor } from '@/data/demo/selectors'
 import { useDemoStore } from '@/data/demo/store'
-import { therapistCanAccessClient } from '@/data/demo/team'
 import { useAuth } from '@/features/auth/auth-context'
 import { BodyStage, type BodyMarker } from '@/features/body/BodyStage'
 import type { FigureFace } from '@/features/body/anchors'
 import { fmtTime, minutesLabel, relativeDay, relativeWhen, whenPhrase } from '@/lib/formatting/time'
+import { canRunSession } from './sessionAccess'
 import { useWakeLock } from './useWakeLock'
 import './session.css'
 
@@ -72,9 +72,7 @@ export function SessionModePage() {
   const state = useDemoStore()
   const appointment = getAppointment(state, appointmentId)
   const client = getClient(state, appointment?.clientId)
-  const allowed =
-    appointment &&
-    (appointment.therapistId === auth.demoTherapistId || therapistCanAccessClient(state, auth.demoTherapistId, appointment.clientId))
+  const allowed = canRunSession(appointment, auth.demoTherapistId)
 
   const [rotation, setRotation] = useState<TableRotation>(() => readOrientation() ?? defaultOrientation())
   const [face, setFace] = useState<FigureFace>('front')
@@ -103,7 +101,7 @@ export function SessionModePage() {
 
   const points = useMemo(() => (appointment ? sessionPointsFor(state, appointment) : []), [state, appointment])
 
-  if (!appointment || !client || !allowed) {
+  if (!allowed || !client) {
     return (
       <main id="main-content" className="session session--missing">
         <p className="empty">This session isn’t available to you.</p>

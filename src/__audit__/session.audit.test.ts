@@ -189,15 +189,26 @@ describe('FINDINGS: session timing, Bonus Care and follow-ups', () => {
     expect(bonusSummary(store().bonusCredits, noa).byTherapist.map((item) => item.minutes)).not.toContain(0)
   })
 
-  it('F7 a therapist who may run Session Mode can also finish it', () => {
+  it('F7 a therapist who may run Session Mode can also finish it, and a colleague may do neither', () => {
+    const refused = 'This session isn’t available to you.'
     const start = at(-90)
     const id = book(mira, pratana, start, 90)
-    const session = renderSession(id, wassana)
+
+    const colleagueSession = renderSession(id, wassana)
+    expect(screen.getByText(refused)).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Start session/ })).toBeNull()
+    colleagueSession.unmount()
+    const ownSession = renderSession(id, pratana)
     expect(screen.getByRole('button', { name: /Start session/ })).toBeInTheDocument()
-    session.unmount()
+    ownSession.unmount()
+
     runSession(id, start, NOW)
-    renderFinish(id, wassana)
-    expect(screen.queryByText('This session isn’t available to you.')).toBeNull()
+    const colleagueFinish = renderFinish(id, wassana)
+    expect(screen.getByText(refused)).toBeInTheDocument()
+    colleagueFinish.unmount()
+    renderFinish(id, pratana)
+    expect(screen.queryByText(refused)).toBeNull()
+    expect(screen.getByRole('heading', { name: 'Session time' })).toBeInTheDocument()
   })
 
   it('F8 a stale second tab tapping Finish does not erase a confirmed credit', async () => {

@@ -23,6 +23,7 @@ import { useDemoStore } from '@/data/demo/store'
 import { useAuth } from '@/features/auth/auth-context'
 import { bonusSentence, latestBonusCredit } from '@/features/client-home/bonusSentence'
 import { fmtTime, minutesLabel } from '@/lib/formatting/time'
+import { canRunSession } from './sessionAccess'
 import './session.css'
 import './finish.css'
 
@@ -53,7 +54,7 @@ export function FinishSessionPage() {
   const [visibility, setVisibility] = useState<NoteVisibility>('private')
   const [saved, setSaved] = useState<string[]>([])
 
-  if (!appointment || appointment.therapistId !== auth.demoTherapistId) {
+  if (!canRunSession(appointment, auth.demoTherapistId)) {
     return (
       <div className="page">
         <p className="empty">This session isn’t available to you.</p>

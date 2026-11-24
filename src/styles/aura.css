@@ -1,51 +1,56 @@
-/* AURA — "Dusk" design system. Built from scratch for the 2026 redesign. */
+/* AURA — "Luminous" design system (November 2026, second pass): night sky, living light, real glass. */
 
 :root {
   color-scheme: dark;
 
-  /* Ink: water at dusk */
-  --ink-950: #050d0f;
-  --ink-900: #08151a;
-  --ink-850: #0b1b20;
-  --ink-800: #0f232a;
-  --ink-700: #153039;
-  --ink-600: #1d3f49;
+  /* Night */
+  --ink-950: #05060f;
+  --ink-900: #090c1d;
+  --ink-850: #0d122a;
+  --ink-800: #121937;
+  --ink-700: #1a2348;
+  --ink-600: #26305c;
 
-  --text: #eef5f2;
-  --text-soft: #c4d6d1;
-  --text-dim: #8fa8a2;
-  --text-faint: #66807b;
+  --text: #f6f7ff;
+  --text-soft: #d3d9f2;
+  --text-dim: #9ea8cc;
+  --text-faint: #6f7aa3;
 
-  --line: rgba(208, 238, 230, 0.11);
-  --line-strong: rgba(208, 238, 230, 0.22);
-  --glass: rgba(16, 38, 44, 0.58);
-  --glass-strong: rgba(20, 46, 53, 0.78);
-  --glass-hi: rgba(255, 255, 255, 0.06);
+  --line: rgba(220, 228, 255, 0.12);
+  --line-strong: rgba(220, 228, 255, 0.24);
+  --glass: rgba(255, 255, 255, 0.075);
+  --glass-strong: rgba(24, 30, 64, 0.72);
+  --glass-hi: rgba(255, 255, 255, 0.1);
 
-  --aqua: #8ae6d6;
-  --aqua-deep: #3fb5a3;
-  --aqua-glow: rgba(118, 230, 210, 0.32);
-  --lantern: #f3cf8e;
-  --lantern-deep: #d9a65d;
-  --lantern-glow: rgba(243, 207, 142, 0.35);
-  --rose: #f2a196;
+  /* Light */
+  --aqua: #5ef0d6;
+  --aqua-deep: #2fc4ad;
+  --aqua-glow: rgba(94, 240, 214, 0.35);
+  --sky: #6fa8ff;
+  --violet: #a48bff;
+  --lantern: #ffcd7a;
+  --lantern-deep: #ff9671;
+  --lantern-glow: rgba(255, 168, 112, 0.42);
+  --rose: #ff8ba7;
+  --sunset: linear-gradient(135deg, #ffe09a 0%, #ffb072 48%, #ff8a86 100%);
+  --lagoon: linear-gradient(135deg, #7af7df 0%, #6fa8ff 55%, #a48bff 100%);
 
   /* Pain scale: always shown with its number */
-  --pain-0: #8fdcc6;
-  --pain-low: #e8d58c;
-  --pain-mid: #f3a35f;
-  --pain-high: #f0705d;
-  --pain-max: #e2476d;
+  --pain-0: #5ef0d6;
+  --pain-low: #ffe27a;
+  --pain-mid: #ffad5c;
+  --pain-high: #ff6f6b;
+  --pain-max: #ff4f93;
 
   --font: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Inter, Roboto, system-ui, sans-serif;
   --font-display: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Inter, system-ui, sans-serif;
   --font-mono: ui-monospace, 'SF Mono', Menlo, monospace;
 
-  --r-xs: 8px;
-  --r-sm: 12px;
-  --r-md: 18px;
-  --r-lg: 26px;
-  --r-xl: 34px;
+  --r-xs: 10px;
+  --r-sm: 14px;
+  --r-md: 20px;
+  --r-lg: 28px;
+  --r-xl: 36px;
   --r-pill: 999px;
 
   --s-1: 4px;
@@ -58,8 +63,8 @@
   --s-10: 40px;
   --s-12: 48px;
 
-  --shadow-1: 0 1px 0 rgba(255, 255, 255, 0.05) inset, 0 10px 30px rgba(0, 0, 0, 0.28);
-  --shadow-2: 0 1px 0 rgba(255, 255, 255, 0.07) inset, 0 24px 60px rgba(0, 0, 0, 0.42);
+  --shadow-1: 0 1px 0 rgba(255, 255, 255, 0.1) inset, 0 18px 48px rgba(2, 4, 18, 0.45);
+  --shadow-2: 0 1px 0 rgba(255, 255, 255, 0.14) inset, 0 30px 80px rgba(2, 4, 18, 0.6);
   --ease: cubic-bezier(0.22, 1, 0.36, 1);
   --ease-soft: cubic-bezier(0.4, 0, 0.2, 1);
   --t-fast: 160ms;
@@ -69,7 +74,7 @@
   --touch: 44px;
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
-  --gutter: clamp(16px, 4.6vw, 32px);
+  --gutter: clamp(16px, 4.6vw, 36px);
   --tabbar-h: 72px;
 }
 
@@ -92,15 +97,72 @@ body {
   font-size: 16px;
   line-height: 1.5;
   color: var(--text);
-  background:
-    radial-gradient(120% 70% at 85% -10%, rgba(63, 181, 163, 0.16), transparent 60%),
-    radial-gradient(90% 60% at -10% 110%, rgba(217, 166, 93, 0.1), transparent 60%),
-    linear-gradient(180deg, var(--ink-900), var(--ink-950) 70%);
-  background-attachment: fixed;
+  /* Transparent so the fixed sky (z-index -1) shows; the page colour lives on <html>. */
+  background: transparent;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   overflow-x: hidden;
   -webkit-tap-highlight-color: transparent;
+}
+
+/* The living sky behind every screen: slow fields of light and fine grain, so glass has light to catch. */
+.sky {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+  background:
+    radial-gradient(140% 90% at 50% -20%, #18214d 0%, transparent 60%),
+    linear-gradient(180deg, #0a0e24 0%, #070915 55%, #05060f 100%);
+}
+
+.sky__light {
+  position: absolute;
+  width: 78vmax;
+  height: 78vmax;
+  border-radius: 50%;
+  opacity: 0.55;
+  will-change: transform;
+  animation: sky-drift 46s var(--ease-soft) infinite alternate;
+}
+
+.sky__light--aqua {
+  top: -34vmax;
+  right: -26vmax;
+  background: radial-gradient(closest-side, rgba(70, 232, 205, 0.55), rgba(70, 232, 205, 0.12) 55%, transparent 72%);
+}
+
+.sky__light--violet {
+  top: 18vh;
+  left: -38vmax;
+  background: radial-gradient(closest-side, rgba(140, 110, 255, 0.48), rgba(140, 110, 255, 0.1) 55%, transparent 72%);
+  animation-duration: 58s;
+  animation-direction: alternate-reverse;
+}
+
+.sky__light--sunset {
+  bottom: -46vmax;
+  right: -10vmax;
+  background: radial-gradient(closest-side, rgba(255, 150, 105, 0.5), rgba(255, 120, 140, 0.12) 55%, transparent 72%);
+  animation-duration: 64s;
+}
+
+.sky__grain {
+  position: absolute;
+  inset: -50%;
+  opacity: 0.07;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+}
+
+@keyframes sky-drift {
+  from {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  to {
+    transform: translate3d(-6vmax, 5vmax, 0) scale(1.12);
+  }
 }
 
 img,
@@ -138,8 +200,8 @@ h1,
 h2,
 h3 {
   font-family: var(--font-display);
-  letter-spacing: -0.02em;
-  font-weight: 600;
+  letter-spacing: -0.025em;
+  font-weight: 650;
   text-wrap: balance;
 }
 
@@ -173,6 +235,19 @@ h3 {
   white-space: nowrap;
 }
 
+.gradient-text {
+  background: var(--sunset);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.gradient-text--cool {
+  background: var(--lagoon);
+  -webkit-background-clip: text;
+  background-clip: text;
+}
+
 /* ---------- Root chrome ---------- */
 
 .skip-link {
@@ -204,7 +279,7 @@ h3 {
   padding: 3px 10px;
   border-radius: var(--r-pill);
   border: 1px solid rgba(243, 207, 142, 0.35);
-  background: rgba(8, 21, 26, 0.72);
+  background: rgba(9, 12, 29, 0.72);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   color: var(--lantern);
@@ -255,32 +330,35 @@ h3 {
 
 /* ---------- Typography helpers ---------- */
 
+/* Small section labels: sentence case, in light, never grey capitals. */
 .eyebrow {
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--text-dim);
+  font-size: 13px;
+  font-weight: 650;
+  letter-spacing: 0.01em;
+  color: var(--aqua);
 }
 
 .title-xl {
-  font-size: clamp(32px, 7.4vw, 52px);
+  font-size: clamp(34px, 8vw, 56px);
   line-height: 1.02;
+  font-weight: 700;
 }
 
 .title-lg {
-  font-size: clamp(26px, 5.6vw, 36px);
+  font-size: clamp(27px, 6vw, 38px);
   line-height: 1.08;
+  font-weight: 680;
 }
 
 .title-md {
   font-size: 20px;
-  line-height: 1.2;
+  line-height: 1.22;
+  font-weight: 650;
 }
 
 .lead {
   color: var(--text-soft);
-  font-size: 16px;
+  font-size: 16.5px;
 }
 
 .muted {
@@ -331,6 +409,12 @@ h3 {
   display: inline-flex;
 }
 
+/* Icons inside buttons and links keep their size when space is tight. */
+.button svg,
+.icon-button svg {
+  flex: none;
+}
+
 .button--sm {
   min-height: 36px;
   padding: 0 14px;
@@ -356,24 +440,26 @@ h3 {
 
 .button--primary,
 .button--gold {
-  color: #1d1406;
-  background: linear-gradient(180deg, #f8dca6, var(--lantern) 45%, var(--lantern-deep));
+  color: #2b1207;
+  background: var(--sunset);
   box-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.55) inset,
-    0 8px 26px var(--lantern-glow);
+    0 1px 0 rgba(255, 255, 255, 0.6) inset,
+    0 -1px 0 rgba(120, 40, 20, 0.18) inset,
+    0 10px 30px var(--lantern-glow);
 }
 
 .button--primary:hover:not(:disabled),
 .button--gold:hover:not(:disabled) {
   box-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.55) inset,
-    0 10px 34px rgba(243, 207, 142, 0.5);
+    0 1px 0 rgba(255, 255, 255, 0.6) inset,
+    0 14px 40px rgba(255, 150, 110, 0.55);
 }
 
 .button--secondary {
   color: var(--text);
-  background: var(--glass-hi);
-  border-color: var(--line-strong);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.06));
+  border-color: rgba(255, 255, 255, 0.2);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.18) inset;
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
 }
@@ -415,34 +501,67 @@ h3 {
   color: var(--text);
 }
 
+.link-button {
+  min-height: var(--touch);
+  padding: 0 4px;
+  border: 0;
+  background: none;
+  color: var(--aqua);
+  font-weight: 650;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
 /* ---------- Surfaces ---------- */
 
+/* Glass: translucent, lit from the top-left edge, with a soft coloured depth shadow. */
 .card,
 .glass {
   position: relative;
-  border: 1px solid var(--line);
+  isolation: isolate;
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: var(--r-lg);
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.015)), var(--glass);
-  backdrop-filter: blur(22px) saturate(1.15);
-  -webkit-backdrop-filter: blur(22px) saturate(1.15);
+  background: linear-gradient(155deg, rgba(255, 255, 255, 0.11) 0%, rgba(255, 255, 255, 0.045) 45%, rgba(255, 255, 255, 0.03) 100%);
+  backdrop-filter: blur(26px) saturate(1.6);
+  -webkit-backdrop-filter: blur(26px) saturate(1.6);
   box-shadow: var(--shadow-1);
   padding: var(--s-5);
 }
 
+.card::before,
+.glass::before,
+.glass-edge::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  z-index: -1;
+  padding: 1px;
+  border-radius: inherit;
+  background: linear-gradient(150deg, rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0.08) 32%, rgba(255, 255, 255, 0) 60%, rgba(255, 255, 255, 0.14));
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#000 0 0) content-box exclude,
+    linear-gradient(#000 0 0);
+  pointer-events: none;
+}
+
 .card--soft {
-  background: rgba(255, 255, 255, 0.03);
+  background: rgba(255, 255, 255, 0.045);
   box-shadow: none;
 }
 
 .card--gold {
-  border-color: rgba(243, 207, 142, 0.3);
+  border-color: rgba(255, 200, 130, 0.3);
   background:
-    radial-gradient(120% 140% at 100% 0%, rgba(243, 207, 142, 0.14), transparent 55%),
-    var(--glass);
+    radial-gradient(120% 140% at 100% 0%, rgba(255, 176, 114, 0.22), transparent 55%),
+    linear-gradient(155deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.03));
 }
 
 .card--concern {
-  border-color: rgba(242, 161, 150, 0.35);
+  border-color: rgba(255, 139, 167, 0.4);
 }
 
 .card--interactive {
@@ -518,10 +637,11 @@ h3 {
   gap: 2px;
   padding: 2px 9px;
   border-radius: var(--r-pill);
-  background: color-mix(in srgb, var(--chip) 18%, transparent);
-  border: 1px solid color-mix(in srgb, var(--chip) 50%, transparent);
+  background: color-mix(in srgb, var(--chip) 20%, transparent);
+  border: 1px solid color-mix(in srgb, var(--chip) 55%, transparent);
   color: var(--chip);
-  font-weight: 700;
+  font-weight: 800;
+  text-shadow: 0 0 14px color-mix(in srgb, var(--chip) 45%, transparent);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
@@ -563,7 +683,7 @@ h3 {
   padding: 12px 16px;
   border-radius: var(--r-md);
   border: 1px solid var(--line-strong);
-  background: rgba(3, 12, 14, 0.45);
+  background: rgba(6, 9, 26, 0.5);
   color: var(--text);
   font-size: 16px; /* 16px stops iOS from zooming the page on focus */
   transition:
@@ -614,7 +734,7 @@ h3 {
   padding: 4px;
   border-radius: var(--r-pill);
   border: 1px solid var(--line);
-  background: rgba(3, 12, 14, 0.45);
+  background: rgba(6, 9, 26, 0.45);
 }
 
 .segmented button {
@@ -635,7 +755,7 @@ h3 {
 
 .segmented button[aria-pressed='true'],
 .segmented button[aria-checked='true'] {
-  background: rgba(255, 255, 255, 0.12);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.1));
   color: var(--text);
   box-shadow: 0 1px 0 rgba(255, 255, 255, 0.1) inset;
 }
@@ -646,7 +766,7 @@ h3 {
   position: fixed;
   inset: 0;
   z-index: 70;
-  background: rgba(2, 8, 10, 0.66);
+  background: rgba(4, 5, 16, 0.66);
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
   animation: fade-in var(--t-med) var(--ease);
@@ -666,7 +786,7 @@ h3 {
   border: 1px solid var(--line-strong);
   border-bottom: 0;
   border-radius: var(--r-xl) var(--r-xl) 0 0;
-  background: linear-gradient(180deg, rgba(25, 52, 59, 0.96), rgba(10, 25, 30, 0.98));
+  background: linear-gradient(180deg, rgba(34, 42, 88, 0.97), rgba(12, 15, 36, 0.98));
   box-shadow: var(--shadow-2);
   animation: sheet-up var(--t-med) var(--ease);
 }
@@ -888,9 +1008,9 @@ h3 {
   border-radius: calc(var(--size) / 2) calc(var(--size) / 2) calc(var(--size) * 0.22) calc(var(--size) * 0.22);
   overflow: hidden;
   background:
-    radial-gradient(90% 70% at 50% 30%, rgba(243, 207, 142, 0.28), transparent 70%),
-    linear-gradient(180deg, var(--ink-600), var(--ink-800));
-  border: 1px solid var(--line-strong);
+    radial-gradient(90% 70% at 50% 25%, rgba(255, 214, 150, 0.35), transparent 70%),
+    var(--monogram, linear-gradient(160deg, #3a4a8f, #1a2048));
+  border: 1px solid rgba(255, 255, 255, 0.22);
   isolation: isolate;
 }
 
@@ -905,10 +1025,11 @@ h3 {
 }
 
 .portrait__monogram {
-  font-weight: 600;
+  font-weight: 700;
   font-size: calc(var(--size) * 0.36);
-  letter-spacing: 0.04em;
-  color: var(--text-soft);
+  letter-spacing: 0.02em;
+  color: #fff;
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.25);
 }
 
 .portrait--xs { --size: 28px; }

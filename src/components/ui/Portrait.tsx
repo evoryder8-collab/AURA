@@ -1,7 +1,7 @@
 import { clsx } from 'clsx'
-import { useState } from 'react'
+import { useState, type CSSProperties } from 'react'
 import type { DemoPortrait } from '@/data/demo/model'
-import { assetUrl } from './assets'
+import { assetUrl, monogramGradient } from './assets'
 
 
 const initialsOf = (name: string) =>
@@ -31,7 +31,11 @@ export function Portrait({
 }) {
   const [failed, setFailed] = useState(false)
   return (
-    <span className={clsx('portrait', `portrait--${size}`, glow && 'portrait--glow', className)} aria-hidden="true">
+    <span
+      className={clsx('portrait', `portrait--${size}`, glow && 'portrait--glow', className)}
+      style={{ '--monogram': monogramGradient(name) } as CSSProperties}
+      aria-hidden="true"
+    >
       <span className="portrait__monogram">{initialsOf(name)}</span>
       {portrait && !failed ? (
         <img src={assetUrl(portrait.avatar)} alt="" loading="lazy" decoding="async" onError={() => setFailed(true)} />

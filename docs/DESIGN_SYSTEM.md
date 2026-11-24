@@ -1,16 +1,18 @@
-# AURA design system — "Dusk"
+# AURA design system — "Luminous"
 
-AURA was redesigned from scratch in November 2026. This is the contract every screen follows.
+AURA was redesigned from scratch in November 2026 and given its luminous second pass on 24 November 2026, after the first dark palette read as cheap and depressing. This is the contract every screen follows.
 
 ## Character
 
-A private wellness retreat at dusk: deep blue-green ink, light reflected from water (aqua), warm lantern light for the one action that matters (gold). Surfaces are thin, crisp frosted glass. Signature moments (entrance, identity reveal, Session Mode) are cinematic; everyday screens are quiet — fewer glows, generous spacing, one primary action per view.
+A private retreat under a night sky: a living backdrop (`.sky` in `RootLayout`) of slow aqua, violet and sunset light with fine grain sits behind every screen, so frosted glass always has light to catch. The one action that matters is a warm sunset gradient; information accents are aqua; people are present through portraits and gradient monograms. Dark is only premium when it glows: no flat backgrounds, no grey uppercase micro-labels, big confident type.
+
+Screens lead with what the person acts on. The therapist's Today shows who is next, what changed since the last visit (one headline line, the client's words, the date) and the button to begin, above the fold on a phone, with the week beside it on wide screens.
 
 ## Tokens (`src/styles/aura.css`)
 
-- Ink backgrounds `--ink-950 … --ink-600`; text `--text`, `--text-soft`, `--text-dim`, `--text-faint`.
-- Lines `--line`, `--line-strong`; glass `--glass`, `--glass-strong`, `--glass-hi`.
-- Accents: `--aqua` (water, positive, focus of information), `--lantern` (primary action, focus ring), `--rose` (concern, errors).
+- Night backgrounds `--ink-950 … --ink-600`; text `--text`, `--text-soft`, `--text-dim`, `--text-faint`.
+- Lines `--line`, `--line-strong`; glass `--glass`, `--glass-strong`, `--glass-hi`; `.card`/`.glass` draw a lit gradient edge.
+- Light: `--sunset` (primary action gradient), `--lagoon` (cool gradient), `--aqua` (labels, positive information), `--lantern` (focus ring, warm accents), `--violet`, `--sky`, `--rose` (concern, errors). `.gradient-text` for hero numbers.
 - Pain scale `--pain-0`, `--pain-low` (1–3), `--pain-mid` (4–6), `--pain-high` (7–8), `--pain-max` (9–10). A score is always printed as a number; colour is never the only cue. Use `PainChip` / `painColor()`.
 - Radii `--r-xs … --r-xl`, `--r-pill`; spacing `--s-1 … --s-12`; motion `--ease`, `--t-fast/med/slow`.
 - System font only (`--font`, `--font-display`); numbers use `.num` (tabular).

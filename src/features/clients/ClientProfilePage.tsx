@@ -17,7 +17,14 @@ import {
 } from '@/domain/care'
 import type { DemoState } from '@/data/demo/model'
 import type { DemoStore } from '@/data/demo/store'
-import { clientAppointments, clientBonus, clientObservations, getClient, getTherapist, isUpcoming } from '@/data/demo/selectors'
+import {
+  clientAppointments,
+  clientBonus,
+  clientObservations,
+  getClient,
+  getTherapist,
+  isUpcoming,
+} from '@/data/demo/selectors'
 import { useDemoStore } from '@/data/demo/store'
 import { therapistCanAccessClient, therapistsForClient } from '@/data/demo/team'
 import { useAuth } from '@/features/auth/auth-context'
@@ -25,7 +32,15 @@ import { BodyStage, type BodyMarker } from '@/features/body/BodyStage'
 import { anchorFor } from '@/features/body/anchors'
 import { ProgressPhotos } from '@/features/photos/ProgressPhotos'
 import { ProgressExplorer } from '@/features/progress/ProgressExplorer'
-import { daysBetween, fmtDate, fmtDay, fmtTime, minutesLabel, relativeDay, relativeWhen } from '@/lib/formatting/time'
+import {
+  daysBetween,
+  fmtDate,
+  fmtDay,
+  fmtTime,
+  minutesLabel,
+  relativeDay,
+  relativeWhen,
+} from '@/lib/formatting/time'
 import './profile.css'
 
 type Tab = 'overview' | 'history' | 'progress' | 'notes'
@@ -67,19 +82,25 @@ export function ClientProfilePage() {
         <ArrowLeft size={18} aria-hidden="true" /> Clients
       </Link>
       <header className="profile__head">
-        <div>
-          <p className="eyebrow">{age !== null ? `${age} · ` : ''}Synthetic client</p>
-          <h1 className="title-lg">{client.displayName}</h1>
-          <div className="profile__team" aria-label="Care team">
-            {team.map((member) => (
-              <span key={member.id} className="profile__member">
-                <Portrait name={member.displayName} portrait={member.portrait} size="xs" />
-                {member.preferredName}
-              </span>
-            ))}
+        <div className="profile__identity">
+          <Portrait name={client.displayName} size="lg" />
+          <div>
+            <p className="eyebrow">{age !== null ? `${age} · ` : ''}Synthetic client</p>
+            <h1 className="title-lg">{client.displayName}</h1>
+            <div className="profile__team" aria-label="Care team">
+              {team.map((member) => (
+                <span key={member.id} className="profile__member">
+                  <Portrait name={member.displayName} portrait={member.portrait} size="xs" />
+                  {member.preferredName}
+                </span>
+              ))}
+            </div>
           </div>
         </div>
-        <Button icon={<Stethoscope size={18} />} onClick={() => navigate(`/therapist/clients/${client.id}/report`)}>
+        <Button
+          icon={<Stethoscope size={18} />}
+          onClick={() => navigate(`/therapist/clients/${client.id}/report`)}
+        >
           Prepare report for a doctor
         </Button>
       </header>
@@ -105,15 +126,27 @@ export function ClientProfilePage() {
       ) : null}
       {tab === 'history' ? <History clientId={client.id} state={state} /> : null}
       {tab === 'progress' ? <ProgressExplorer clientId={client.id} audience="therapist" /> : null}
-      {tab === 'notes' ? <Notes clientId={client.id} state={state} therapistId={auth.demoTherapistId ?? ''} /> : null}
+      {tab === 'notes' ? (
+        <Notes clientId={client.id} state={state} therapistId={auth.demoTherapistId ?? ''} />
+      ) : null}
     </div>
   )
 }
 
-function Overview({ clientId, state, onTab }: { clientId: string; state: DemoState; onTab: (tab: Tab) => void }) {
+function Overview({
+  clientId,
+  state,
+  onTab,
+}: {
+  clientId: string
+  state: DemoState
+  onTab: (tab: Tab) => void
+}) {
   const now = Date.now()
   const observations = clientObservations(state, clientId)
-  const latest = [...latestByArea(observations).values()].filter((point) => daysBetween(point.observedAt, now) <= 30 && point.pain > 0)
+  const latest = [...latestByArea(observations).values()].filter(
+    (point) => daysBetween(point.observedAt, now) <= 30 && point.pain > 0,
+  )
   const upcoming = clientAppointments(state, clientId).find((item) => isUpcoming(item, now))
   const upcomingTherapist = getTherapist(state, upcoming?.therapistId)
   const bonus = clientBonus(state, clientId)
@@ -123,7 +156,10 @@ function Overview({ clientId, state, onTab }: { clientId: string; state: DemoSta
     label: areaLabel(point.region, point.side),
     detail: relativeDay(point.observedAt, now),
   }))
-  const face = markers.length && markers.every((marker) => anchorFor(marker.area)?.surface === 'back') ? 'back' : 'front'
+  const face =
+    markers.length && markers.every((marker) => anchorFor(marker.area)?.surface === 'back')
+      ? 'back'
+      : 'front'
   const reports = state.reports.filter((report) => report.clientId === clientId)
 
   return (
@@ -145,7 +181,8 @@ function Overview({ clientId, state, onTab }: { clientId: string; state: DemoSta
                     <div>
                       <strong>{areaKeyLabel(point.area)}</strong>
                       <span className="small muted">
-                        {relativeWhen(point.observedAt, now)} · {OBSERVATION_SOURCE_LABEL[point.source]}
+                        {relativeWhen(point.observedAt, now)} ·{' '}
+                        {OBSERVATION_SOURCE_LABEL[point.source]}
                       </span>
                       {point.note ? <q className="small">{point.note}</q> : null}
                     </div>
@@ -166,15 +203,20 @@ function Overview({ clientId, state, onTab }: { clientId: string; state: DemoSta
           </h2>
           {upcoming ? (
             <p className="profile__next">
-              {relativeDay(upcoming.startsAt, now)} {fmtTime(upcoming.startsAt)} with {upcomingTherapist?.preferredName} ·{' '}
-              {minutesLabel(upcoming.durationMinutes)}
+              {relativeDay(upcoming.startsAt, now)} {fmtTime(upcoming.startsAt)} with{' '}
+              {upcomingTherapist?.preferredName} · {minutesLabel(upcoming.durationMinutes)}
             </p>
           ) : (
             <p className="muted">Nothing booked.</p>
           )}
           <p className="small muted">
             Extra care across visits: {minutesLabel(bonus.lifetimeMinutes)}
-            {bonus.byTherapist.map((item) => ` · ${getTherapist(state, item.therapistId)?.preferredName} ${item.minutes}`).join('')}
+            {bonus.byTherapist
+              .map(
+                (item) =>
+                  ` · ${getTherapist(state, item.therapistId)?.preferredName} ${item.minutes}`,
+              )
+              .join('')}
           </p>
         </section>
         {reports.length ? (
@@ -190,7 +232,15 @@ function Overview({ clientId, state, onTab }: { clientId: string; state: DemoSta
                     <span>
                       {report.recipient} · {fmtDay(report.updatedAt)}
                     </span>
-                    <Badge tone={report.status === 'consented' ? 'favourable' : report.status === 'awaiting_consent' ? 'pending' : 'neutral'}>
+                    <Badge
+                      tone={
+                        report.status === 'consented'
+                          ? 'favourable'
+                          : report.status === 'awaiting_consent'
+                            ? 'pending'
+                            : 'neutral'
+                      }
+                    >
                       {report.status === 'consented'
                         ? 'Consent given'
                         : report.status === 'awaiting_consent'
@@ -211,8 +261,7 @@ function Overview({ clientId, state, onTab }: { clientId: string; state: DemoSta
 }
 
 type HistoryItem =
-  | { kind: 'visit'; at: string; id: string }
-  | { kind: 'observation'; at: string; id: string }
+  { kind: 'visit'; at: string; id: string } | { kind: 'observation'; at: string; id: string }
 
 function History({ clientId, state }: { clientId: string; state: DemoState }) {
   const now = Date.now()
@@ -220,7 +269,11 @@ function History({ clientId, state }: { clientId: string; state: DemoState }) {
   const between = clientObservations(state, clientId).filter((item) => item.source === 'home')
   const items: HistoryItem[] = [
     ...visits.map((visit) => ({ kind: 'visit' as const, at: visit.startsAt, id: visit.id })),
-    ...between.map((observation) => ({ kind: 'observation' as const, at: observation.observedAt, id: observation.id })),
+    ...between.map((observation) => ({
+      kind: 'observation' as const,
+      at: observation.observedAt,
+      id: observation.id,
+    })),
   ].sort((a, b) => b.at.localeCompare(a.at))
 
   return (
@@ -249,8 +302,12 @@ function History({ clientId, state }: { clientId: string; state: DemoState }) {
         const visit = visits.find((entry) => entry.id === item.id)
         if (!visit) return null
         const therapist = getTherapist(state, visit.therapistId)
-        const arrival = state.observations.find((entry) => entry.appointmentId === visit.id && entry.source === 'arrival')
-        const confirmations = state.confirmations.filter((entry) => entry.appointmentId === visit.id)
+        const arrival = state.observations.find(
+          (entry) => entry.appointmentId === visit.id && entry.source === 'arrival',
+        )
+        const confirmations = state.confirmations.filter(
+          (entry) => entry.appointmentId === visit.id,
+        )
         const follow = state.followUps.find((entry) => entry.appointmentId === visit.id)
         const credit = state.bonusCredits.find((entry) => entry.appointmentId === visit.id)
         return (
@@ -258,24 +315,33 @@ function History({ clientId, state }: { clientId: string; state: DemoState }) {
             <span className="timeline__when">{fmtDate(visit.startsAt)}</span>
             <div className="timeline__body">
               <div className="row">
-                <Portrait name={therapist?.displayName ?? ''} portrait={therapist?.portrait} size="xs" />
+                <Portrait
+                  name={therapist?.displayName ?? ''}
+                  portrait={therapist?.portrait}
+                  size="xs"
+                />
                 <strong>
                   Visit with {therapist?.preferredName} · {visit.sessionType}
                 </strong>
               </div>
               <p className="small muted">
-                Booked {visit.session?.summary?.bookedMinutes ?? visit.durationMinutes} · actual {visit.session?.summary?.actualMinutes ?? '—'} min
-                {credit && credit.minutes > 0 ? ` · ${minutesLabel(credit.minutes)} extra care` : ''}
+                Booked {visit.session?.summary?.bookedMinutes ?? visit.durationMinutes} · actual{' '}
+                {visit.session?.summary?.actualMinutes ?? '—'} min
+                {credit && credit.minutes > 0
+                  ? ` · ${minutesLabel(credit.minutes)} extra care`
+                  : ''}
               </p>
               <div className="row row--wrap">
                 {arrival?.entries.map((entry) => (
                   <span key={`${entry.region}:${entry.side}`} className="timeline__entry">
-                    {areaLabel(entry.region, entry.side)} <PainChip score={entry.pain} /> <small className="muted">at arrival</small>
+                    {areaLabel(entry.region, entry.side)} <PainChip score={entry.pain} />{' '}
+                    <small className="muted">at arrival</small>
                   </span>
                 ))}
                 {confirmations.map((entry) => (
                   <span key={entry.id} className="timeline__entry">
-                    {areaKeyLabel(entry.area)} <small className="muted">confirmed from an earlier entry</small>
+                    {areaKeyLabel(entry.area)}{' '}
+                    <small className="muted">confirmed from an earlier entry</small>
                   </span>
                 ))}
               </div>
@@ -292,7 +358,15 @@ function History({ clientId, state }: { clientId: string; state: DemoState }) {
   )
 }
 
-function Notes({ clientId, state, therapistId }: { clientId: string; state: DemoStore; therapistId: string }) {
+function Notes({
+  clientId,
+  state,
+  therapistId,
+}: {
+  clientId: string
+  state: DemoStore
+  therapistId: string
+}) {
   const [filter, setFilter] = useState<'all' | NoteVisibility>('all')
   const [draft, setDraft] = useState('')
   const [visibility, setVisibility] = useState<NoteVisibility>('private')
@@ -301,7 +375,9 @@ function Notes({ clientId, state, therapistId }: { clientId: string; state: Demo
   const notes = useMemo(
     () =>
       state.notes
-        .filter((note) => note.clientId === clientId && (filter === 'all' || note.visibility === filter))
+        .filter(
+          (note) => note.clientId === clientId && (filter === 'all' || note.visibility === filter),
+        )
         .sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
     [state.notes, clientId, filter],
   )
@@ -321,7 +397,13 @@ function Notes({ clientId, state, therapistId }: { clientId: string; state: Demo
             { value: 'report', label: 'For a doctor’s report' },
           ]}
         />
-        <Textarea value={draft} rows={3} maxLength={1200} aria-label="Note" onChange={(event) => setDraft(event.target.value)} />
+        <Textarea
+          value={draft}
+          rows={3}
+          maxLength={1200}
+          aria-label="Note"
+          onChange={(event) => setDraft(event.target.value)}
+        />
         <p className="field__hint">
           {visibility === 'private'
             ? 'Private notes stay inside the practice. They are never offered for a report.'
@@ -370,7 +452,12 @@ function Notes({ clientId, state, therapistId }: { clientId: string; state: Demo
               </div>
               {editing === note.id ? (
                 <div className="stack">
-                  <Textarea value={editText} rows={3} aria-label="Edit note" onChange={(event) => setEditText(event.target.value)} />
+                  <Textarea
+                    value={editText}
+                    rows={3}
+                    aria-label="Edit note"
+                    onChange={(event) => setEditText(event.target.value)}
+                  />
                   <div className="row">
                     <Button
                       size="sm"

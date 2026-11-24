@@ -12,7 +12,7 @@ test('@a11y client screens have no serious axe violations', async ({ page }) => 
   await freshDemo(page)
   await expectNoSeriousViolations(page, 'entrance')
   await signInAs(page, 'client', IDS.mira, '/client/home')
-  await expect(page.getByRole('heading', { name: 'Mira', exact: true })).toBeVisible()
+  await expect(page.getByRole('heading', { level: 1, name: /, Mira$/ })).toBeVisible()
   await expectNoSeriousViolations(page, 'client home')
   for (const [hash, heading] of [
     ['/client/log', 'Where do you feel it?'],

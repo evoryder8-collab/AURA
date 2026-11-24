@@ -6,7 +6,7 @@ test('a day-seven update reaches Wassana before day eight; arrival adds the calf
 
   // Day seven, at home: Mira logs her left shoulder.
   await signInAs(page, 'client', IDS.mira, '/client/home')
-  await expect(page.getByRole('heading', { name: 'Mira', exact: true })).toBeVisible()
+  await expect(page.getByRole('heading', { level: 1, name: /, Mira$/ })).toBeVisible()
   await page.locator('.log-prompt').getByRole('button', { name: 'Log how I feel' }).click()
   await page.getByRole('button', { name: 'Choose from a list' }).click()
   await page.getByRole('button', { name: 'Shoulder', exact: true }).click()

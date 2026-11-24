@@ -21,6 +21,12 @@ export function RootLayout() {
       <a className="skip-link" href="#main-content" onClick={skipToContent}>
         Skip to content
       </a>
+      <div className="sky" aria-hidden="true">
+        <span className="sky__light sky__light--aqua" />
+        <span className="sky__light sky__light--violet" />
+        <span className="sky__light sky__light--sunset" />
+        <span className="sky__grain" />
+      </div>
       <AppStatus />
       {env.demoMode && !hydrated ? <Spinner label="Opening AURA" fullPage /> : <Outlet />}
     </div>

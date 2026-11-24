@@ -136,16 +136,7 @@
   font-weight: 600;
 }
 
-.link-button {
-  min-height: var(--touch);
-  padding: 0 4px;
-  border: 0;
-  background: none;
-  color: var(--aqua);
-  font-weight: 650;
-  text-decoration: underline;
-  text-underline-offset: 3px;
-}
+
 
 .arrival__quick {
   width: 100%;

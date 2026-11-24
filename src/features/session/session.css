@@ -6,10 +6,12 @@
   grid-template-rows: auto minmax(0, 1fr) auto;
   padding: calc(30px + var(--safe-top)) var(--gutter) calc(var(--s-4) + var(--safe-bottom));
   gap: var(--s-3);
+  /* Calm for a dim treatment room: the same night sky, with the light turned low. */
   background:
-    radial-gradient(70% 60% at 40% 45%, rgba(26, 58, 66, 0.55), transparent 70%),
-    radial-gradient(60% 50% at 90% 10%, rgba(243, 207, 142, 0.06), transparent 70%),
-    linear-gradient(180deg, #071216, #04090b);
+    radial-gradient(70% 60% at 38% 45%, rgba(70, 90, 190, 0.22), transparent 70%),
+    radial-gradient(50% 50% at 92% 8%, rgba(94, 240, 214, 0.1), transparent 70%),
+    radial-gradient(60% 50% at 80% 100%, rgba(255, 150, 110, 0.1), transparent 70%),
+    linear-gradient(180deg, #0a0d24, #05060f);
   overflow: hidden;
 }
 
@@ -45,7 +47,7 @@
   min-height: 0;
   border-radius: var(--r-xl);
   border: 1px solid rgba(208, 238, 230, 0.07);
-  background: radial-gradient(60% 70% at 50% 50%, rgba(16, 42, 48, 0.6), rgba(3, 10, 12, 0.5));
+  background: radial-gradient(60% 70% at 50% 50%, rgba(40, 50, 110, 0.35), rgba(5, 7, 20, 0.45));
   overflow: hidden;
 }
 

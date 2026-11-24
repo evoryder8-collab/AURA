@@ -9,7 +9,13 @@ import { AuthContext, type AuthState } from '@/features/auth/auth-context'
 export const TEST_NOW = new Date(2026, 10, 23, 8, 0, 0)
 
 export function seedDemo() {
-  useDemoStore.setState({ ...createDemoState(), hydrated: true })
+  const state = createDemoState()
+  // These tests describe a week with one visit per client; the demo's later bookings are left out.
+  useDemoStore.setState({
+    ...state,
+    appointments: state.appointments.filter((appointment) => !appointment.id.endsWith('-next-week')),
+    hydrated: true,
+  })
 }
 
 /** Renders one page signed in as a demo client or therapist. Plain .ts so the fast-refresh lint rule stays quiet. */

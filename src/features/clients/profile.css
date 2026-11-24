@@ -163,3 +163,9 @@
 .profile__note-body {
   white-space: pre-wrap;
 }
+
+.profile__identity {
+  display: flex;
+  align-items: center;
+  gap: var(--s-4);
+}

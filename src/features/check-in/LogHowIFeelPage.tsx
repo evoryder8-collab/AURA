@@ -15,6 +15,7 @@ import {
   expandSide,
   getRegion,
   latestByArea,
+  parseAreaKey,
   recordedAreas,
   type ChosenSide,
   type RegionId,
@@ -58,7 +59,8 @@ export function LogHowIFeelPage() {
   const auth = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
-  const from = (location.state as { from?: string } | null)?.from ?? '/client/home'
+  const navigationState = location.state as { from?: string; preset?: string } | null
+  const from = navigationState?.from ?? '/client/home'
   const clientId = auth.demoClientId ?? ''
   const state = useDemoStore()
   const observations = useMemo(() => clientObservations(state, clientId), [state, clientId])
@@ -69,7 +71,11 @@ export function LogHowIFeelPage() {
   const upcomingTherapist = getTherapist(state, upcoming?.therapistId)
 
   const [face, setFace] = useState<FigureFace>('front')
-  const [selections, setSelections] = useState<Selection[]>([])
+  // Opening from a "recently recorded" chip starts with that area selected.
+  const [selections, setSelections] = useState<Selection[]>(() => {
+    const preset = navigationState?.preset ? parseAreaKey(navigationState.preset) : null
+    return preset ? [{ id: nextId(), region: preset.region, side: preset.side, pain: null }] : []
+  })
   const [listOpen, setListOpen] = useState(false)
   const [when, setWhen] = useState<When>('now')
   const [note, setNote] = useState('')

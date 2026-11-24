@@ -46,5 +46,5 @@ test('a client signs in the same way and lands on home', async ({ page }) => {
   await page.getByRole('button', { name: 'Fill demo sign-in' }).click()
   await page.getByRole('button', { name: /^sign in/i }).click()
   await expect(page).toHaveURL(/#\/client\/home/)
-  await expect(page.getByRole('heading', { name: 'Mira', exact: true })).toBeVisible()
+  await expect(page.getByRole('heading', { level: 1, name: /, Mira$/ })).toBeVisible()
 })

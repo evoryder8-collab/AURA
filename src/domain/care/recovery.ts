@@ -28,7 +28,11 @@ export type VisitMeasures = {
 const clamp = (value: number) => Math.min(10, Math.max(0, value))
 const round1 = (value: number) => Math.round(value * 10) / 10
 
-/** One comparable row per completed visit, ready for the deterministic pattern engine. */
+/**
+ * One comparable row per completed visit, ready for the deterministic pattern engine.
+ * Goal ease follows one goal, the one rated most recently by the last visit, so the
+ * series never compares the ease of two different goals.
+ */
 export function visitMeasures(input: {
   readonly visits: readonly VisitRef[]
   readonly observations: readonly CareObservation[]
@@ -38,6 +42,9 @@ export function visitMeasures(input: {
   readonly goalScores: readonly GoalScore[]
 }): VisitMeasures[] {
   const visits = [...input.visits].sort((a, b) => a.startsAt.localeCompare(b.startsAt))
+  const lastVisitAt = visits.at(-1)?.startsAt ?? ''
+  const goalScores = [...input.goalScores].sort((a, b) => a.recordedAt.localeCompare(b.recordedAt))
+  const trackedGoal = goalScores.filter((score) => score.recordedAt <= lastVisitAt).at(-1)?.goalId
   return visits.map((visit, index) => {
     const previous = visits[index - 1]
     const points = sessionPainPoints({
@@ -50,10 +57,7 @@ export function visitMeasures(input: {
     })
     const stiffness = input.stiffness.filter((item) => item.appointmentId === visit.id)
     const rom = input.rom.filter((item) => item.appointmentId === visit.id)
-    const goal = input.goalScores
-      .filter((score) => score.recordedAt <= visit.startsAt)
-      .sort((a, b) => a.recordedAt.localeCompare(b.recordedAt))
-      .at(-1)
+    const goal = goalScores.filter((score) => score.goalId === trackedGoal && score.recordedAt <= visit.startsAt).at(-1)
     return {
       visitId: visit.id,
       observedAt: visit.startsAt,

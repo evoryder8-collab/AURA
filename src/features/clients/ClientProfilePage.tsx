@@ -12,6 +12,7 @@ import {
   SESSION_RESPONSE_LABEL,
   areaKeyLabel,
   areaLabel,
+  lastReportedAt,
   latestByArea,
   type NoteVisibility,
 } from '@/domain/care'
@@ -33,6 +34,7 @@ import { anchorFor } from '@/features/body/anchors'
 import { ProgressPhotos } from '@/features/photos/ProgressPhotos'
 import { ProgressExplorer } from '@/features/progress/ProgressExplorer'
 import {
+  dayPhrase,
   daysBetween,
   fmtDate,
   fmtDay,
@@ -144,8 +146,10 @@ function Overview({
 }) {
   const now = Date.now()
   const observations = clientObservations(state, clientId)
-  const latest = [...latestByArea(observations).values()].filter(
-    (point) => daysBetween(point.observedAt, now) <= 30 && point.pain > 0,
+  // Recent means recorded or confirmed as still accurate in the last 30 days; the score keeps its own date.
+  const confirmations = state.confirmations.filter((item) => item.clientId === clientId)
+  const latest = [...latestByArea(observations, undefined, confirmations).values()].filter(
+    (point) => daysBetween(lastReportedAt(point, now), now) <= 30 && point.pain > 0,
   )
   const upcoming = clientAppointments(state, clientId).find((item) => isUpcoming(item, now))
   const upcomingTherapist = getTherapist(state, upcoming?.therapistId)
@@ -183,6 +187,9 @@ function Overview({
                       <span className="small muted">
                         {relativeWhen(point.observedAt, now)} ·{' '}
                         {OBSERVATION_SOURCE_LABEL[point.source]}
+                        {lastReportedAt(point, now) > Date.parse(point.observedAt)
+                          ? ` · confirmed at arrival ${dayPhrase(lastReportedAt(point, now), now)}`
+                          : null}
                       </span>
                       {point.note ? <q className="small">{point.note}</q> : null}
                     </div>

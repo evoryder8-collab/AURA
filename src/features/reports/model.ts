@@ -6,7 +6,7 @@ import {
   type AreaKey,
   type AreaPoint,
   type DoctorReport,
-    type ObservationSource,
+  type ObservationSource,
   type ReportContent,
   type ReportSection,
   type RomMeasurement,
@@ -396,24 +396,32 @@ function goalChart(entry: ReportContent['goals'][number], from: string, to: stri
   }
 }
 
+/** Where a score confirmed at arrival first came from, for the visit table's footnote. */
+const CONFIRMED_SOURCE: Record<ObservationSource, string> = {
+  home: 'logged at home',
+  arrival: 'given at an earlier arrival check',
+  session: 'recorded during an earlier visit',
+  follow_up: 'given in a next-day follow-up',
+}
+
 function visitTable(inputs: ReportInputs): VisitTable {
   const { content } = inputs
   const { dateFrom, dateTo } = content.report
   const visits = inputs.visits
     .filter((visit) => time(visit.startsAt) >= time(dateFrom) && time(visit.startsAt) <= time(dateTo))
     .sort((a, b) => a.startsAt.localeCompare(b.startsAt))
-  let confirmed = false
+  const confirmedSources = new Set<ObservationSource>()
   let missing = false
   const arrivalValues = new Map<AreaKey, number[]>()
   const rows = visits.map((visit) => {
     const cells = content.areas.flatMap((area) => {
       const arrival =
         area.series.find((point) => point.appointmentId === visit.id && point.source === 'arrival') ??
-        area.series.find((point) => visit.arrivalAt !== undefined && point.confirmedAt.includes(visit.arrivalAt))
+        area.series.find((point) => point.confirmedAt.some((item) => item.appointmentId === visit.id))
       const next = area.series.find((point) => point.appointmentId === visit.id && point.source === 'follow_up')
       if (arrival) arrivalValues.set(area.area, [...(arrivalValues.get(area.area) ?? []), arrival.pain])
       const isConfirmed = arrival !== undefined && arrival.appointmentId !== visit.id
-      confirmed ||= isConfirmed
+      if (isConfirmed) confirmedSources.add(arrival.source)
       missing ||= !arrival || !next
       return [arrival ? `${arrival.pain}/10${isConfirmed ? ' (confirmed)' : ''}` : '—', next ? `${next.pain}/10` : '—']
     })
@@ -438,7 +446,15 @@ function visitTable(inputs: ReportInputs): VisitTable {
     rows,
     summary,
     footnotes: [
-      ...(confirmed ? ['Confirmed: at arrival the client confirmed that an earlier score, logged at home, still applied.'] : []),
+      ...(confirmedSources.size
+        ? [
+            `Confirmed: at arrival the client confirmed that an earlier score, ${names(
+              (['home', 'follow_up', 'arrival', 'session'] as const)
+                .filter((source) => confirmedSources.has(source))
+                .map((source) => CONFIRMED_SOURCE[source]),
+            )}, still applied.`,
+          ]
+        : []),
       ...(missing ? ['— no score was recorded for that area at that point.'] : []),
     ],
   }

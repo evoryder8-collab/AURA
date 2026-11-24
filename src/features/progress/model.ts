@@ -203,10 +203,7 @@ export function painSeries(
     at: Date.parse(point.observedAt),
     recordedBy: observationById.get(point.observationId)?.recordedBy,
     visit: point.appointmentId ? visitById.get(point.appointmentId) : undefined,
-    confirmations: confirmations
-      .filter((item) => item.observationId === point.observationId && item.area === point.area)
-      .map((item) => ({ at: Date.parse(item.confirmedAt), visit: visitById.get(item.appointmentId) }))
-      .sort((a, b) => a.at - b.at),
+    confirmations: point.confirmedAt.map((item) => ({ at: Date.parse(item.at), visit: visitById.get(item.appointmentId) })),
   }))
 }
 
@@ -253,11 +250,17 @@ export function painAnswer(input: {
   const { points, audience, now } = input
   const areaName = lowerFirst(areaKeyLabel(input.area))
   const subject = audience === 'client' ? `Your ${areaName}` : `${input.clientName}’s ${areaName}`
+  const whose = audience === 'client' ? 'your' : 'the'
   const latest = points.at(-1)
   if (!latest) {
-    const before = input.earlier
-      ? ` The last entry was ${outOf10(input.earlier.pain)} ${onDay(input.earlier.at, now)}.`
-      : ''
+    const { earlier } = input
+    // A "still accurate" inside the window is told, never plotted: the score keeps its own date.
+    const confirmed = earlier?.confirmations.filter((item) => inWindow(item.at, input.window)).at(-1)
+    const before = !earlier
+      ? ''
+      : confirmed
+        ? ` ${audience === 'client' ? 'You' : input.clientName} confirmed the ${outOf10(earlier.pain)} from ${dayLabel(earlier.at)} as still accurate ${confirmed.visit ? `at ${whose} visit` : 'at arrival'} ${onDay(confirmed.at, now)}.`
+        : ` The last entry was ${outOf10(earlier.pain)} ${onDay(earlier.at, now)}.`
     return { answer: `No ${areaName} entries ${input.phrase}.${before}`, summary: '' }
   }
 
@@ -275,7 +278,6 @@ export function painAnswer(input: {
   const latestPart = `${outOf10(latest.pain)} ${onDay(latest.at, now)} ${sourcePhrase(latest.source, audience)}`
   let answer: string
   if (atVisit) {
-    const whose = audience === 'client' ? 'your' : 'the'
     const visitPart =
       atVisit.visit.id === lastVisit?.id
         ? `at ${whose} last visit ${onDay(atVisit.visit.at, now)}`

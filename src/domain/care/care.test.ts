@@ -104,7 +104,7 @@ describe('arrival confirmation', () => {
     expect(series).toHaveLength(1)
     expect(series[0]?.pain).toBe(7)
     expect(series[0]?.observedAt).toBe(homeShoulder.observedAt)
-    expect(series[0]?.confirmedAt).toEqual([confirmation.confirmedAt])
+    expect(series[0]?.confirmedAt).toEqual([{ at: confirmation.confirmedAt, appointmentId: appointment.id }])
   })
 
   it('maps confirmed and newly added areas for Session Mode, keeping yesterday’s date', () => {

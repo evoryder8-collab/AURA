@@ -48,6 +48,9 @@ export function painEntriesFromSelections(selections: readonly PainSelection[]):
   return [...byArea.values()]
 }
 
+/** "Still accurate" at a later arrival: when, and for which visit. */
+export type PointConfirmation = { readonly at: string; readonly appointmentId: string }
+
 /** One plotted score for one area. Confirmations annotate it; they never duplicate it. */
 export type AreaPoint = {
   readonly observationId: string
@@ -60,7 +63,7 @@ export type AreaPoint = {
   readonly source: ObservationSource
   readonly appointmentId?: string
   readonly note?: string
-  readonly confirmedAt: readonly string[]
+  readonly confirmedAt: readonly PointConfirmation[]
 }
 
 const time = (iso: string) => new Date(iso).getTime()
@@ -73,10 +76,13 @@ export function areaPoints(
   observations: readonly CareObservation[],
   confirmations: readonly ArrivalConfirmation[] = [],
 ): AreaPoint[] {
-  const confirmationsByPoint = new Map<string, string[]>()
-  for (const confirmation of confirmations) {
+  const confirmationsByPoint = new Map<string, PointConfirmation[]>()
+  for (const confirmation of [...confirmations].sort((a, b) => time(a.confirmedAt) - time(b.confirmedAt))) {
     const key = `${confirmation.observationId}|${confirmation.area}`
-    confirmationsByPoint.set(key, [...(confirmationsByPoint.get(key) ?? []), confirmation.confirmedAt])
+    confirmationsByPoint.set(key, [
+      ...(confirmationsByPoint.get(key) ?? []),
+      { at: confirmation.confirmedAt, appointmentId: confirmation.appointmentId },
+    ])
   }
   return [...observations].sort(compareObservations).flatMap((observation) =>
     observation.entries.map((entry) => {
@@ -111,14 +117,23 @@ export function areaSeries(
   )
 }
 
-/** Latest score per area observed at or before `asOf`. */
+/**
+ * When the client last stood by this score: the moment it was recorded, or a later
+ * "still accurate" at arrival up to `asOf`. The score and its own date never change.
+ */
+export function lastReportedAt(point: AreaPoint, asOf = Infinity): number {
+  return Math.max(time(point.observedAt), ...point.confirmedAt.map((item) => time(item.at)).filter((at) => at <= asOf))
+}
+
+/** Latest score per area observed at or before `asOf`, annotated with its confirmations. */
 export function latestByArea(
   observations: readonly CareObservation[],
   asOf?: string,
+  confirmations: readonly ArrivalConfirmation[] = [],
 ): Map<AreaKey, AreaPoint> {
   const limit = asOf ? time(asOf) : Infinity
   const latest = new Map<AreaKey, AreaPoint>()
-  for (const point of areaPoints(observations)) {
+  for (const point of areaPoints(observations, confirmations)) {
     if (time(point.observedAt) <= limit) latest.set(point.area, point)
   }
   return latest
@@ -132,8 +147,9 @@ export function recordedAreas(observations: readonly CareObservation[]): AreaKey
 }
 
 /**
- * What changed since the client's previous visit: every home or follow-up observation
- * observed after `since` and before `until`, newest first.
+ * What changed since the client's previous visit: every home, follow-up or arrival
+ * observation observed after `since` and before `until`, newest first. An arrival update
+ * is the newest word on an area, so it leads, as it does on the body figure.
  */
 export function updatesBetween(
   observations: readonly CareObservation[],
@@ -145,7 +161,7 @@ export function updatesBetween(
   return observations
     .filter(
       (observation) =>
-        (observation.source === 'home' || observation.source === 'follow_up') &&
+        (observation.source === 'home' || observation.source === 'follow_up' || observation.source === 'arrival') &&
         time(observation.observedAt) > start &&
         time(observation.observedAt) <= end,
     )
@@ -157,19 +173,21 @@ const PREVIOUS_VISIT_MARGIN_MS = 12 * 3_600_000
 
 /**
  * The areas a client is asked to confirm or update at arrival: the latest report for every
- * area mentioned at or since the previous visit (or in the last 30 days for a first visit).
- * An area nobody mentioned at the last visit is treated as settled, so arrival stays short.
+ * area mentioned or confirmed at or since the previous visit (or in the last 30 days for a
+ * first visit). An area nobody mentioned at the last visit is treated as settled, so arrival
+ * stays short.
  */
 export function areasToReview(
   observations: readonly CareObservation[],
   appointmentStartsAt: string,
   previousVisitAt?: string,
+  confirmations: readonly ArrivalConfirmation[] = [],
 ): AreaPoint[] {
   const windowStart = previousVisitAt
     ? time(previousVisitAt) - PREVIOUS_VISIT_MARGIN_MS
     : time(appointmentStartsAt) - ARRIVAL_LOOKBACK_DAYS * 86_400_000
-  return [...latestByArea(observations, appointmentStartsAt).values()]
-    .filter((point) => time(point.observedAt) >= windowStart)
+  return [...latestByArea(observations, appointmentStartsAt, confirmations).values()]
+    .filter((point) => lastReportedAt(point, time(appointmentStartsAt)) >= windowStart)
     .sort((a, b) => b.pain - a.pain || time(b.observedAt) - time(a.observedAt))
 }
 
@@ -178,8 +196,9 @@ export type SessionPointStatus = 'confirmed' | 'updated' | 'new' | 'unconfirmed'
 export type SessionPainPoint = AreaPoint & { readonly status: SessionPointStatus }
 
 /**
- * The pain points Session Mode shows. After arrival intake they are exactly what the client
- * confirmed or updated; before it, the latest reports with their original dates.
+ * The scores standing at a visit. After arrival intake they are exactly what the client
+ * confirmed or updated; before it, the latest reports with their original dates. A 0/10 is a
+ * real score and stays: the Recovery Index counts it, and only screens that show discomfort hide it.
  */
 export function sessionPainPoints(input: {
   readonly observations: readonly CareObservation[]
@@ -191,9 +210,9 @@ export function sessionPainPoints(input: {
 }): SessionPainPoint[] {
   const { observations, confirmations, appointmentId } = input
   if (!input.arrivalCompleted) {
-    return areasToReview(observations, input.appointmentStartsAt, input.previousVisitAt)
-      .filter((point) => point.pain > 0)
-      .map((point) => ({ ...point, status: 'unconfirmed' as const }))
+    return areasToReview(observations, input.appointmentStartsAt, input.previousVisitAt, confirmations).map(
+      (point) => ({ ...point, status: 'unconfirmed' as const }),
+    )
   }
 
   const points = areaPoints(observations, confirmations)
@@ -215,9 +234,7 @@ export function sessionPainPoints(input: {
   for (const point of points.filter((item) => item.observationId === arrival?.id)) {
     result.set(point.area, { ...point, status: earlierAreas.has(point.area) ? 'updated' : 'new' })
   }
-  return [...result.values()]
-    .filter((point) => point.pain > 0)
-    .sort((a, b) => b.pain - a.pain)
+  return [...result.values()].sort((a, b) => b.pain - a.pain)
 }
 
 /** Groups a list of areas by whether they are seen from the front, the back or both. */

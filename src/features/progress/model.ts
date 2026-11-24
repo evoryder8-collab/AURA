@@ -2,10 +2,10 @@
  * Pure helpers behind the progress charts. Every figure on the page (headline answer,
  * chart, summary, table) is read from the series these functions return, so they agree.
  */
-import { startOfDay } from 'date-fns'
 import {
   areaKeyLabel,
   areaSeries,
+  isGap,
   ROM_MOVEMENTS,
   SESSION_RESPONSE_LABEL,
   type Actor,
@@ -24,12 +24,12 @@ import {
   type StiffnessAssessment,
 } from '@/domain/care'
 import type { DemoAppointment, DemoTherapist } from '@/data/demo/model'
+import { practiceDayStart } from '@/lib/dates/practice'
 import { dayPhrase, daysBetween, fmtDay, fmtShortDate, fmtTime } from '@/lib/formatting/time'
 
 export const DAY_MS = 86_400_000
 /** A stretch longer than this with no entry is drawn as "No entries" and never bridged. */
-import { GAP_DAYS } from '@/domain/care'
-export { GAP_DAYS }
+export { GAP_DAYS } from '@/domain/care'
 
 export type Audience = 'client' | 'therapist'
 
@@ -120,19 +120,20 @@ export type TimeWindow = {
   readonly startsAtFirstEntry: boolean
 }
 
+/** Every range starts at a practice midnight, counted in calendar days, so the hour and a DST change never move it. */
 export function rangeWindow(
   range: RangeKey,
   visits: readonly Visit[],
   firstRecordAt: number | undefined,
   now: number,
 ): TimeWindow {
-  const first = firstRecordAt === undefined ? undefined : startOfDay(firstRecordAt).getTime()
+  const first = firstRecordAt === undefined ? undefined : practiceDayStart(firstRecordAt)
   const sixth = visits.slice(-VISIT_RANGE_COUNT)[0]
   let from: number
-  if (range === 'visits' && sixth) from = startOfDay(sixth.at).getTime()
-  else if (range === 'days30') from = startOfDay(now - 30 * DAY_MS).getTime()
-  else if (range === 'days90') from = startOfDay(now - 90 * DAY_MS).getTime()
-  else from = first ?? startOfDay(now - 30 * DAY_MS).getTime()
+  if (range === 'visits' && sixth) from = practiceDayStart(sixth.at)
+  else if (range === 'days30') from = practiceDayStart(now, -30)
+  else if (range === 'days90') from = practiceDayStart(now, -90)
+  else from = first ?? practiceDayStart(now, -30)
   const startsAtFirstEntry = first !== undefined && from < first
   return { from: startsAtFirstEntry && first !== undefined ? first : from, to: now, startsAtFirstEntry }
 }
@@ -149,13 +150,12 @@ export type Gap = { readonly from: number; readonly to: number; readonly label: 
  */
 export function findGaps(times: readonly number[], window: TimeWindow, label = 'No entries'): Gap[] {
   const sorted = times.filter((at) => inWindow(at, window)).sort((a, b) => a - b)
-  const limit = GAP_DAYS * DAY_MS
   const edges = [window.from, ...sorted, window.to]
   const gaps: Gap[] = []
   for (let index = 1; index < edges.length; index += 1) {
     const from = edges[index - 1] as number
     const to = edges[index] as number
-    if (to - from > limit) gaps.push({ from, to, label, ...(index === edges.length - 1 ? { trailing: true } : {}) })
+    if (isGap(from, to)) gaps.push({ from, to, label, ...(index === edges.length - 1 ? { trailing: true } : {}) })
   }
   return gaps
 }
@@ -203,10 +203,7 @@ export function painSeries(
     at: Date.parse(point.observedAt),
     recordedBy: observationById.get(point.observationId)?.recordedBy,
     visit: point.appointmentId ? visitById.get(point.appointmentId) : undefined,
-    confirmations: confirmations
-      .filter((item) => item.observationId === point.observationId && item.area === point.area)
-      .map((item) => ({ at: Date.parse(item.confirmedAt), visit: visitById.get(item.appointmentId) }))
-      .sort((a, b) => a.at - b.at),
+    confirmations: point.confirmedAt.map((item) => ({ at: Date.parse(item.at), visit: visitById.get(item.appointmentId) })),
   }))
 }
 
@@ -253,11 +250,17 @@ export function painAnswer(input: {
   const { points, audience, now } = input
   const areaName = lowerFirst(areaKeyLabel(input.area))
   const subject = audience === 'client' ? `Your ${areaName}` : `${input.clientName}’s ${areaName}`
+  const whose = audience === 'client' ? 'your' : 'the'
   const latest = points.at(-1)
   if (!latest) {
-    const before = input.earlier
-      ? ` The last entry was ${outOf10(input.earlier.pain)} ${onDay(input.earlier.at, now)}.`
-      : ''
+    const { earlier } = input
+    // A "still accurate" inside the window is told, never plotted: the score keeps its own date.
+    const confirmed = earlier?.confirmations.filter((item) => inWindow(item.at, input.window)).at(-1)
+    const before = !earlier
+      ? ''
+      : confirmed
+        ? ` ${audience === 'client' ? 'You' : input.clientName} confirmed the ${outOf10(earlier.pain)} from ${dayLabel(earlier.at)} as still accurate ${confirmed.visit ? `at ${whose} visit` : 'at arrival'} ${onDay(confirmed.at, now)}.`
+        : ` The last entry was ${outOf10(earlier.pain)} ${onDay(earlier.at, now)}.`
     return { answer: `No ${areaName} entries ${input.phrase}.${before}`, summary: '' }
   }
 
@@ -275,7 +278,6 @@ export function painAnswer(input: {
   const latestPart = `${outOf10(latest.pain)} ${onDay(latest.at, now)} ${sourcePhrase(latest.source, audience)}`
   let answer: string
   if (atVisit) {
-    const whose = audience === 'client' ? 'your' : 'the'
     const visitPart =
       atVisit.visit.id === lastVisit?.id
         ? `at ${whose} last visit ${onDay(atVisit.visit.at, now)}`

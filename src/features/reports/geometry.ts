@@ -1,12 +1,9 @@
-import type { AreaKey } from '@/domain/care'
+import { isGap, type AreaKey } from '@/domain/care'
+import { addDays, practiceMidnight } from '@/lib/dates/practice'
 import {
-  GAP_DAYS,
-  addDays,
-  daysApart,
   fmtDayMonth,
   fmtMed,
   practiceDay,
-  practiceMidnight,
   type FigureMarker,
   type ReportChart,
   type SeriesPoint,
@@ -48,7 +45,7 @@ export function chartLayout(chart: ReportChart, from: string, to: string, width:
   const segments: PlottedPoint[][] = []
   points.forEach((point, index) => {
     const previous = points[index - 1]
-    if (!previous || daysApart(previous.at, point.at) > GAP_DAYS) segments.push([point])
+    if (!previous || isGap(time(previous.at), time(point.at))) segments.push([point])
     else segments.at(-1)?.push(point)
   })
 

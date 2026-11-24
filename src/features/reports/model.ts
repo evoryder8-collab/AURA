@@ -3,24 +3,22 @@ import {
   ROM_METHOD_LABEL,
   figureViews,
   hiddenAreas,
+  isGap,
   type AreaKey,
   type AreaPoint,
   type DoctorReport,
-    type ObservationSource,
+  type ObservationSource,
   type ReportContent,
   type ReportSection,
   type RomMeasurement,
 } from '@/domain/care'
-import { PRACTICE_TIME_ZONE } from '@/lib/formatting/time'
+import { addDays, practiceMidnight } from '@/lib/dates/practice'
+import { dayKey, PRACTICE_TIME_ZONE } from '@/lib/formatting/time'
 
 /**
  * Everything the preview and the PDF print, computed once from `buildReportContent()`.
  * Both renderers read only this, so a number on screen and in the file cannot disagree.
  */
-
-const DAY = 86_400_000
-import { GAP_DAYS } from '@/domain/care'
-export { GAP_DAYS }
 
 const formatter = (options: Intl.DateTimeFormatOptions) =>
   new Intl.DateTimeFormat('en-GB', { timeZone: PRACTICE_TIME_ZONE, ...options })
@@ -42,49 +40,10 @@ export function fmtPeriod(from: string, to: string) {
   return `${sameYear ? fmtDayMonth(from) : fmtMed(from)} – ${fmtMed(to)}`
 }
 
-const zonedParts = formatter({
-  year: 'numeric',
-  month: 'numeric',
-  day: 'numeric',
-  hour: 'numeric',
-  minute: 'numeric',
-  hourCycle: 'h23',
-})
-
-function zoneOffset(at: number) {
-  const parts = Object.fromEntries(
-    zonedParts
-      .formatToParts(new Date(at))
-      .filter((part) => part.type !== 'literal')
-      .map((part) => [part.type, Number(part.value)]),
-  ) as Record<'year' | 'month' | 'day' | 'hour' | 'minute', number>
-  return Date.UTC(parts.year, parts.month - 1, parts.day, parts.hour, parts.minute) - Math.floor(at / 60_000) * 60_000
-}
-
-/** UTC instant of midnight at the start of `day` (yyyy-mm-dd) in the practice time zone. */
-export function practiceMidnight(day: string): string {
-  const guess = Date.parse(`${day}T00:00:00Z`)
-  if (!Number.isFinite(guess)) throw new RangeError('A date must look like 2026-11-23.')
-  let at = guess - zoneOffset(guess)
-  at = guess - zoneOffset(at)
-  return new Date(at).toISOString()
-}
-
 /** yyyy-mm-dd of `iso` in the practice time zone, for date inputs. */
-export function practiceDay(iso: string) {
-  const parts = formatter({ year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(new Date(iso))
-  const get = (type: string) => parts.find((part) => part.type === type)?.value ?? '00'
-  return `${get('year')}-${get('month')}-${get('day')}`
-}
+export const practiceDay = (iso: string) => dayKey(iso)
 
 const time = (iso: string) => new Date(iso).getTime()
-
-/** Whole calendar days from `a` to `b`; a daylight-saving hour never tips a two-week gap over. */
-export const daysApart = (a: string, b: string) => Math.round((time(b) - time(a)) / DAY)
-
-/** yyyy-mm-dd plus `days`. */
-export const addDays = (day: string, days: number) =>
-  new Date(Date.parse(`${day}T00:00:00Z`) + days * DAY).toISOString().slice(0, 10)
 
 export type RangePreset = 'visits' | 'months' | 'custom'
 
@@ -276,16 +235,16 @@ function gapStatements(points: readonly SeriesPoint[], from: string, to: string,
   if (!points.length) return [`No ${noun} were recorded in this period.`]
   const out: string[] = []
   const first = points[0] as SeriesPoint
-  if (daysApart(from, first.at) > GAP_DAYS) out.push(`No ${noun} were recorded before ${fmtDayMonth(first.at)}.`)
+  if (isGap(time(from), time(first.at))) out.push(`No ${noun} were recorded before ${fmtDayMonth(first.at)}.`)
   for (let index = 1; index < points.length; index += 1) {
     const previous = points[index - 1] as SeriesPoint
     const current = points[index] as SeriesPoint
-    if (daysApart(previous.at, current.at) > GAP_DAYS) {
+    if (isGap(time(previous.at), time(current.at))) {
       out.push(`No ${noun} were recorded between ${fmtDayMonth(previous.at)} and ${fmtDayMonth(current.at)}.`)
     }
   }
   const last = points.at(-1) as SeriesPoint
-  if (daysApart(last.at, to) > GAP_DAYS) out.push(`No ${noun} have been recorded since ${fmtDayMonth(last.at)}.`)
+  if (isGap(time(last.at), time(to))) out.push(`No ${noun} have been recorded since ${fmtDayMonth(last.at)}.`)
   return out
 }
 
@@ -396,24 +355,32 @@ function goalChart(entry: ReportContent['goals'][number], from: string, to: stri
   }
 }
 
+/** Where a score confirmed at arrival first came from, for the visit table's footnote. */
+const CONFIRMED_SOURCE: Record<ObservationSource, string> = {
+  home: 'logged at home',
+  arrival: 'given at an earlier arrival check',
+  session: 'recorded during an earlier visit',
+  follow_up: 'given in a next-day follow-up',
+}
+
 function visitTable(inputs: ReportInputs): VisitTable {
   const { content } = inputs
   const { dateFrom, dateTo } = content.report
   const visits = inputs.visits
     .filter((visit) => time(visit.startsAt) >= time(dateFrom) && time(visit.startsAt) <= time(dateTo))
     .sort((a, b) => a.startsAt.localeCompare(b.startsAt))
-  let confirmed = false
+  const confirmedSources = new Set<ObservationSource>()
   let missing = false
   const arrivalValues = new Map<AreaKey, number[]>()
   const rows = visits.map((visit) => {
     const cells = content.areas.flatMap((area) => {
       const arrival =
         area.series.find((point) => point.appointmentId === visit.id && point.source === 'arrival') ??
-        area.series.find((point) => visit.arrivalAt !== undefined && point.confirmedAt.includes(visit.arrivalAt))
+        area.series.find((point) => point.confirmedAt.some((item) => item.appointmentId === visit.id))
       const next = area.series.find((point) => point.appointmentId === visit.id && point.source === 'follow_up')
       if (arrival) arrivalValues.set(area.area, [...(arrivalValues.get(area.area) ?? []), arrival.pain])
       const isConfirmed = arrival !== undefined && arrival.appointmentId !== visit.id
-      confirmed ||= isConfirmed
+      if (isConfirmed) confirmedSources.add(arrival.source)
       missing ||= !arrival || !next
       return [arrival ? `${arrival.pain}/10${isConfirmed ? ' (confirmed)' : ''}` : '—', next ? `${next.pain}/10` : '—']
     })
@@ -438,7 +405,15 @@ function visitTable(inputs: ReportInputs): VisitTable {
     rows,
     summary,
     footnotes: [
-      ...(confirmed ? ['Confirmed: at arrival the client confirmed that an earlier score, logged at home, still applied.'] : []),
+      ...(confirmedSources.size
+        ? [
+            `Confirmed: at arrival the client confirmed that an earlier score, ${names(
+              (['home', 'follow_up', 'arrival', 'session'] as const)
+                .filter((source) => confirmedSources.has(source))
+                .map((source) => CONFIRMED_SOURCE[source]),
+            )}, still applied.`,
+          ]
+        : []),
       ...(missing ? ['— no score was recorded for that area at that point.'] : []),
     ],
   }

@@ -80,6 +80,7 @@ export function preVisitUpdates(state: DemoState, appointment: DemoAppointment, 
   return updatesBetween(clientObservations(state, appointment.clientId), since, until)
 }
 
+/** The areas with discomfort the visit screens show; a 0/10 still counts in the Recovery Index. */
 export function sessionPointsFor(state: DemoState, appointment: DemoAppointment) {
   const previous = previousVisit(state, appointment)
   return sessionPainPoints({
@@ -89,7 +90,7 @@ export function sessionPointsFor(state: DemoState, appointment: DemoAppointment)
     appointmentStartsAt: appointment.arrival?.completedAt ?? appointment.startsAt,
     arrivalCompleted: Boolean(appointment.arrival),
     ...(previous ? { previousVisitAt: previous.session?.finishedAt ?? previous.startsAt } : {}),
-  })
+  }).filter((point) => point.pain > 0)
 }
 
 export function clientBonus(state: Pick<DemoState, 'bonusCredits'>, clientId: string) {

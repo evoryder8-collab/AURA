@@ -3,7 +3,7 @@ import { Badge } from '@/components/design-system/Badge'
 import { Card } from '@/components/design-system/Card'
 import { clientRecovery } from '@/data/demo/selectors'
 import type { DemoStore } from '@/data/demo/store'
-import { areaKeyLabel, OBSERVATION_SOURCE_LABEL, ROM_METHOD_LABEL, type AreaKey, type RomMethod } from '@/domain/care'
+import { areaKeyLabel, classifyVisits, OBSERVATION_SOURCE_LABEL, ROM_METHOD_LABEL, type AreaKey, type RomMethod } from '@/domain/care'
 import { PROTOTYPE_V1_CONFIG, type EvidenceStream } from '@/domain/engine'
 import { DataTable } from './DataTable'
 import {
@@ -424,17 +424,28 @@ const STREAM_WORDS: Record<EvidenceStream | 'recoveryIndex', string> = {
   functionalAbility: 'Goal ease',
 }
 
-const oneDecimal = (value: number) => String(Math.round(value * 10) / 10)
-const points = (value: number | null) =>
-  value === null ? 'Not enough entries' : nb(`${signed(Math.round(value * 10) / 10)} points`)
+const round1 = (value: number) => Math.round(value * 10) / 10
+const oneDecimal = (value: number) => String(round1(value))
+const percentOfTypical = (rom: number) => nb(`${Math.round(rom * 10)}%`)
+/** Each stream on its own scale: lower pain and stiffness are the favourable direction, so a raw change never reads as its opposite. */
+const STREAM_SCALE: Record<EvidenceStream, (value: number) => string> = {
+  pain: (value) => outOf10(round1(value)),
+  stiffness: (value) => outOf10(round1(value)),
+  rom: percentOfTypical,
+  functionalAbility: (value) => outOf10(round1(value)),
+}
 
 export function RecoveryPanel(props: PanelProps) {
   const { state, clientId, audience, window, visits, Heading } = props
   const detailId = useId()
-  const { result } = clientRecovery(state, clientId)
-  const included = result.evidence.includedPoints
-    .map((point) => ({ ...point, at: Date.parse(point.observedAt), visit: visits.find((visit) => visit.id === point.observationId) }))
-    .filter((point) => inWindow(point.at, window))
+  // Only the window's visits are classified, so the summary, chart, table and every delta read one series.
+  const { measures } = clientRecovery(state, clientId)
+  const result = classifyVisits(measures.filter((measure) => inWindow(Date.parse(measure.observedAt), window)))
+  const included = result.evidence.includedPoints.map((point) => ({
+    ...point,
+    at: Date.parse(point.observedAt),
+    visit: visits.find((visit) => visit.id === point.observationId),
+  }))
   const [selectedId, select] = useSelection(included.map((point) => point.observationId))
   const selected = included.find((point) => point.observationId === selectedId)
   const { explanation, confidence } = result
@@ -446,8 +457,18 @@ export function RecoveryPanel(props: PanelProps) {
       : last
         ? `${oneDecimal(last.recoveryIndex)} of 100 at the visit ${dayLabel(last.at)}.`
         : 'No visits with enough measures in this period.'
-  const deltaStreams = audience === 'client' ? (['recoveryIndex'] as const) : (['recoveryIndex', 'pain', 'stiffness', 'rom', 'functionalAbility'] as const)
-  const deltaKey = { recoveryIndex: 'recoveryIndexDelta', pain: 'painDelta', stiffness: 'stiffnessDelta', rom: 'romDelta', functionalAbility: 'functionalAbilityDelta' } as const
+  // The index change is read from the same rounded figures the summary prints, so the two always agree.
+  const indexChange =
+    first && last && first !== last
+      ? nb(`${signed(round1(round1(last.recoveryIndex) - round1(first.recoveryIndex)))} points`)
+      : 'Not enough entries'
+  const streamChange = (stream: EvidenceStream) => {
+    const delta = result.evidence.deltas[stream]
+    return delta && delta.pointCount > 1
+      ? `${STREAM_SCALE[stream](delta.start)} to ${STREAM_SCALE[stream](delta.end)}`
+      : 'Not enough entries'
+  }
+  const deltaStreams = audience === 'client' ? [] : (['pain', 'stiffness', 'rom', 'functionalAbility'] as const)
   const weights = PROTOTYPE_V1_CONFIG.recoveryWeights
 
   return (
@@ -487,7 +508,7 @@ export function RecoveryPanel(props: PanelProps) {
               {[
                 selected.rawScores.pain !== null ? `pain ${outOf10(selected.rawScores.pain)}` : null,
                 selected.rawScores.stiffness !== null ? `stiffness ${outOf10(selected.rawScores.stiffness)}` : null,
-                selected.rawScores.rom !== null ? `range of motion ${nb(`${Math.round(selected.rawScores.rom * 10)}%`)} of typical` : null,
+                selected.rawScores.rom !== null ? `range of motion ${percentOfTypical(selected.rawScores.rom)} of typical` : null,
               ]
                 .filter(Boolean)
                 .join(', ')}
@@ -500,7 +521,7 @@ export function RecoveryPanel(props: PanelProps) {
         {audience === 'therapist' ? (
           // The pattern label is a professional prompt; clients see the recorded index, not the classification.
           <div>
-            <dt>Pattern across all {plural(explanation.facts.includedObservationCount, 'visit')}</dt>
+            <dt>Pattern across {plural(explanation.facts.includedObservationCount, 'visit')} in this period</dt>
             <dd>{explanation.patternLabel}</dd>
           </div>
         ) : null}
@@ -511,10 +532,14 @@ export function RecoveryPanel(props: PanelProps) {
             <span className="num">{nb(`${Math.round(confidence.score)}/100`)}</span>
           </dd>
         </div>
+        <div>
+          <dt>{STREAM_WORDS.recoveryIndex}, first to last visit</dt>
+          <dd className="num">{indexChange}</dd>
+        </div>
         {deltaStreams.map((stream) => (
           <div key={stream}>
             <dt>{STREAM_WORDS[stream]}, first to last visit</dt>
-            <dd className="num">{points(explanation.facts[deltaKey[stream]])}</dd>
+            <dd className="num">{streamChange(stream)}</dd>
           </div>
         ))}
         {explanation.facts.excludedPointCount ? (
@@ -560,7 +585,7 @@ export function RecoveryPanel(props: PanelProps) {
               <span key="value" className="num nowrap">{nb(`${oneDecimal(point.recoveryIndex)} of 100`)}</span>,
               point.rawScores.pain === null ? '—' : outOf10(point.rawScores.pain),
               point.rawScores.stiffness === null ? '—' : outOf10(point.rawScores.stiffness),
-              point.rawScores.rom === null ? '—' : nb(`${Math.round(point.rawScores.rom * 10)}% of typical`),
+              point.rawScores.rom === null ? '—' : `${percentOfTypical(point.rawScores.rom)} of typical`,
             ],
           }))}
         />

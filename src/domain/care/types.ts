@@ -128,6 +128,8 @@ export type FollowUpResponse = {
   readonly respondedAt: string
   readonly response: SessionResponse
   readonly observationId?: string
+  /** What the client added to the reply; its observation, when scored, carries it too. */
+  readonly note?: string
 }
 
 export type BonusCredit = {

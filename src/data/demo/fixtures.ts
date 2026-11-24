@@ -249,7 +249,15 @@ export function createDemoState(now: Date = new Date()): DemoState {
         entries: painEntriesFromSelections(visit.followUp.pain),
         ...(visit.followUp.note ? { note: visit.followUp.note } : {}),
       })
-      followUps.push({ id: `follow-${visit.key}`, clientId: visit.clientId, appointmentId, respondedAt: followAt, response: visit.followUp.response, observationId })
+      followUps.push({
+        id: `follow-${visit.key}`,
+        clientId: visit.clientId,
+        appointmentId,
+        respondedAt: followAt,
+        response: visit.followUp.response,
+        observationId,
+        ...(visit.followUp.note ? { note: visit.followUp.note } : {}),
+      })
     }
     const extra = Math.max(0, visit.actual - booked)
     bonusCredits.push({

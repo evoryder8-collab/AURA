@@ -284,22 +284,30 @@ export const useDemoStore = create<DemoStore>()(
           const appointment = findAppointment(appointmentId)
           if (!appointment) return
           const completedAt = nowIso()
-          // Re-running arrival replaces this visit's arrival record instead of adding a second one.
-          const previousArrivalId = appointment.arrival?.observationId
+          const text = note?.trim()
+          // Re-running arrival replaces this visit's arrival record instead of adding a second one, so a score
+          // confirmed from that record is carried into its replacement rather than left pointing at nothing.
+          const previous = get().observations.find((item) => item.id === appointment.arrival?.observationId)
+          const carried = confirm.flatMap((item) =>
+            item.observationId === previous?.id
+              ? previous.entries.filter((entry) => areaKey(entry.region, entry.side) === item.area)
+              : [],
+          )
+          const selections = [...carried, ...updates]
           set((state) => ({
-            observations: state.observations.filter((item) => item.id !== previousArrivalId),
+            observations: state.observations.filter((item) => item.id !== previous?.id),
             confirmations: state.confirmations.filter((item) => item.appointmentId !== appointmentId),
           }))
           const updatedAreas = new Set(
-            painEntriesFromSelections(updates).map((entry) => areaKey(entry.region, entry.side)),
+            painEntriesFromSelections(selections).map((entry) => areaKey(entry.region, entry.side)),
           )
-          const observationId = updates.length
+          const observationId = selections.length
             ? get().logObservation({
                 clientId: appointment.clientId,
                 source: 'arrival',
-                selections: updates,
+                selections,
                 appointmentId,
-                ...(note ? { note } : {}),
+                ...(text ? { note: text } : {}),
               })
             : undefined
           set((state) => ({
@@ -317,9 +325,10 @@ export const useDemoStore = create<DemoStore>()(
                 })),
             ],
           }))
+          // The note belongs to the arrival itself, so it is kept when every area was only confirmed.
           patchAppointment(appointmentId, (item) => ({
             ...item,
-            arrival: { completedAt, ...(observationId ? { observationId } : {}) },
+            arrival: { completedAt, ...(observationId ? { observationId } : {}), ...(text ? { note: text } : {}) },
           }))
         },
 
@@ -426,13 +435,14 @@ export const useDemoStore = create<DemoStore>()(
           const appointment = findAppointment(appointmentId)
           if (!appointment) return
           if (get().followUps.some((item) => item.appointmentId === appointmentId)) return
+          const text = note?.trim()
           const observationId = selections.length
             ? get().logObservation({
                 clientId: appointment.clientId,
                 source: 'follow_up',
                 selections,
                 appointmentId,
-                ...(note ? { note } : {}),
+                ...(text ? { note: text } : {}),
               })
             : undefined
           set((state) => ({
@@ -445,6 +455,8 @@ export const useDemoStore = create<DemoStore>()(
                 respondedAt: nowIso(),
                 response,
                 ...(observationId ? { observationId } : {}),
+                // Kept with the reply, so a note sent without a score is not lost.
+                ...(text ? { note: text } : {}),
               },
             ],
           }))

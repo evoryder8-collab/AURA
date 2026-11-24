@@ -79,7 +79,8 @@ export type DemoAppointment = {
   room: string
   requestNote?: string
   createdAt?: string
-  arrival?: { completedAt: string; observationId?: string }
+  /** `note` is what the client added at arrival; a scored arrival record carries it too. */
+  arrival?: { completedAt: string; observationId?: string; note?: string }
   session?: {
     startedAt: string
     finishedAt?: string

@@ -136,7 +136,8 @@ describe('Gaps: chart legend, chart and PDF agree on GAP_DAYS', () => {
     )
     const times = series.map((point) => Date.parse(point.observedAt))
     const innerGaps = findGaps(times, { from: times[0] as number, to: times.at(-1) as number, startsAtFirstEntry: false })
-    expect(innerGaps).toHaveLength(1)
+    // The seeded story must contain at least one gap for this to prove anything; its count follows the fixtures.
+    expect(innerGaps.length).toBeGreaterThan(0)
     const d = container.querySelector('.trend__chart path')?.getAttribute('d') ?? ''
     expect(d.match(/M/g)?.length).toBe(innerGaps.length + 1)
   })

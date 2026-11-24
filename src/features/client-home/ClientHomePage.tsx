@@ -6,7 +6,7 @@ import { PainChip } from '@/components/ui/PainChip'
 import { Portrait } from '@/components/ui/Portrait'
 import { assetUrl } from '@/components/ui/assets'
 import { painColor } from '@/components/ui/pain'
-import { areaKeyLabel, areaSeries, latestByArea, recordedAreas, type AreaKey } from '@/domain/care'
+import { areaKeyLabel, areaSeries, isGap, latestByArea, recordedAreas, type AreaKey } from '@/domain/care'
 import type { DemoState } from '@/data/demo/model'
 import { clientAppointments, clientBonus, clientObservations, getClient, getTherapist, nextAppointment } from '@/data/demo/selectors'
 import { useDemoStore } from '@/data/demo/store'
@@ -232,11 +232,22 @@ function TrendCard({ area, state, clientId, now }: { area: AreaKey; state: DemoS
   const start = new Date(series[0]?.observedAt ?? now).getTime()
   const span = Math.max(1, now - start)
   const points = series.map((point) => ({
+    at: new Date(point.observedAt).getTime(),
     x: ((new Date(point.observedAt).getTime() - start) / span) * (width - 12) + 6,
     y: height - 8 - (point.pain / 10) * (height - 16),
     pain: point.pain,
   }))
-  const path = points.map((point, index) => `${index ? 'L' : 'M'}${point.x.toFixed(1)},${point.y.toFixed(1)}`).join(' ')
+  // Never bridge a stretch the progress chart marks "No entries": each run starts its own line.
+  const runs: Array<typeof points> = []
+  points.forEach((point, index) => {
+    const previous = points[index - 1]
+    if (!previous || isGap(previous.at, point.at)) runs.push([point])
+    else runs.at(-1)?.push(point)
+  })
+  // A lone entry between two gaps is a zero-length stroke, drawn as a dot by the round cap.
+  const path = runs
+    .map((run) => run.map((point, index) => `${index ? 'L' : 'M'}${point.x.toFixed(1)},${point.y.toFixed(1)}`).join(' ') + (run.length === 1 ? ' h0' : ''))
+    .join(' ')
   const end = points.at(-1)
   return (
     <Link to="/client/progress" className="trend glass rise" aria-label={`${areaKeyLabel(area)}: ${last.pain} out of 10, ${relativeDay(last.observedAt, now)}. Open progress.`}>

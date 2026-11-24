@@ -5,6 +5,7 @@
 import {
   areaKeyLabel,
   areaSeries,
+  isGap,
   ROM_MOVEMENTS,
   SESSION_RESPONSE_LABEL,
   type Actor,
@@ -28,8 +29,7 @@ import { dayPhrase, daysBetween, fmtDay, fmtShortDate, fmtTime } from '@/lib/for
 
 export const DAY_MS = 86_400_000
 /** A stretch longer than this with no entry is drawn as "No entries" and never bridged. */
-import { GAP_DAYS } from '@/domain/care'
-export { GAP_DAYS }
+export { GAP_DAYS } from '@/domain/care'
 
 export type Audience = 'client' | 'therapist'
 
@@ -150,13 +150,12 @@ export type Gap = { readonly from: number; readonly to: number; readonly label: 
  */
 export function findGaps(times: readonly number[], window: TimeWindow, label = 'No entries'): Gap[] {
   const sorted = times.filter((at) => inWindow(at, window)).sort((a, b) => a - b)
-  const limit = GAP_DAYS * DAY_MS
   const edges = [window.from, ...sorted, window.to]
   const gaps: Gap[] = []
   for (let index = 1; index < edges.length; index += 1) {
     const from = edges[index - 1] as number
     const to = edges[index] as number
-    if (to - from > limit) gaps.push({ from, to, label, ...(index === edges.length - 1 ? { trailing: true } : {}) })
+    if (isGap(from, to)) gaps.push({ from, to, label, ...(index === edges.length - 1 ? { trailing: true } : {}) })
   }
   return gaps
 }

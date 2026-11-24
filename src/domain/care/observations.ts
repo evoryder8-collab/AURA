@@ -20,6 +20,9 @@ import type {
  */
 export const GAP_DAYS = 8
 
+/** The one gap rule every chart, sparkline and report sentence uses: more than GAP_DAYS × 24 hours apart. */
+export const isGap = (from: number, to: number) => to - from > GAP_DAYS * 86_400_000
+
 export type PainSelection = { readonly region: RegionId; readonly side: ChosenSide; readonly pain: number }
 
 export function assertPainScore(value: number): number {

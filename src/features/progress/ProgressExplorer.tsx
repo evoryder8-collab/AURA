@@ -15,7 +15,9 @@ import {
   dayLabel,
   endsEarly,
   findGaps,
+  GAP_DAYS,
   lowerFirst,
+  nb,
   onDay,
   outOf10,
   painAnswer,
@@ -249,7 +251,7 @@ function PainPanel({
             {gaps.length ? (
               <li>
                 <span className="legend-swatch legend-swatch--gap" aria-hidden="true" />
-                No entries for 5+&nbsp;days
+                No entries for more than {nb(`${GAP_DAYS} days`)}
               </li>
             ) : null}
           </ul>

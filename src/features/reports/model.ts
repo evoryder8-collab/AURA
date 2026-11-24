@@ -3,6 +3,7 @@ import {
   ROM_METHOD_LABEL,
   figureViews,
   hiddenAreas,
+  isGap,
   type AreaKey,
   type AreaPoint,
   type DoctorReport,
@@ -18,10 +19,6 @@ import { dayKey, PRACTICE_TIME_ZONE } from '@/lib/formatting/time'
  * Everything the preview and the PDF print, computed once from `buildReportContent()`.
  * Both renderers read only this, so a number on screen and in the file cannot disagree.
  */
-
-const DAY = 86_400_000
-import { GAP_DAYS } from '@/domain/care'
-export { GAP_DAYS }
 
 const formatter = (options: Intl.DateTimeFormatOptions) =>
   new Intl.DateTimeFormat('en-GB', { timeZone: PRACTICE_TIME_ZONE, ...options })
@@ -47,9 +44,6 @@ export function fmtPeriod(from: string, to: string) {
 export const practiceDay = (iso: string) => dayKey(iso)
 
 const time = (iso: string) => new Date(iso).getTime()
-
-/** Whole calendar days from `a` to `b`; a daylight-saving hour never tips a two-week gap over. */
-export const daysApart = (a: string, b: string) => Math.round((time(b) - time(a)) / DAY)
 
 export type RangePreset = 'visits' | 'months' | 'custom'
 
@@ -241,16 +235,16 @@ function gapStatements(points: readonly SeriesPoint[], from: string, to: string,
   if (!points.length) return [`No ${noun} were recorded in this period.`]
   const out: string[] = []
   const first = points[0] as SeriesPoint
-  if (daysApart(from, first.at) > GAP_DAYS) out.push(`No ${noun} were recorded before ${fmtDayMonth(first.at)}.`)
+  if (isGap(time(from), time(first.at))) out.push(`No ${noun} were recorded before ${fmtDayMonth(first.at)}.`)
   for (let index = 1; index < points.length; index += 1) {
     const previous = points[index - 1] as SeriesPoint
     const current = points[index] as SeriesPoint
-    if (daysApart(previous.at, current.at) > GAP_DAYS) {
+    if (isGap(time(previous.at), time(current.at))) {
       out.push(`No ${noun} were recorded between ${fmtDayMonth(previous.at)} and ${fmtDayMonth(current.at)}.`)
     }
   }
   const last = points.at(-1) as SeriesPoint
-  if (daysApart(last.at, to) > GAP_DAYS) out.push(`No ${noun} have been recorded since ${fmtDayMonth(last.at)}.`)
+  if (isGap(time(last.at), time(to))) out.push(`No ${noun} have been recorded since ${fmtDayMonth(last.at)}.`)
   return out
 }
 

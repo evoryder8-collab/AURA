@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { DEMO_CLIENT_IDS } from '@/data/demo/fixtures'
 import { useDemoStore } from '@/data/demo/store'
 import { demoAuth, renderPage, resetDemoStore } from '@/test/renderWithDemo'
+import { GAP_DAYS } from './model'
 import { ProgressExplorer } from './ProgressExplorer'
 import { ProgressPage } from './ProgressPage'
 
@@ -65,7 +66,7 @@ describe('ProgressExplorer', () => {
     render(<ProgressExplorer clientId={mira} audience="client" />)
     expect(within(painChart()).getAllByText('No entries').length).toBeGreaterThan(0)
     expect(within(painRegion()).getByText(/^No entries since /)).toBeInTheDocument()
-    expect(within(painRegion()).getByText(/No entries for 5\+/)).toBeInTheDocument()
+    expect(within(painRegion()).getByText(new RegExp(`No entries for more than ${GAP_DAYS}`))).toBeInTheDocument()
   })
 
   it('shows date, score, source, who recorded it and the note for a selected point', async () => {

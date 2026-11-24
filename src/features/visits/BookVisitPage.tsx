@@ -10,13 +10,17 @@ import type { DemoAppointment, DemoTherapist } from '@/data/demo/model'
 import { useDemoStore } from '@/data/demo/store'
 import { useAuth } from '@/features/auth/auth-context'
 import { fmtDay, fmtTime, minutesLabel, PRACTICE_TIME_ZONE } from '@/lib/formatting/time'
-import { availableStarts, bookingDays, SERVICES, type Service } from './slots'
+import { availableStarts, bookingDays, SERVICES, startProblem, zonedParts, type Service, type StartProblem } from './slots'
 import { SlotPicker, type SlotDay } from './SlotPicker'
 import './visits.css'
 
 type Step = 'therapist' | 'service' | 'time' | 'confirm' | 'done'
 const STEPS: readonly Step[] = ['therapist', 'service', 'time', 'confirm']
 const ROOM = 'Garden room'
+
+/** The visits a new booking must not overlap: the therapist's and the client's own. */
+const busyFor = (therapistId: string, clientId: string, appointments: readonly DemoAppointment[]) =>
+  appointments.filter((appointment) => appointment.therapistId === therapistId || appointment.clientId === clientId)
 
 /** Free days and times for one therapist and length, leaving out anything that clashes with the client's own visits too. */
 function slotDays(input: {
@@ -26,9 +30,7 @@ function slotDays(input: {
   appointments: readonly DemoAppointment[]
   now: number
 }): SlotDay[] {
-  const busy = input.appointments.filter(
-    (appointment) => appointment.therapistId === input.therapist.id || appointment.clientId === input.clientId,
-  )
+  const busy = busyFor(input.therapist.id, input.clientId, input.appointments)
   return bookingDays({ now: input.now, workingDays: input.therapist.workingDays, timeZone: PRACTICE_TIME_ZONE }).map((key) => ({
     key,
     starts: availableStarts({
@@ -88,18 +90,27 @@ export function BookVisitPage() {
 
   const book = () => {
     if (!therapist || !service || !startsAt) return
-    // The chosen time is checked again: another booking may have taken it since it was shown.
-    const fresh = slotDays({
-      therapist,
-      clientId,
-      minutes: service.minutes,
-      appointments: useDemoStore.getState().appointments,
+    // The chosen time is checked again: it may have passed, or another booking taken it, since it was shown.
+    const local = zonedParts(startsAt, PRACTICE_TIME_ZONE)
+    const problem = startProblem({
+      dayKey: local.dayKey,
+      minutes: local.minutes,
+      durationMinutes: service.minutes,
+      busy: busyFor(therapist.id, clientId, useDemoStore.getState().appointments),
       now: Date.now(),
+      timeZone: PRACTICE_TIME_ZONE,
+      workingDays: therapist.workingDays,
     })
-    if (!fresh.some((day) => day.starts.includes(startsAt))) {
+    if (problem) {
+      const reason: Record<StartProblem, string> = {
+        past: 'That time has just passed. Please choose a later one.',
+        taken: 'That time has just been taken. Please choose another.',
+        closed: `${therapist.preferredName} no longer works on that day. Please choose another.`,
+        outside_hours: 'That time is outside opening hours. Please choose another.',
+      }
       setStartsAt(null)
       setStep('time')
-      setError('That time has just been taken. Please choose another.')
+      setError(reason[problem])
       return
     }
     addAppointment({

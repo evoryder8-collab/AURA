@@ -28,7 +28,7 @@ The published demo runs on the local store in `src/data/demo/store.ts` (IndexedD
 | `confirmations` | "Still accurate" at arrival, pointing at the original observation and area | new table; never a second `pain_entries` row |
 | `stiffness`, `rom` | Therapist palpation 0–10; range of motion in degrees with movement, side and method | `therapist_assessments` |
 | `goals`, `goalScores` | Functional goal in the client's words and ease scores | `functional_goals`, `functional_goal_entries` |
-| `followUps` | Next-day response −2…+2 | `follow_up_responses` |
+| `followUps` | Next-day response −2…+2 with the client's optional note (kept even when no score is given) | `follow_up_responses` |
 | `bonusCredits` | One confirmed Bonus Care credit per visit (`bonus-<appointmentId>`) | `session_records` with a unique appointment constraint |
 | `notes` | Therapist notes, `private` or written for a doctor's `report` | `session_private_notes` / `appointment_private_notes`, plus a report-note type |
 | `reports` | Doctor report draft; from sending onwards, the content frozen for the client (photos by id only); client consent for recipient + purpose + photos | `handoff_exports`, `handoff_export_approvals`, `consents` |

@@ -1,5 +1,5 @@
 import { openDB } from 'idb'
-import { create } from 'zustand'
+import { create, type StateCreator, type StoreApi } from 'zustand'
 import { createJSONStorage, persist, type StateStorage } from 'zustand/middleware'
 import {
   areaKey,
@@ -15,8 +15,8 @@ import {
   type SessionResponse,
 } from '@/domain/care'
 import { freezeReport } from '@/features/reports/inputs'
-import { createDemoState, DEMO_THERAPIST_IDS } from './fixtures'
-import { mirrorStorage, newerRecord } from './mirror'
+import { createDemoState, createDemoTherapists, DEMO_THERAPIST_IDS, reanchorDemoState } from './fixtures'
+import { listedPhotos, mirrorKey, mirrorStorage, newerRecord, type MirrorState } from './mirror'
 import type { ConsentState, DemoAppointment, DemoReport, DemoState } from './model'
 
 const DB_NAME = 'aura-synthetic-demo'
@@ -120,25 +120,63 @@ export type DemoStore = DemoState & DemoActions
 
 type Persisted = Partial<DemoState> & { version?: number; savedAt?: number }
 
+/**
+ * `savedAt` of the newest record this tab has written or loaded. Every write goes past it, so the
+ * last write of a multi-step action always wins over the first, and another tab's record is
+ * taken in only when it is newer.
+ */
+let latestSavedAt = 0
+const nextSavedAt = () => (latestSavedAt = Math.max(Date.now(), latestSavedAt + 1))
+
+/** The store's own setter, which persist does not wrap: state that came from storage is not saved back. */
+let setUnsaved: StoreApi<DemoStore>['setState'] = () => undefined
+
+const withUnsavedSet = <S extends StateCreator<DemoStore, [], [['zustand/persist', unknown]]>>(creator: S): S =>
+  ((setState, getState, api) => {
+    setUnsaved = setState
+    return creator(setState, getState, api)
+  }) as S
+
+function loadRecord(persisted: unknown, current: DemoStore): DemoStore {
+  latestSavedAt = Math.max(latestSavedAt, (persisted as Persisted | undefined)?.savedAt ?? 0)
+  return mergePersistedDemoState(persisted, current)
+}
+
+/**
+ * Takes in a record another open tab saved, without saving it back: tabs would otherwise echo
+ * each other forever. Photos come from this tab, limited to the ids the record lists; a photo
+ * another tab added is loaded from IndexedDB.
+ */
+function adoptNewerRecord() {
+  const current = useDemoStore.getState()
+  const record: MirrorState | null = current.hydrated ? mirrorStorage.newerThan(DEMO_STORAGE_KEY, latestSavedAt) : null
+  if (!record) return
+  const { photoIds: _ids, ...rest } = record
+  const photos = listedPhotos(current.photos, record)
+  setUnsaved(loadRecord({ ...rest, photos }, current), true)
+  if ((record.photoIds?.length ?? 0) > photos.length) void useDemoStore.persist.rehydrate()
+}
+
 export function mergePersistedDemoState(persisted: unknown, current: DemoStore): DemoStore {
   const state = (persisted ?? {}) as Persisted
   if (state.version !== STATE_VERSION || !Array.isArray(state.clients) || !Array.isArray(state.observations)) {
     return current
   }
-  const fixture = createDemoState()
+  const identities = createDemoTherapists()
   return {
     ...current,
-    ...(state as DemoState),
+    // A record from an earlier day gets today's demo schedule, keeping what the person entered.
+    ...reanchorDemoState(state as DemoState, new Date()),
     // Identity and portraits always follow the current build; the record keeps the person's data.
-    therapists: (state.therapists ?? fixture.therapists).map((therapist) => {
-      const fresh = fixture.therapists.find((item) => item.id === therapist.id)
+    therapists: (state.therapists ?? identities).map((therapist) => {
+      const fresh = identities.find((item) => item.id === therapist.id)
       return fresh ? { ...therapist, ...fresh, assignedClientIds: therapist.assignedClientIds } : therapist
     }),
   }
 }
 
 export const useDemoStore = create<DemoStore>()(
-  persist(
+  withUnsavedSet(persist(
     (set, get) => {
       const patchAppointment = (id: string, patch: (appointment: DemoAppointment) => DemoAppointment) =>
         set((state) => ({ appointments: state.appointments.map((item) => (item.id === id ? patch(item) : item)) }))
@@ -147,7 +185,8 @@ export const useDemoStore = create<DemoStore>()(
       return {
         ...createDemoState(),
         hydrated: false,
-        setHydrated: (hydrated) => set({ hydrated }),
+        // Only the first load saves; reloading another tab's photo from storage has nothing new to save.
+        setHydrated: (hydrated) => (get().hydrated === hydrated ? undefined : set({ hydrated })),
         resetDemo: () => set({ ...createDemoState() }),
 
         addClient: (input) => {
@@ -247,22 +286,30 @@ export const useDemoStore = create<DemoStore>()(
           const appointment = findAppointment(appointmentId)
           if (!appointment) return
           const completedAt = nowIso()
-          // Re-running arrival replaces this visit's arrival record instead of adding a second one.
-          const previousArrivalId = appointment.arrival?.observationId
+          const text = note?.trim()
+          // Re-running arrival replaces this visit's arrival record instead of adding a second one, so a score
+          // confirmed from that record is carried into its replacement rather than left pointing at nothing.
+          const previous = get().observations.find((item) => item.id === appointment.arrival?.observationId)
+          const carried = confirm.flatMap((item) =>
+            item.observationId === previous?.id
+              ? previous.entries.filter((entry) => areaKey(entry.region, entry.side) === item.area)
+              : [],
+          )
+          const selections = [...carried, ...updates]
           set((state) => ({
-            observations: state.observations.filter((item) => item.id !== previousArrivalId),
+            observations: state.observations.filter((item) => item.id !== previous?.id),
             confirmations: state.confirmations.filter((item) => item.appointmentId !== appointmentId),
           }))
           const updatedAreas = new Set(
-            painEntriesFromSelections(updates).map((entry) => areaKey(entry.region, entry.side)),
+            painEntriesFromSelections(selections).map((entry) => areaKey(entry.region, entry.side)),
           )
-          const observationId = updates.length
+          const observationId = selections.length
             ? get().logObservation({
                 clientId: appointment.clientId,
                 source: 'arrival',
-                selections: updates,
+                selections,
                 appointmentId,
-                ...(note ? { note } : {}),
+                ...(text ? { note: text } : {}),
               })
             : undefined
           set((state) => ({
@@ -280,9 +327,10 @@ export const useDemoStore = create<DemoStore>()(
                 })),
             ],
           }))
+          // The note belongs to the arrival itself, so it is kept when every area was only confirmed.
           patchAppointment(appointmentId, (item) => ({
             ...item,
-            arrival: { completedAt, ...(observationId ? { observationId } : {}) },
+            arrival: { completedAt, ...(observationId ? { observationId } : {}), ...(text ? { note: text } : {}) },
           }))
         },
 
@@ -389,13 +437,14 @@ export const useDemoStore = create<DemoStore>()(
           const appointment = findAppointment(appointmentId)
           if (!appointment) return
           if (get().followUps.some((item) => item.appointmentId === appointmentId)) return
+          const text = note?.trim()
           const observationId = selections.length
             ? get().logObservation({
                 clientId: appointment.clientId,
                 source: 'follow_up',
                 selections,
                 appointmentId,
-                ...(note ? { note } : {}),
+                ...(text ? { note: text } : {}),
               })
             : undefined
           set((state) => ({
@@ -408,6 +457,8 @@ export const useDemoStore = create<DemoStore>()(
                 respondedAt: nowIso(),
                 response,
                 ...(observationId ? { observationId } : {}),
+                // Kept with the reply, so a note sent without a score is not lost.
+                ...(text ? { note: text } : {}),
               },
             ],
           }))
@@ -535,7 +586,8 @@ export const useDemoStore = create<DemoStore>()(
       storage: createJSONStorage(() => indexedDbStorage),
       partialize: (state): Persisted => ({
         version: STATE_VERSION,
-        savedAt: Date.now(),
+        savedAt: nextSavedAt(),
+        anchoredAt: state.anchoredAt,
         therapists: state.therapists,
         clients: state.clients,
         appointments: state.appointments,
@@ -551,8 +603,14 @@ export const useDemoStore = create<DemoStore>()(
         reports: state.reports,
         photos: state.photos,
       }),
-      merge: mergePersistedDemoState,
+      merge: loadRecord,
       onRehydrateStorage: () => (state) => state?.setHydrated(true),
     },
-  ),
+  )),
 )
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('storage', (event) => {
+    if (event.key === mirrorKey(DEMO_STORAGE_KEY)) adoptNewerRecord()
+  })
+}

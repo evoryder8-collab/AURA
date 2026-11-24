@@ -80,7 +80,8 @@ export type DemoAppointment = {
   room: string
   requestNote?: string
   createdAt?: string
-  arrival?: { completedAt: string; observationId?: string }
+  /** `note` is what the client added at arrival; a scored arrival record carries it too. */
+  arrival?: { completedAt: string; observationId?: string; note?: string }
   session?: {
     startedAt: string
     finishedAt?: string
@@ -112,6 +113,8 @@ export type ReportSnapshot = Omit<ReportInputs, 'content' | 'photos'> & {
 export type DemoReport = DoctorReport & { readonly snapshot?: ReportSnapshot }
 
 export type DemoState = {
+  /** When the seeded story was generated; its visits and logs are placed relative to this day. */
+  anchoredAt: string
   therapists: DemoTherapist[]
   clients: DemoClient[]
   appointments: DemoAppointment[]

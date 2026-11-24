@@ -1,8 +1,8 @@
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { areaSeries, bonusSummary } from '@/domain/care'
-import { createDemoState, DEMO_CLIENT_IDS, DEMO_THERAPIST_IDS } from './fixtures'
+import { createDemoState, DEMO_CLIENT_IDS, DEMO_THERAPIST_IDS, reanchorDemoState } from './fixtures'
 import { clientBonus, clientRecovery, preVisitUpdates, sessionPointsFor } from './selectors'
-import { mergePersistedDemoState, useDemoStore } from './store'
+import { DEMO_STORAGE_KEY, mergePersistedDemoState, useDemoStore } from './store'
 
 const mira = DEMO_CLIENT_IDS.mira
 const pratana = DEMO_THERAPIST_IDS.amara
@@ -185,5 +185,66 @@ describe('persistence', () => {
     const merged = mergePersistedDemoState({ ...saved, version: 2 }, current)
     expect(merged.notes).toEqual([])
     expect(merged.therapists[0]?.portrait?.avatar).toBe('portraits/pratana-avatar.webp')
+  })
+
+  it('moves the untouched story to today but keeps a visit the person worked on with the log it confirmed', () => {
+    const friday = new Date(2026, 10, 20, 8, 0)
+    const tuesday = new Date(2026, 10, 24, 9, 0)
+    const saved = createDemoState(friday)
+    const noaToday = saved.appointments.find((item) => item.id === 'appointment-noa-today')!
+    saved.appointments = saved.appointments.map((item) =>
+      item.id === noaToday.id ? { ...item, arrival: { completedAt: noaToday.startsAt } } : item,
+    )
+    saved.confirmations.push({
+      id: 'confirm-by-the-person',
+      clientId: DEMO_CLIENT_IDS.noa,
+      appointmentId: noaToday.id,
+      observationId: 'obs-noa-h1',
+      area: 'lower_back:centre',
+      confirmedAt: noaToday.startsAt,
+    })
+
+    const moved = reanchorDemoState(saved, tuesday)
+    const today = createDemoState(tuesday)
+    const startOf = (state: { appointments: Array<{ id: string; startsAt: string }> }, id: string) =>
+      state.appointments.find((item) => item.id === id)?.startsAt
+    const observedAt = (state: { observations: Array<{ id: string; observedAt: string }> }, id: string) =>
+      state.observations.find((item) => item.id === id)?.observedAt
+    expect({
+      anchoredAt: moved.anchoredAt,
+      noaToday: startOf(moved, noaToday.id),
+      confirmedLog: observedAt(moved, 'obs-noa-h1'),
+      miraTomorrow: startOf(moved, 'appointment-mira-tomorrow'),
+      noaLastVisit: startOf(moved, 'appointment-noa-v2'),
+    }).toEqual({
+      anchoredAt: tuesday.toISOString(),
+      noaToday: noaToday.startsAt,
+      confirmedLog: observedAt(saved, 'obs-noa-h1'),
+      miraTomorrow: startOf(today, 'appointment-mira-tomorrow'),
+      noaLastVisit: startOf(today, 'appointment-noa-v2'),
+    })
+  })
+
+  it('lets a visitor coming back the next day carry on with the story', () => {
+    const saved = createDemoState(new Date(2026, 10, 23, 8, 30))
+    expect(reanchorDemoState(saved, new Date(2026, 10, 24, 9, 50))).toEqual(saved)
+  })
+
+  it('finds the anchor of a record saved before anchors were kept, from Noa’s untouched visit', () => {
+    const { anchoredAt: _unknown, ...saved } = createDemoState(new Date(2026, 10, 20, 8, 0))
+    const tuesday = new Date(2026, 10, 24, 9, 0)
+    expect(reanchorDemoState(saved, tuesday).appointments).toEqual(createDemoState(tuesday).appointments)
+  })
+
+  it('takes in a record another open tab saved, without saving it back', async () => {
+    localStorage.clear()
+    vi.resetModules()
+    const { useDemoStore: otherTab } = await import('./store')
+    await vi.waitFor(() => expect(otherTab.getState().hydrated).toBe(true))
+    const setItem = vi.spyOn(Storage.prototype, 'setItem')
+    const id = useDemoStore.getState().addNote({ clientId: mira, therapistId: pratana, visibility: 'private', body: 'Prefers a warmer room.' })
+    expect(otherTab.getState().notes.some((note) => note.id === id)).toBe(true)
+    expect(setItem.mock.calls.filter(([key]) => key === `${DEMO_STORAGE_KEY}:mirror`)).toHaveLength(1)
+    setItem.mockRestore()
   })
 })

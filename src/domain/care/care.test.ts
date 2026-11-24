@@ -97,7 +97,7 @@ describe('arrival confirmation', () => {
   it('shows the therapist what changed since the previous visit', () => {
     const updates = updatesBetween([homeShoulder], '2026-11-16T10:00:00.000Z', appointment.startsAt)
     expect(updates.map((item) => item.id)).toEqual(['obs-home'])
-    expect(areasToReview([homeShoulder], appointment.startsAt)[0]?.area).toBe('shoulder:left')
+    expect(areasToReview([homeShoulder], [], appointment.startsAt)[0]?.area).toBe('shoulder:left')
   })
 
   it('never turns a confirmation into a second chart point', () => {

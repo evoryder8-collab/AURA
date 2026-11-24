@@ -65,7 +65,7 @@ export function LogHowIFeelPage() {
   const clientId = auth.demoClientId ?? ''
   const state = useDemoStore()
   const observations = useMemo(() => clientObservations(state, clientId), [state, clientId])
-  const latest = useMemo(() => latestByArea(observations), [observations])
+  const latest = useMemo(() => latestByArea(observations, []), [observations])
   const recent = useMemo(() => recordedAreas(observations).slice(0, 4), [observations])
   const goal = state.goals.find((item) => item.clientId === clientId && item.status === 'active')
   const upcoming = nextAppointment(clientAppointments(state, clientId), Date.now())

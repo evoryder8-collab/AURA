@@ -88,7 +88,7 @@ export function buildReportContent(input: {
   const { report } = input
   const range = { from: report.dateFrom, to: report.dateTo }
   const views = figureViews(report.areas, report.view)
-  const latest = latestByArea(input.observations, report.dateTo)
+  const latest = latestByArea(input.observations, input.confirmations, report.dateTo)
 
   const areas = report.areas.map((area) => {
     const series = areaSeries(input.observations, input.confirmations, area, range)

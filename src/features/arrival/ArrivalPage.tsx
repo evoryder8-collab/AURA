@@ -49,9 +49,9 @@ export function ArrivalPage() {
     const previous = previousVisit(state, appointment)
     return areasToReview(
       clientObservations(state, appointment.clientId),
+      state.confirmations.filter((item) => item.clientId === appointment.clientId),
       new Date(Math.max(Date.now(), new Date(appointment.startsAt).getTime())).toISOString(),
       previous?.session?.finishedAt ?? previous?.startsAt,
-      state.confirmations.filter((item) => item.clientId === appointment.clientId),
     )
     // Fixed for this arrival: what was on record when the screen opened.
     // eslint-disable-next-line react-hooks/exhaustive-deps

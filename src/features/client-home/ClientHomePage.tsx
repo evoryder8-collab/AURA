@@ -26,7 +26,7 @@ export function ClientHomePage() {
   const observations = useMemo(() => clientObservations(state, clientId), [state, clientId])
   const upcoming = nextAppointment(appointments, now)
   const therapist = getTherapist(state, upcoming?.therapistId)
-  const latest = useMemo(() => latestByArea(observations), [observations])
+  const latest = useMemo(() => latestByArea(observations, []), [observations])
   const areas = recordedAreas(observations).slice(0, 3)
   const newest = [...observations].sort((a, b) => b.recordedAt.localeCompare(a.recordedAt))[0]
   const bonus = clientBonus(state, clientId)

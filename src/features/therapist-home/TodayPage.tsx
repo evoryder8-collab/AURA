@@ -141,7 +141,7 @@ function NextBrief({ appointment, state, now }: { appointment: DemoAppointment; 
   const updates = preVisitUpdates(state, appointment, now)
   const observations = clientObservations(state, appointment.clientId)
   // With no earlier visit there is nothing to compare against, so every area reads as new.
-  const before = previous ? latestByArea(observations, previous.session?.finishedAt ?? previous.startsAt) : latestByArea([])
+  const before = previous ? latestByArea(observations, [], previous.session?.finishedAt ?? previous.startsAt) : new Map()
   const points = sessionPointsFor(state, appointment)
   const started = Boolean(appointment.session?.startedAt && !appointment.session.finishedAt)
   const markers: BodyMarker[] = points.map((point) => ({ area: point.area, pain: point.pain, label: areaLabel(point.region, point.side) }))

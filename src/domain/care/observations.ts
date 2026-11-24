@@ -77,7 +77,7 @@ export function compareObservations(a: CareObservation, b: CareObservation): num
 
 export function areaPoints(
   observations: readonly CareObservation[],
-  confirmations: readonly ArrivalConfirmation[] = [],
+  confirmations: readonly ArrivalConfirmation[],
 ): AreaPoint[] {
   const confirmationsByPoint = new Map<string, PointConfirmation[]>()
   for (const confirmation of [...confirmations].sort((a, b) => time(a.confirmedAt) - time(b.confirmedAt))) {
@@ -131,8 +131,8 @@ export function lastReportedAt(point: AreaPoint, asOf = Infinity): number {
 /** Latest score per area observed at or before `asOf`, annotated with its confirmations. */
 export function latestByArea(
   observations: readonly CareObservation[],
+  confirmations: readonly ArrivalConfirmation[],
   asOf?: string,
-  confirmations: readonly ArrivalConfirmation[] = [],
 ): Map<AreaKey, AreaPoint> {
   const limit = asOf ? time(asOf) : Infinity
   const latest = new Map<AreaKey, AreaPoint>()
@@ -144,7 +144,7 @@ export function latestByArea(
 
 /** Areas the client has ever recorded, most recently reported first. */
 export function recordedAreas(observations: readonly CareObservation[]): AreaKey[] {
-  return [...latestByArea(observations).values()]
+  return [...latestByArea(observations, []).values()]
     .sort((a, b) => time(b.observedAt) - time(a.observedAt))
     .map((point) => point.area)
 }
@@ -182,14 +182,14 @@ const PREVIOUS_VISIT_MARGIN_MS = 12 * 3_600_000
  */
 export function areasToReview(
   observations: readonly CareObservation[],
+  confirmations: readonly ArrivalConfirmation[],
   appointmentStartsAt: string,
   previousVisitAt?: string,
-  confirmations: readonly ArrivalConfirmation[] = [],
 ): AreaPoint[] {
   const windowStart = previousVisitAt
     ? time(previousVisitAt) - PREVIOUS_VISIT_MARGIN_MS
     : time(appointmentStartsAt) - ARRIVAL_LOOKBACK_DAYS * 86_400_000
-  return [...latestByArea(observations, appointmentStartsAt, confirmations).values()]
+  return [...latestByArea(observations, confirmations, appointmentStartsAt).values()]
     .filter((point) => lastReportedAt(point, time(appointmentStartsAt)) >= windowStart)
     .sort((a, b) => b.pain - a.pain || time(b.observedAt) - time(a.observedAt))
 }
@@ -213,7 +213,7 @@ export function sessionPainPoints(input: {
 }): SessionPainPoint[] {
   const { observations, confirmations, appointmentId } = input
   if (!input.arrivalCompleted) {
-    return areasToReview(observations, input.appointmentStartsAt, input.previousVisitAt, confirmations).map(
+    return areasToReview(observations, confirmations, input.appointmentStartsAt, input.previousVisitAt).map(
       (point) => ({ ...point, status: 'unconfirmed' as const }),
     )
   }

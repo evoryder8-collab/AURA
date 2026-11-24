@@ -148,7 +148,7 @@ function Overview({
   const observations = clientObservations(state, clientId)
   // Recent means recorded or confirmed as still accurate in the last 30 days; the score keeps its own date.
   const confirmations = state.confirmations.filter((item) => item.clientId === clientId)
-  const latest = [...latestByArea(observations, undefined, confirmations).values()].filter(
+  const latest = [...latestByArea(observations, confirmations).values()].filter(
     (point) => daysBetween(lastReportedAt(point, now), now) <= 30 && point.pain > 0,
   )
   const upcoming = clientAppointments(state, clientId).find((item) => isUpcoming(item, now))

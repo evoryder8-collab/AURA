@@ -149,7 +149,7 @@ function Builder({ client, therapistId, saved }: { client: DemoClient; therapist
     () => state.appointments.filter((item) => item.clientId === clientId && item.status === 'completed').map((item) => item.startsAt),
     [state.appointments, clientId],
   )
-  const points = useMemo(() => areaPoints(observations), [observations])
+  const points = useMemo(() => areaPoints(observations, []), [observations])
   const areaOptions = useMemo(() => recordedAreas(observations), [observations])
   const mostReported = useMemo(() => {
     const counts = new Map<AreaKey, number>()

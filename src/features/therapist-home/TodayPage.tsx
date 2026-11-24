@@ -63,7 +63,7 @@ export function TodayPage() {
         <div>
           <p className="today__date">{new Intl.DateTimeFormat('en-GB', { weekday: 'long', day: 'numeric', month: 'long' }).format(now)}</p>
           <h1 className="title-lg">
-            {greeting(now)}, {therapist?.preferredName}
+            {greeting(now)}, <span className="gradient-text gradient-text--dawn">{therapist?.preferredName}</span>
           </h1>
         </div>
         <p className="today__summary">
@@ -148,7 +148,7 @@ function NextBrief({ appointment, state, now }: { appointment: DemoAppointment; 
 
   if (!client) return null
   return (
-    <section className="next rise" aria-labelledby="next-name">
+    <section className="next edge-light rise" aria-labelledby="next-name">
       <div className="next__top">
         <p className="eyebrow next__eyebrow">{started ? 'In session now' : `Up next · ${untilLabel(appointment.startsAt, now)}`}</p>
         <p className="next__time">

@@ -55,7 +55,7 @@ export function ClientHomePage() {
       <header className="home__hello rise">
         <p className="home__date">{new Intl.DateTimeFormat('en-GB', { weekday: 'long', day: 'numeric', month: 'long' }).format(now)}</p>
         <h1 className="title-lg">
-          {greeting(now)}, {client.preferredName}
+          {greeting(now)}, <span className="gradient-text gradient-text--dawn">{client.preferredName}</span>
         </h1>
       </header>
 
@@ -103,7 +103,7 @@ export function ClientHomePage() {
       <div className="home__grid">
         <div className="home__col">
           {upcoming && therapist ? (
-            <section className="visit-hero rise" aria-labelledby="next-visit-title">
+            <section className="visit-hero edge-light rise" aria-labelledby="next-visit-title">
               <div className="visit-hero__copy">
                 <p className="eyebrow" id="next-visit-title">
                   Your next visit

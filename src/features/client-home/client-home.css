@@ -206,8 +206,12 @@
     min-height: 280px;
   }
   .visit-hero__portrait {
-    height: 92%;
-    right: -12%;
+    height: 84%;
+    right: -16%;
+  }
+  /* Keeps a long day word ("Tomorrow") clear of the portrait on 320–390px phones. */
+  .visit-hero__day {
+    font-size: clamp(25px, 7vw, 30px);
   }
 }
 

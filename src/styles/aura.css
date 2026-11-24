@@ -148,6 +148,19 @@ body {
   animation-duration: 64s;
 }
 
+.sky__aurora {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  transition: opacity 1.4s var(--ease);
+}
+
+.sky__aurora.is-live {
+  opacity: 1;
+}
+
 .sky__grain {
   position: absolute;
   inset: -50%;
@@ -246,6 +259,63 @@ h3 {
   background: var(--lagoon);
   -webkit-background-clip: text;
   background-clip: text;
+}
+
+/* A name in slow-moving dawn light: aqua through pearl to lantern gold. */
+.gradient-text--dawn {
+  background: linear-gradient(100deg, #7af7df, #f4f1ff 35%, #ffcd7a 60%, #ff9f86 80%, #7af7df);
+  background-size: 300% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  animation: dawn-drift 14s ease-in-out infinite alternate;
+}
+
+@keyframes dawn-drift {
+  to {
+    background-position: 100% 0;
+  }
+}
+
+@property --edge-angle {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 200deg;
+}
+
+/* A slow light that travels around the edge of the screen's hero card. */
+.edge-light::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  padding: 1.5px;
+  border-radius: inherit;
+  background: conic-gradient(
+    from var(--edge-angle),
+    transparent 0deg 210deg,
+    rgba(122, 247, 223, 0.85) 250deg,
+    rgba(255, 255, 255, 0.95) 268deg,
+    rgba(255, 190, 120, 0.85) 288deg,
+    transparent 330deg
+  );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#000 0 0) content-box exclude,
+    linear-gradient(#000 0 0);
+  pointer-events: none;
+  animation: edge-travel 11s linear infinite;
+}
+
+@keyframes edge-travel {
+  from {
+    --edge-angle: 200deg;
+  }
+  to {
+    --edge-angle: 560deg;
+  }
 }
 
 /* ---------- Root chrome ---------- */
@@ -446,6 +516,31 @@ h3 {
     0 1px 0 rgba(255, 255, 255, 0.6) inset,
     0 -1px 0 rgba(120, 40, 20, 0.18) inset,
     0 10px 30px var(--lantern-glow);
+}
+
+/* A sheen that sweeps across the main buttons every few seconds. */
+.button--primary:not(.button--sm)::before,
+.button--gold:not(.button--sm)::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(110deg, transparent 40%, rgba(255, 255, 255, 0.6) 50%, transparent 60%) no-repeat;
+  background-size: 250% 100%;
+  background-position: 150% 0;
+  mix-blend-mode: soft-light;
+  pointer-events: none;
+  animation: sheen 7s var(--ease) 1.2s infinite;
+}
+
+@keyframes sheen {
+  0%,
+  72% {
+    background-position: 150% 0;
+  }
+  100% {
+    background-position: -50% 0;
+  }
 }
 
 .button--primary:hover:not(:disabled),

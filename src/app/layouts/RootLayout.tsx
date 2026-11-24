@@ -1,5 +1,6 @@
 import type { MouseEvent } from 'react'
-import { Outlet } from 'react-router-dom'
+import { Outlet, useLocation } from 'react-router-dom'
+import { LivingSky } from '@/components/sky/LivingSky'
 import { env } from '@/config/env'
 import { AppStatus } from '@/components/feedback/AppStatus'
 import { Spinner } from '@/components/design-system/Spinner'
@@ -8,6 +9,9 @@ import { useDemoStore } from '@/data/demo/store'
 export function RootLayout() {
   // Screens wait for the saved demo record, so nothing renders (or is saved) against fresh fixtures first.
   const hydrated = useDemoStore((state) => state.hydrated)
+  const { pathname } = useLocation()
+  const entrance = pathname === '/' || pathname.startsWith('/login')
+  const sessionMode = /^\/therapist\/session\/[^/]+$/.test(pathname)
   const skipToContent = (event: MouseEvent<HTMLAnchorElement>) => {
     event.preventDefault()
     const main = document.getElementById('main-content')
@@ -21,12 +25,8 @@ export function RootLayout() {
       <a className="skip-link" href="#main-content" onClick={skipToContent}>
         Skip to content
       </a>
-      <div className="sky" aria-hidden="true">
-        <span className="sky__light sky__light--aqua" />
-        <span className="sky__light sky__light--violet" />
-        <span className="sky__light sky__light--sunset" />
-        <span className="sky__grain" />
-      </div>
+      {/* The entrance paints its own pool-light scene; everywhere else the aurora moves behind the glass. */}
+      {entrance ? null : <LivingSky calm={sessionMode} />}
       <AppStatus />
       {env.demoMode && !hydrated ? <Spinner label="Opening AURA" fullPage /> : <Outlet />}
     </div>

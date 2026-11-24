@@ -125,8 +125,6 @@ function latestRemark(values: readonly number[], latest: number) {
 export type ReportVisit = {
   readonly id: string
   readonly startsAt: string
-  /** When arrival was completed; a confirmation at that moment belongs to this visit. */
-  readonly arrivalAt?: string
   readonly therapistId: string
 }
 

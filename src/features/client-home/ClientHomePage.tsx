@@ -192,7 +192,7 @@ export function ClientHomePage() {
               </p>
               <p className="bonus__sentence">{bonusSentence(bonusCredit, bonus, bonusTherapist, now)}</p>
               <ul className="bonus__people" aria-label="Free extra care by therapist">
-                {bonus.byTherapist.filter((item) => item.minutes > 0).map((item) => {
+                {bonus.byTherapist.map((item) => {
                   const person = getTherapist(state, item.therapistId)
                   const share = bonus.lifetimeMinutes ? item.minutes / bonus.lifetimeMinutes : 0
                   return (

@@ -78,7 +78,6 @@ function liveInputs(state: DemoState, report: DoctorReport): ReportInputs {
         id: appointment.id,
         startsAt: appointment.startsAt,
         therapistId: appointment.therapistId,
-        ...(appointment.arrival ? { arrivalAt: appointment.arrival.completedAt } : {}),
       })),
     ...(note
       ? {

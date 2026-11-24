@@ -108,27 +108,25 @@ export function MePage() {
             <p className="small muted">
               Time your therapists added beyond what you booked, at no charge, across all your visits.
             </p>
-            {bonus.byTherapist.some((item) => item.minutes > 0) ? (
+            {bonus.byTherapist.length ? (
               <ul className="list me-bonus__list">
-                {bonus.byTherapist
-                  .filter((item) => item.minutes > 0)
-                  .map((item) => {
-                    const therapist = nameOf(item.therapistId)
-                    const name = therapist?.displayName ?? 'A former therapist'
-                    return (
-                      <li key={item.therapistId} className="me-bonus__row">
-                        <Portrait name={name} portrait={therapist?.portrait} size="xs" />
-                        <span className="me-bonus__name">{name}</span>
-                        <span className="small">
-                          <strong className="num">{`${item.minutes}\u00a0min`}</strong>
-                          <span className="muted">
-                            {' '}
-                            on {plural(item.visits, 'visit', 'visits')}
-                          </span>
+                {bonus.byTherapist.map((item) => {
+                  const therapist = nameOf(item.therapistId)
+                  const name = therapist?.displayName ?? 'A former therapist'
+                  return (
+                    <li key={item.therapistId} className="me-bonus__row">
+                      <Portrait name={name} portrait={therapist?.portrait} size="xs" />
+                      <span className="me-bonus__name">{name}</span>
+                      <span className="small">
+                        <strong className="num">{`${item.minutes}\u00a0min`}</strong>
+                        <span className="muted">
+                          {' '}
+                          on {plural(item.visits, 'visit', 'visits')}
                         </span>
-                      </li>
-                    )
-                  })}
+                      </span>
+                    </li>
+                  )
+                })}
               </ul>
             ) : (
               <p className="small muted">No extra time has been recorded yet.</p>

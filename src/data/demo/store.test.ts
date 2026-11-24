@@ -274,6 +274,19 @@ describe('persistence', () => {
       })
     })
 
+    it('adds an upcoming booking a record from an older build never had, and changes nothing else', () => {
+      const saved = createDemoState(friday)
+      const older = { ...saved, appointments: saved.appointments.filter((item) => item.id !== 'appointment-noa-next-week') }
+      const loaded = refreshPassedBookings(older, tuesday)
+      expect(booking(loaded, 'appointment-noa-next-week')).toEqual(
+        createDemoState(tuesday).appointments.find((item) => item.id === 'appointment-noa-next-week'),
+      )
+      expect(loaded.clients).toEqual(older.clients)
+      expect(loaded.appointments.filter((item) => item.status === 'completed')).toEqual(older.appointments.filter((item) => item.status === 'completed'))
+      // Loading again finds nothing missing or passed, so it changes nothing.
+      expect(refreshPassedBookings(loaded, tuesday)).toBe(loaded)
+    })
+
     it('leaves a booking missed earlier today where it was, so Today and Visits show it as missed', () => {
       const morning = new Date(2026, 10, 24, 8, 0)
       const afternoon = new Date(2026, 10, 24, 16, 0)

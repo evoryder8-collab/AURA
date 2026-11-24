@@ -24,7 +24,7 @@ Everything below is fictional and stays in your browser (IndexedDB); nothing is 
 | Client | Noa Lindqvist | 39 | `noa` | any 8+ characters |
 | Client | Sage Okafor | 47 | `sage` | any 8+ characters |
 
-Fixtures are generated relative to the moment the demo first loads, on the therapists' working days and inside opening hours in the practice time zone: Mira saw Pratana seven days ago and sees Wassana tomorrow at 10:00 (the next day Wassana works); Noa has a 90-minute session with Pratana from the half hour after next. When you come back later, each of these upcoming bookings whose time has passed with nothing done for it moves to its slot in the current day's story, unless that slot clashes with another visit; past visits and everything you entered or changed stay as they are. Open tabs take in each other's saves. *Me → Reset demo data* restores this state.
+Fixtures are generated relative to the moment the demo first loads, on the therapists' working days and inside opening hours in the practice time zone: Mira saw Pratana seven days ago and sees Wassana tomorrow at 10:00 (the next day Wassana works); Noa has a 90-minute session with Pratana from the half hour after next. When you come back on a later day, each of these upcoming bookings that passed on an earlier day with nothing done for it moves to its slot in the current day's story, and any upcoming booking your saved demo predates is added, unless the slot clashes with another visit; past visits and everything you entered or changed stay as they are. Open tabs take in each other's saves. *Me → Reset demo data* restores this state.
 
 ## A five-minute walkthrough
 

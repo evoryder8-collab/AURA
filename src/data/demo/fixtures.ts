@@ -449,6 +449,7 @@ export function createDemoState(now: Date = new Date()): DemoState {
  * from an earlier practice day with nothing done for it (still confirmed, no arrival, no session, and no
  * log, confirmation, assessment, follow-up, credit or note pointing at it) takes its slot in today's
  * story, unless that slot breaks a booking rule against another visit for the same therapist or client.
+ * An upcoming booking a record from an older build never had is added under the same rule.
  * Nothing else moves: history, clients, consents and notes stay exactly as saved.
  */
 export function refreshPassedBookings(saved: DemoState, now: Date): DemoState {
@@ -468,7 +469,9 @@ export function refreshPassedBookings(saved: DemoState, now: Date): DemoState {
   let appointments = saved.appointments
   for (const booking of today.appointments.filter((item) => item.status === 'confirmed')) {
     const kept = appointments.find((item) => item.id === booking.id)
-    if (!kept || !passedUntouched(kept)) continue
+    // A booking an older build never seeded is added; appointments are never deleted, only cancelled.
+    const missing = !kept && saved.clients.some((client) => client.id === booking.clientId)
+    if (!missing && !(kept && passedUntouched(kept))) continue
     const local = zonedParts(booking.startsAt, PRACTICE_TIME_ZONE)
     const problem = startProblem({
       dayKey: local.dayKey,
@@ -481,7 +484,8 @@ export function refreshPassedBookings(saved: DemoState, now: Date): DemoState {
       timeZone: PRACTICE_TIME_ZONE,
       workingDays: today.therapists.find((therapist) => therapist.id === booking.therapistId)?.workingDays ?? [],
     })
-    if (!problem) appointments = appointments.map((item) => (item.id === booking.id ? booking : item))
+    if (problem) continue
+    appointments = missing ? [...appointments, booking] : appointments.map((item) => (item.id === booking.id ? booking : item))
   }
   return appointments === saved.appointments ? saved : { ...saved, appointments }
 }

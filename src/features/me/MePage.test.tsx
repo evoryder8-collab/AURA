@@ -61,7 +61,8 @@ describe('MePage', () => {
 
     const bonus = clientBonus(useDemoStore.getState(), MIRA)
     const extra = within(screen.getByRole('region', { name: /extra care/i }))
-    expect(extra.getByText(String(bonus.lifetimeMinutes))).toBeInTheDocument()
+    expect(extra.getByText(`+${bonus.lifetimeMinutes}`)).toBeInTheDocument()
+    expect(extra.getByText(/^free minutes?$/)).toBeInTheDocument()
     for (const item of bonus.byTherapist) {
       expect(extra.getByText(new RegExp(`^${item.minutes}\\s+min$`))).toBeInTheDocument()
     }

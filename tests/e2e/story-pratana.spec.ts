@@ -68,5 +68,6 @@ test('a 90-minute booking with Pratana crosses zero, finishes at 102 minutes and
   await expect(page.locator('.bonus')).toContainText(EXTRA_SENTENCE)
   await page.reload()
   await expect(page.locator('.bonus')).toContainText(EXTRA_SENTENCE)
-  await expect(page.locator('.bonus')).toContainText(/57\s+minutes of extra care in all/)
+  await expect(page.locator('.bonus')).toContainText('57 free extra minutes in all')
+  await expect(page.locator('.bonus')).toContainText('+57')
 })

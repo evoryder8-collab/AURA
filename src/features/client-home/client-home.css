@@ -327,32 +327,81 @@
     0 30px 80px rgba(40, 14, 8, 0.35);
 }
 
-.bonus__head .eyebrow {
-  display: inline-flex;
+.bonus__head {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
   align-items: center;
-  gap: 6px;
+  gap: 14px;
+}
+
+/* A gift, so the minutes read as given, not owed. */
+.bonus__gift {
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 18px;
+  color: #2b1207;
+  background: var(--sunset);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.6) inset,
+    0 10px 30px rgba(255, 150, 110, 0.45);
+}
+
+.bonus__title {
+  font-family: var(--font-display);
+  font-size: clamp(20px, 4.6vw, 24px);
+  font-weight: 750;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+}
+
+.bonus__lede {
+  margin-top: 2px;
+  color: var(--text-soft);
+  font-size: 15px;
+  line-height: 1.35;
+}
+
+.bonus__amount {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+}
+
+.bonus__plus {
+  font-family: var(--font-display);
+  font-size: clamp(64px, 17vw, 84px);
+  font-weight: 800;
+  letter-spacing: -0.05em;
+  line-height: 0.95;
+  background: var(--sunset);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 6px 24px rgba(255, 150, 110, 0.35));
+}
+
+.bonus__unit {
+  font-family: var(--font-display);
+  font-size: clamp(26px, 6vw, 32px);
+  font-weight: 750;
   color: var(--lantern);
 }
 
-.bonus__total {
-  display: flex;
-  align-items: baseline;
-  gap: 10px;
-  margin-top: 4px;
-}
-
-.bonus__total .num {
-  font-family: var(--font-display);
-  font-size: clamp(44px, 10vw, 60px);
+/* Not colour alone: the word itself says free. */
+.bonus__free {
+  align-self: center;
+  padding: 5px 12px;
+  border-radius: var(--r-pill);
+  background: rgba(255, 205, 122, 0.16);
+  border: 1px solid rgba(255, 205, 122, 0.55);
+  color: var(--lantern);
+  font-size: 13px;
   font-weight: 800;
-  letter-spacing: -0.04em;
-  line-height: 1;
-}
-
-.bonus__total span:last-child {
-  color: var(--text-soft);
-  font-weight: 600;
-  font-size: 15px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
 }
 
 .bonus__sentence {
@@ -373,13 +422,32 @@
   display: grid;
   grid-template-columns: auto 1fr auto;
   align-items: center;
-  gap: 12px;
-  padding: 8px 12px;
+  gap: 4px 12px;
+  padding: 10px 12px 12px;
   border-radius: var(--r-md);
   background: rgba(255, 255, 255, 0.07);
   font-weight: 650;
 }
 
-.bonus__all {
-  margin-top: -4px;
+.bonus__people strong {
+  color: var(--lantern);
+}
+
+/* Each therapist's share of the free minutes, at a glance. */
+.bonus__bar {
+  grid-column: 1 / -1;
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+  position: relative;
+}
+
+.bonus__bar::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  width: calc(var(--share, 0) * 100%);
+  border-radius: inherit;
+  background: var(--sunset);
 }

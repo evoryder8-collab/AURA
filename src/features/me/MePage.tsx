@@ -98,15 +98,15 @@ export function MePage() {
             )}
           </Card>
 
-          <Card as="section" title="Extra care" aria-label="Extra care" tone="gold">
+          <Card as="section" title="Free extra care" aria-label="Free extra care" tone="gold">
             <p className="me-bonus__total">
-              <span className="num">{bonus.lifetimeMinutes}</span>
+              <span className="num">+{bonus.lifetimeMinutes}</span>
               <span className="me-bonus__unit">
-                {bonus.lifetimeMinutes === 1 ? 'minute' : 'minutes'}
+                free {bonus.lifetimeMinutes === 1 ? 'minute' : 'minutes'}
               </span>
             </p>
             <p className="small muted">
-              Time your therapists gave beyond what you booked, across all your visits.
+              Time your therapists added beyond what you booked, at no charge, across all your visits.
             </p>
             {bonus.byTherapist.some((item) => item.minutes > 0) ? (
               <ul className="list me-bonus__list">

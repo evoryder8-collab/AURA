@@ -1,5 +1,5 @@
-import { ArrowRight, CalendarDays, Check, ClipboardCheck, FileText, MessageCircleHeart, Plus, Sparkles } from 'lucide-react'
-import { useMemo } from 'react'
+import { ArrowRight, CalendarDays, Check, ClipboardCheck, FileText, Gift, MessageCircleHeart, Plus } from 'lucide-react'
+import { useMemo, type CSSProperties } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Button } from '@/components/design-system/Button'
 import { PainChip } from '@/components/ui/PainChip'
@@ -177,28 +177,39 @@ export function ClientHomePage() {
           {bonusCredit && bonusTherapist ? (
             <section className="bonus rise" aria-labelledby="bonus-title">
               <div className="bonus__head">
-                <p className="eyebrow" id="bonus-title">
-                  <Sparkles size={14} aria-hidden="true" /> Extra care
-                </p>
-                <p className="bonus__total">
-                  <span className="num gradient-text">{bonus.lifetimeMinutes}</span>
-                  <span>minutes given beyond your bookings</span>
-                </p>
+                <span className="bonus__gift" aria-hidden="true">
+                  <Gift size={24} />
+                </span>
+                <div>
+                  <h2 className="bonus__title" id="bonus-title">
+                    Free extra care
+                  </h2>
+                  <p className="bonus__lede">Time added beyond what you booked, at no charge.</p>
+                </div>
               </div>
+              <p className="bonus__total">
+                <span className="visually-hidden">{minutesLabel(bonus.lifetimeMinutes).replace('minute', 'free extra minute')} in all</span>
+                <span aria-hidden="true" className="bonus__amount">
+                  <span className="bonus__plus num">+{bonus.lifetimeMinutes}</span>
+                  <span className="bonus__unit">min</span>
+                  <span className="bonus__free">Free</span>
+                </span>
+              </p>
               <p className="bonus__sentence">{bonusSentence(bonusCredit, bonus, bonusTherapist, now)}</p>
-              <ul className="bonus__people">
-                {bonus.byTherapist.map((item) => {
+              <ul className="bonus__people" aria-label="Free extra care by therapist">
+                {bonus.byTherapist.filter((item) => item.minutes > 0).map((item) => {
                   const person = getTherapist(state, item.therapistId)
+                  const share = bonus.lifetimeMinutes ? item.minutes / bonus.lifetimeMinutes : 0
                   return (
-                    <li key={item.therapistId}>
+                    <li key={item.therapistId} style={{ '--share': share } as CSSProperties}>
                       <Portrait name={person?.displayName ?? ''} portrait={person?.portrait} size="sm" />
                       <span>{person?.preferredName}</span>
-                      <strong className="num">{minutesLabel(item.minutes)}</strong>
+                      <strong className="num">+{minutesLabel(item.minutes)}</strong>
+                      <span className="bonus__bar" aria-hidden="true" />
                     </li>
                   )
                 })}
               </ul>
-              <p className="small muted bonus__all">{minutesLabel(bonus.lifetimeMinutes)} of extra care in all</p>
             </section>
           ) : null}
         </div>

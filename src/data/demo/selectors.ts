@@ -6,6 +6,7 @@ import {
   visitMeasures,
   type CareObservation,
 } from '@/domain/care'
+import { inWindow, type TimeWindow } from '@/features/progress/model'
 import { daysBetween } from '@/lib/formatting/time'
 import type { DemoAppointment, DemoState } from './model'
 
@@ -97,7 +98,8 @@ export function clientBonus(state: Pick<DemoState, 'bonusCredits'>, clientId: st
   return bonusSummary(state.bonusCredits, clientId)
 }
 
-export function clientRecovery(state: DemoState, clientId: string) {
+/** One row of measures per completed visit and the pattern they show; only the visits inside `window` when one is given. */
+export function clientRecovery(state: DemoState, clientId: string, window?: TimeWindow) {
   const visits = clientAppointments(state, clientId)
     .filter((appointment) => appointment.status === 'completed')
     .map((appointment) => ({
@@ -105,7 +107,7 @@ export function clientRecovery(state: DemoState, clientId: string) {
       startsAt: appointment.arrival?.completedAt ?? appointment.startsAt,
       arrivalCompleted: Boolean(appointment.arrival),
     }))
-  const measures = visitMeasures({
+  const all = visitMeasures({
     visits,
     observations: clientObservations(state, clientId),
     confirmations: state.confirmations.filter((item) => item.clientId === clientId),
@@ -113,5 +115,6 @@ export function clientRecovery(state: DemoState, clientId: string) {
     rom: state.rom.filter((item) => item.clientId === clientId),
     goalScores: state.goalScores.filter((item) => item.clientId === clientId),
   })
+  const measures = window ? all.filter((measure) => inWindow(Date.parse(measure.observedAt), window)) : all
   return { measures, result: classifyVisits(measures) }
 }

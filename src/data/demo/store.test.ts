@@ -40,6 +40,14 @@ describe('demo fixtures tell one continuous story', () => {
     expect(measures).toHaveLength(6)
     expect(measures.every((row) => row.pain !== null)).toBe(true)
   })
+
+  it('reads the pattern from the visits inside a window only', () => {
+    const window = { from: Date.now() - 17 * 86_400_000, to: Date.now(), startsAtFirstEntry: false }
+    const { measures, result } = clientRecovery(useDemoStore.getState(), mira, window)
+    const lastTwo = ['appointment-mira-v5', 'appointment-mira-v6']
+    expect(measures.map((row) => row.visitId)).toEqual(lastTwo)
+    expect(result.evidence.includedPoints.map((point) => point.observationId)).toEqual(lastTwo)
+  })
 })
 
 describe('acceptance: Pratana, 90-minute booking finished at 102 minutes', () => {

@@ -3,7 +3,7 @@ import { Badge } from '@/components/design-system/Badge'
 import { Card } from '@/components/design-system/Card'
 import { clientRecovery } from '@/data/demo/selectors'
 import type { DemoStore } from '@/data/demo/store'
-import { areaKeyLabel, classifyVisits, OBSERVATION_SOURCE_LABEL, ROM_METHOD_LABEL, type AreaKey, type RomMethod } from '@/domain/care'
+import { areaKeyLabel, OBSERVATION_SOURCE_LABEL, ROM_METHOD_LABEL, type AreaKey, type RomMethod } from '@/domain/care'
 import { PROTOTYPE_V1_CONFIG, type EvidenceStream } from '@/domain/engine'
 import { DataTable } from './DataTable'
 import {
@@ -12,7 +12,6 @@ import {
   dayAndTime,
   dayLabel,
   goalSeries,
-  inWindow,
   lowerFirst,
   measureSummary,
   nb,
@@ -439,8 +438,7 @@ export function RecoveryPanel(props: PanelProps) {
   const { state, clientId, audience, window, visits, Heading } = props
   const detailId = useId()
   // Only the window's visits are classified, so the summary, chart, table and every delta read one series.
-  const { measures } = clientRecovery(state, clientId)
-  const result = classifyVisits(measures.filter((measure) => inWindow(Date.parse(measure.observedAt), window)))
+  const { result } = clientRecovery(state, clientId, window)
   const included = result.evidence.includedPoints.map((point) => ({
     ...point,
     at: Date.parse(point.observedAt),

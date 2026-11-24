@@ -236,6 +236,40 @@ describe('persistence', () => {
     expect(reanchorDemoState(saved, tuesday).appointments).toEqual(createDemoState(tuesday).appointments)
   })
 
+  it('refreshes a record from an older build whose anchor cannot be recovered, keeping what the person added', () => {
+    // An older build placed Noa's visit at another slot, so the anchor cannot be inferred from it.
+    const { anchoredAt: _unknown, ...seeded } = createDemoState(new Date(2026, 10, 16, 8, 0))
+    const saved = {
+      ...seeded,
+      appointments: seeded.appointments.map((item) =>
+        item.id === 'appointment-noa-today' ? { ...item, startsAt: new Date(Date.parse(item.startsAt) + 15 * 60_000).toISOString() } : item,
+      ),
+      observations: [
+        ...seeded.observations,
+        { ...seeded.observations[0]!, id: 'observation-mine', observedAt: '2026-11-17T18:00:00.000Z', recordedAt: '2026-11-17T18:00:00.000Z' },
+      ],
+    }
+    const tuesday = new Date(2026, 10, 24, 9, 0)
+    const moved = reanchorDemoState(saved, tuesday)
+    const noa = moved.appointments.find((item) => item.id === 'appointment-noa-today')
+    expect(noa).toEqual(createDemoState(tuesday).appointments.find((item) => item.id === 'appointment-noa-today'))
+    expect(moved.observations.find((item) => item.id === 'observation-mine')).toEqual(saved.observations.at(-1))
+    expect(moved.anchoredAt).toBe(tuesday.toISOString())
+  })
+
+  it('leaves an unanchored record from today as it is, and unanchored so a later day can still refresh it', () => {
+    const { anchoredAt: _unknown, ...seeded } = createDemoState(new Date(2026, 10, 24, 8, 0))
+    const saved = {
+      ...seeded,
+      appointments: seeded.appointments.map((item) =>
+        item.id === 'appointment-noa-today' ? { ...item, startsAt: new Date(Date.parse(item.startsAt) + 15 * 60_000).toISOString() } : item,
+      ),
+    }
+    const kept = reanchorDemoState(saved, new Date(2026, 10, 24, 9, 0))
+    expect(kept.appointments).toEqual(saved.appointments)
+    expect(kept.anchoredAt).toBeUndefined()
+  })
+
   it('takes in a record another open tab saved, without saving it back', async () => {
     localStorage.clear()
     vi.resetModules()

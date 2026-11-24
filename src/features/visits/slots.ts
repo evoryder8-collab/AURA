@@ -114,30 +114,52 @@ export function bookingDays(input: {
   )
 }
 
+type Busy = ReadonlyArray<Pick<DemoAppointment, 'startsAt' | 'durationMinutes' | 'status'>>
+
+export type StartProblem = 'closed' | 'outside_hours' | 'past' | 'taken'
+
+/** "HH:MM" for minutes after midnight, as a time input reads and writes it. */
+export const clockTime = (minutes: number) => `${String(Math.floor(minutes / 60)).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}`
+
 /**
- * Start times on one practice day, every 30 minutes from opening, that finish by closing,
- * start after `now` and overlap none of the `busy` visits still holding time.
+ * Why a visit cannot start at this local time, or null when it can: a working day, inside opening
+ * hours (finishing by closing), after `now`, and overlapping none of the `busy` visits still holding time.
+ * The 30-minute grid and a custom time both go through this one rule.
  */
+export function startProblem(input: {
+  dayKey: string
+  minutes: number
+  durationMinutes: number
+  busy: Busy
+  now: number
+  timeZone: string
+  workingDays: readonly number[]
+}): StartProblem | null {
+  if (!input.workingDays.includes(weekdayOf(input.dayKey))) return 'closed'
+  if (input.minutes < OPENING_MINUTES || input.minutes + input.durationMinutes > CLOSING_MINUTES) return 'outside_hours'
+  const start = zonedTimeToUtc(input.dayKey, input.minutes, input.timeZone)
+  if (start <= input.now) return 'past'
+  const end = start + input.durationMinutes * 60_000
+  const clash = input.busy.filter(holdsTime).some((appointment) => {
+    const busyStart = new Date(appointment.startsAt).getTime()
+    return overlaps(start, end, busyStart, busyStart + appointment.durationMinutes * 60_000)
+  })
+  return clash ? 'taken' : null
+}
+
+/** Start times on one practice day, every 30 minutes from opening, that pass `startProblem`. */
 export function availableStarts(input: {
   dayKey: string
   durationMinutes: number
-  busy: ReadonlyArray<Pick<DemoAppointment, 'startsAt' | 'durationMinutes' | 'status'>>
+  busy: Busy
   now: number
   timeZone: string
   workingDays: readonly number[]
 }): string[] {
-  if (!input.workingDays.includes(weekdayOf(input.dayKey))) return []
-  const taken = input.busy.filter(holdsTime).map((appointment) => {
-    const start = new Date(appointment.startsAt).getTime()
-    return [start, start + appointment.durationMinutes * 60_000] as const
-  })
   const starts: string[] = []
   for (let minutes = OPENING_MINUTES; minutes + input.durationMinutes <= CLOSING_MINUTES; minutes += SLOT_STEP_MINUTES) {
-    const start = zonedTimeToUtc(input.dayKey, minutes, input.timeZone)
-    const end = start + input.durationMinutes * 60_000
-    if (start <= input.now) continue
-    if (taken.some(([busyStart, busyEnd]) => overlaps(start, end, busyStart, busyEnd))) continue
-    starts.push(new Date(start).toISOString())
+    if (startProblem({ ...input, minutes })) continue
+    starts.push(new Date(zonedTimeToUtc(input.dayKey, minutes, input.timeZone)).toISOString())
   }
   return starts
 }

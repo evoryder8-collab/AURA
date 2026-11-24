@@ -8,13 +8,28 @@ import { useDemoStore } from '@/data/demo/store'
 import { clientsAssignedToTherapist } from '@/data/demo/team'
 import { PRACTICE_TIME_ZONE } from '@/lib/formatting/time'
 import { SlotPicker, type SlotDay } from '@/features/visits/SlotPicker'
-import { availableStarts, bookingDays, SERVICES } from '@/features/visits/slots'
+import {
+  availableStarts,
+  bookingDays,
+  clockTime,
+  CLOSING_MINUTES,
+  OPENING_MINUTES,
+  SERVICES,
+  startProblem,
+  zonedParts,
+  zonedTimeToUtc,
+  type StartProblem,
+} from '@/features/visits/slots'
 
 const ROOM = 'Garden room'
 type Minutes = `${(typeof SERVICES)[number]['minutes']}`
 
+/** Visits that hold this therapist's or this client's time. */
+const busyFor = (therapist: DemoTherapist, clientId: string, appointments: readonly DemoAppointment[]) =>
+  appointments.filter((item) => item.therapistId === therapist.id || (clientId && item.clientId === clientId))
+
 function freeDays(therapist: DemoTherapist, clientId: string, minutes: number, appointments: readonly DemoAppointment[], now: number): SlotDay[] {
-  const busy = appointments.filter((item) => item.therapistId === therapist.id || (clientId && item.clientId === clientId))
+  const busy = busyFor(therapist, clientId, appointments)
   return bookingDays({ now, workingDays: therapist.workingDays, timeZone: PRACTICE_TIME_ZONE }).map((key) => ({
     key,
     starts: availableStarts({ dayKey: key, durationMinutes: minutes, busy, now, timeZone: PRACTICE_TIME_ZONE, workingDays: therapist.workingDays }),
@@ -46,15 +61,48 @@ export function NewAppointmentSheet({
   const service = SERVICES.find((item) => `${item.minutes}` === minutes) ?? SERVICES[0]!
   const days = freeDays(therapist, clientId, service.minutes, appointments, now)
   const activeDay = days.find((day) => day.key === dayKey && day.starts.length) ?? days.find((day) => day.starts.length)
+  const latest = clockTime(CLOSING_MINUTES - service.minutes)
+
+  const problemAt = (key: string, minutesOfDay: number) =>
+    startProblem({
+      dayKey: key,
+      minutes: minutesOfDay,
+      durationMinutes: service.minutes,
+      busy: busyFor(therapist, clientId, useDemoStore.getState().appointments),
+      now: Date.now(),
+      timeZone: PRACTICE_TIME_ZONE,
+      workingDays: therapist.workingDays,
+    })
+
+  const explain = (problem: StartProblem) =>
+    ({
+      closed: `${therapist.preferredName} does not work on this day.`,
+      outside_hours: `Choose a start from ${clockTime(OPENING_MINUTES)} to ${latest}, so a ${service.minutes}-minute visit ends by ${clockTime(CLOSING_MINUTES)}.`,
+      past: 'That time has already passed. Choose a later time.',
+      taken: 'That time overlaps another visit. Choose a different time.',
+    })[problem]
+
+  const pickCustom = (time: string, key: string) => {
+    const [hours = 0, mins = 0] = time.split(':').map(Number)
+    const problem = problemAt(key, hours * 60 + mins)
+    if (problem) {
+      setStartsAt(null)
+      return setError(explain(problem))
+    }
+    setStartsAt(new Date(zonedTimeToUtc(key, hours * 60 + mins, PRACTICE_TIME_ZONE)).toISOString())
+    setError('')
+  }
 
   const create = () => {
     const client = assigned.find((item) => item.id === clientId)
     if (!client) return setError('Choose one of your clients.')
     if (!startsAt) return setError('Choose a start time.')
-    const fresh = freeDays(therapist, client.id, service.minutes, useDemoStore.getState().appointments, Date.now())
-    if (!fresh.some((day) => day.starts.includes(startsAt))) {
+    // Checked again at booking: the time may have been taken, or passed, since it was chosen.
+    const chosen = zonedParts(startsAt, PRACTICE_TIME_ZONE)
+    const problem = problemAt(chosen.dayKey, chosen.minutes)
+    if (problem) {
       setStartsAt(null)
-      return setError('That time is no longer free. Please choose another.')
+      return setError(problem === 'taken' ? 'That time is no longer free. Please choose another.' : explain(problem))
     }
     addAppointment({
       clientId: client.id,
@@ -114,6 +162,8 @@ export function NewAppointmentSheet({
 
             {activeDay ? (
               <SlotPicker
+                key={`${clientId}-${minutes}`}
+                custom={{ latest, onPick: pickCustom }}
                 days={days}
                 dayKey={activeDay.key}
                 onDay={(key) => {

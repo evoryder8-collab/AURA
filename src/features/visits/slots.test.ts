@@ -4,10 +4,12 @@ import {
   addDays,
   availableStarts,
   bookingDays,
+  clockTime,
   formatDayKey,
   overlaps,
   serviceName,
   startOfWeek,
+  startProblem,
   weekdayOf,
   zonedParts,
   zonedTimeToUtc,
@@ -114,6 +116,45 @@ describe('availableStarts', () => {
   it('keeps 09:00 local in a different practice time zone', () => {
     const starts = availableStarts({ ...base, timeZone: NEW_YORK, durationMinutes: 60, busy: [] })
     expect(starts[0]).toBe('2026-11-24T14:00:00.000Z')
+  })
+})
+
+describe('startProblem (custom times)', () => {
+  const base = { dayKey: '2026-11-24', now: mondayMorning, timeZone: ZURICH, workingDays: weekdays, durationMinutes: 60, busy: [] }
+  const at = (time: string) => {
+    const [hours = 0, minutes = 0] = time.split(':').map(Number)
+    return hours * 60 + minutes
+  }
+
+  it('accepts any free minute inside opening hours, like 10:15 or 11:25', () => {
+    expect(startProblem({ ...base, minutes: at('10:15') })).toBeNull()
+    expect(startProblem({ ...base, minutes: at('11:25') })).toBeNull()
+    expect(startProblem({ ...base, minutes: at('17:00') })).toBeNull() // ends exactly at 18:00
+  })
+
+  it('refuses a start before opening or one that would run past closing', () => {
+    expect(startProblem({ ...base, minutes: at('08:55') })).toBe('outside_hours')
+    expect(startProblem({ ...base, minutes: at('17:05') })).toBe('outside_hours')
+  })
+
+  it('refuses a minute that overlaps a booked visit, but not one that only touches it', () => {
+    const booked = [busy('2026-11-24T09:00:00.000Z', 60)] // 10:00–11:00 local
+    expect(startProblem({ ...base, busy: booked, minutes: at('09:15') })).toBe('taken')
+    expect(startProblem({ ...base, busy: booked, minutes: at('10:59') })).toBe('taken')
+    expect(startProblem({ ...base, busy: booked, minutes: at('11:00') })).toBeNull()
+    expect(startProblem({ ...base, busy: [busy('2026-11-24T09:00:00.000Z', 60, 'cancelled')], minutes: at('10:15') })).toBeNull()
+  })
+
+  it('refuses a time already passed and a day the therapist does not work', () => {
+    const middayToday = Date.parse('2026-11-24T11:10:00.000Z') // 12:10 in Zurich
+    expect(startProblem({ ...base, now: middayToday, minutes: at('12:05') })).toBe('past')
+    expect(startProblem({ ...base, now: middayToday, minutes: at('12:15') })).toBeNull()
+    expect(startProblem({ ...base, dayKey: '2026-11-29', minutes: at('10:15') })).toBe('closed')
+  })
+
+  it('prints minutes after midnight the way a time field reads them', () => {
+    expect(clockTime(9 * 60)).toBe('09:00')
+    expect(clockTime(17 * 60 + 5)).toBe('17:05')
   })
 })
 

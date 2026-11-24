@@ -101,3 +101,25 @@
   opacity: 0.42;
   border-style: dashed;
 }
+
+.slot-time--custom {
+  border-style: dashed;
+  color: var(--aqua);
+}
+
+.slot-time--custom[aria-expanded='true'] {
+  border-style: solid;
+  border-color: rgba(138, 230, 214, 0.65);
+  background: linear-gradient(180deg, rgba(138, 230, 214, 0.2), rgba(138, 230, 214, 0.08));
+  color: var(--text);
+}
+
+.slot-custom {
+  max-width: 260px;
+}
+
+.slot-custom__input {
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}

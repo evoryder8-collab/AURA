@@ -1,4 +1,4 @@
-import { screen, within } from '@testing-library/react'
+import { fireEvent, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { DEMO_CLIENT_IDS, DEMO_THERAPIST_IDS } from '@/data/demo/fixtures'
@@ -130,5 +130,34 @@ describe('Therapist calendar', () => {
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
     expect(screen.getByRole('status')).toHaveTextContent('Booked Mira Ellison on Wed 25 Nov at 14:00.')
     expect(screen.getByRole('button', { name: /Mira Ellison/ })).toBeInTheDocument()
+  })
+
+  it('books a custom time of day, like 10:15, and refuses one that overlaps or runs past closing', async () => {
+    const user = userEvent.setup()
+    show(pratana)
+    const open = async () => {
+      await user.click(screen.getByRole('button', { name: 'New appointment' }))
+      const sheet = screen.getByRole('dialog', { name: 'New appointment' })
+      await user.selectOptions(within(sheet).getByRole('combobox', { name: 'Client' }), DEMO_CLIENT_IDS.mira)
+      await user.click(within(sheet).getByRole('button', { name: /^Wednesday 25 November/ }))
+      await user.click(within(sheet).getByRole('button', { name: 'Custom' }))
+      return { sheet, time: within(sheet).getByLabelText(/^Custom start time/) }
+    }
+
+    const first = await open()
+    expect(within(first.sheet).getByText('Any minute from 09:00 to 17:00')).toBeInTheDocument()
+    fireEvent.change(first.time, { target: { value: '17:30' } })
+    expect(within(first.sheet).getByRole('alert')).toHaveTextContent('Choose a start from 09:00 to 17:00, so a 60-minute visit ends by 18:00.')
+    fireEvent.change(first.time, { target: { value: '10:15' } })
+    expect(within(first.sheet).queryByRole('alert')).not.toBeInTheDocument()
+    await user.click(within(first.sheet).getByRole('button', { name: 'Book appointment' }))
+    expect(screen.getByRole('status')).toHaveTextContent('Booked Mira Ellison on Wed 25 Nov at 10:15.')
+
+    const second = await open()
+    fireEvent.change(second.time, { target: { value: '10:45' } })
+    expect(within(second.sheet).getByRole('alert')).toHaveTextContent('That time overlaps another visit. Choose a different time.')
+    const before = useDemoStore.getState().appointments.length
+    await user.click(within(second.sheet).getByRole('button', { name: 'Book appointment' }))
+    expect(useDemoStore.getState().appointments).toHaveLength(before)
   })
 })

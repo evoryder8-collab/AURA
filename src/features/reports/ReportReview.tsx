@@ -25,6 +25,8 @@ export function ReportReview({ report, mode, onClose }: { report: DoctorReport; 
   const recipient = recipientInSentence(report.recipient, 'my')
   const consentWords = `I agree to share this with ${recipient} for ${lowerFirst(report.purpose)}`
   const photoCount = view.photos?.length ?? 0
+  // Asking about photographs only makes sense when the report shows some.
+  const sharesPhotos = report.includePhotos && photoCount > 0
 
   return (
     <div className="report-review stack">
@@ -59,7 +61,7 @@ export function ReportReview({ report, mode, onClose }: { report: DoctorReport; 
           </div>
           <div>
             <dt>Photographs</dt>
-            <dd>{report.includePhotos && photoCount ? `Included (${plural(photoCount, 'photograph', 'photographs')})` : 'Not included'}</dd>
+            <dd>{sharesPhotos ? `Included (${plural(photoCount, 'photograph', 'photographs')})` : 'Not included'}</dd>
           </div>
         </dl>
         <h3 className="report-subtitle">What it contains</h3>
@@ -82,7 +84,7 @@ export function ReportReview({ report, mode, onClose }: { report: DoctorReport; 
         {report.status === 'awaiting_consent' ? (
           <div className="stack">
             <h2 className="card__title">Your choice</h2>
-            {report.includePhotos ? (
+            {sharesPhotos ? (
               <label className="report-check" htmlFor={photoId}>
                 <input id={photoId} type="checkbox" checked={photosAgreed} onChange={(event) => setPhotosAgreed(event.target.checked)} />
                 <span>I agree to include my photographs ({plural(photoCount, 'photograph', 'photographs')}).</span>
@@ -94,12 +96,12 @@ export function ReportReview({ report, mode, onClose }: { report: DoctorReport; 
               fullWidth
               className="report-agree"
               icon={<CheckCircle2 size={20} aria-hidden="true" />}
-              disabled={report.includePhotos && !photosAgreed}
+              disabled={sharesPhotos && !photosAgreed}
               onClick={() => consentToReport(report.id, report.clientId)}
             >
               {consentWords}
             </Button>
-            {report.includePhotos && !photosAgreed ? (
+            {sharesPhotos && !photosAgreed ? (
               <p className="field__hint">This report includes photographs, so agree to them first.</p>
             ) : null}
             <Button variant="ghost" fullWidth onClick={() => withdrawReport(report.id)}>

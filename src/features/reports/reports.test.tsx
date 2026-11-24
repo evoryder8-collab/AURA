@@ -159,13 +159,25 @@ describe('client review', () => {
 
   it('asks separately before photographs are shared', async () => {
     const user = userEvent.setup()
+    useDemoStore.getState().updateConsent(MIRA, 'photography', true)
+    useDemoStore.getState().addPhoto({ clientId: MIRA, view: 'front', dataUrl: 'data:image/jpeg;base64,AAAA' })
     const id = awaitingReport(true)
     renderAt(`/client/reports/${id}`, asMira)
     const agree = screen.getByRole('button', { name: /i agree to share this/i })
     expect(agree).toBeDisabled()
-    await user.click(screen.getByRole('checkbox', { name: /include my photographs/i }))
+    await user.click(screen.getByRole('checkbox', { name: /include my photographs \(1 photograph\)/i }))
     await user.click(agree)
     expect(useDemoStore.getState().reports.find((item) => item.id === id)!.consent?.includesPhotos).toBe(true)
+  })
+
+  it('asks nothing about photographs when none qualify for the report', async () => {
+    const user = userEvent.setup()
+    const id = awaitingReport(true)
+    renderAt(`/client/reports/${id}`, asMira)
+    expect(screen.getByText('Photographs', { selector: 'dt' }).nextElementSibling).toHaveTextContent('Not included')
+    expect(screen.queryByRole('checkbox', { name: /include my photographs/i })).not.toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: /i agree to share this/i }))
+    expect(useDemoStore.getState().reports.find((item) => item.id === id)!.status).toBe('consented')
   })
 
   it('lets the client withdraw after agreeing', async () => {

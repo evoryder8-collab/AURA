@@ -37,7 +37,7 @@ function clientSummary(state: DemoState, client: DemoClient, now: number) {
   const updates = !healthAllowed
     ? []
     : next
-      ? preVisitUpdates(state, next, now)
+      ? preVisitUpdates(state, next)
       : updatesBetween(
           clientObservations(state, client.id),
           lastVisit?.session?.finishedAt ?? lastVisit?.startsAt,

@@ -105,7 +105,7 @@ describe('acceptance: day-seven update reaches Wassana before day eight', () => 
     if (!appointment) throw new Error('fixture missing')
     expect(appointment.therapistId).toBe(wassana)
 
-    const updates = preVisitUpdates(useDemoStore.getState(), appointment, Date.now())
+    const updates = preVisitUpdates(useDemoStore.getState(), appointment)
     expect(updates[0]).toMatchObject({ id: observationId, note: 'Turning to look behind the car still hurts.' })
 
     const before = sessionPointsFor(useDemoStore.getState(), appointment)

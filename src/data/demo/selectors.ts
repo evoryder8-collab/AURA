@@ -73,11 +73,15 @@ export function clientObservations(state: Pick<DemoState, 'observations'>, clien
   return state.observations.filter((observation) => observation.clientId === clientId)
 }
 
-/** What the client reported since their previous visit, for the therapist preview. */
-export function preVisitUpdates(state: DemoState, appointment: DemoAppointment, now: number) {
+/**
+ * What the client reported since their previous visit, for the therapist preview. Capped at the visit's
+ * end, not at the screen's clock: no log is ever dated ahead, and a per-minute clock would hide one
+ * saved seconds ago in another tab.
+ */
+export function preVisitUpdates(state: DemoState, appointment: DemoAppointment) {
   const previous = previousVisit(state, appointment)
   const since = previous?.session?.finishedAt ?? previous?.startsAt
-  const until = new Date(Math.min(now, time(appointment.startsAt) + appointment.durationMinutes * 60_000)).toISOString()
+  const until = new Date(time(appointment.startsAt) + appointment.durationMinutes * 60_000).toISOString()
   return updatesBetween(clientObservations(state, appointment.clientId), since, until)
 }
 

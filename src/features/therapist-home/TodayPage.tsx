@@ -138,7 +138,7 @@ function NextBrief({ appointment, state, now }: { appointment: DemoAppointment; 
   const client = getClient(state, appointment.clientId)
   const previous = previousVisit(state, appointment)
   const previousTherapist = getTherapist(state, previous?.therapistId)
-  const updates = preVisitUpdates(state, appointment, now)
+  const updates = preVisitUpdates(state, appointment)
   const observations = clientObservations(state, appointment.clientId)
   // With no earlier visit there is nothing to compare against, so every area reads as new.
   const before = previous ? latestByArea(observations, [], previous.session?.finishedAt ?? previous.startsAt) : new Map()
@@ -274,7 +274,7 @@ function Schedule({ appointments, state, now }: { appointments: DemoAppointment[
             <ol className="day__list">
               {items.map((item) => {
                 const client = getClient(state, item.clientId)
-                const update = preVisitUpdates(state, item, now)[0]
+                const update = preVisitUpdates(state, item)[0]
                 const top = update?.entries.slice().sort((a, b) => b.pain - a.pain)[0]
                 return (
                   <li key={item.id}>

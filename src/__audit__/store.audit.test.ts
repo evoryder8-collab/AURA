@@ -161,7 +161,7 @@ describe('audit: log how I feel', () => {
   const recentChip = (name: RegExp) =>
     within(screen.getByRole('region', { name: 'Recently recorded' })).getByRole('button', { name })
 
-  it('stores what the saved screen shows when two cards end up on the same side', async () => {
+  it('keeps one card per side, stores exactly the shown cards and lists exactly what was stored', async () => {
     useDemoStore.getState().logObservation({
       clientId: mira,
       source: 'home',
@@ -172,19 +172,25 @@ describe('audit: log how I feel', () => {
     open()
     await user.click(recentChip(/^Right shoulder/))
     await user.click(recentChip(/^Left shoulder/))
-    const rightCard = screen.getByRole('heading', { name: 'Right shoulder' }).closest('article') as HTMLElement
-    await user.click(within(rightCard).getByRole('button', { name: 'Left' }))
-    const [first, second] = screen.getAllByRole('heading', { name: 'Left shoulder' }).map((heading) => heading.closest('article') as HTMLElement)
-    await user.click(within(first as HTMLElement).getByRole('radio', { name: '2 out of 10' }))
-    await user.click(within(second as HTMLElement).getByRole('radio', { name: '8 out of 10' }))
+    const card = (name: string) => screen.getByRole('heading', { name }).closest('article') as HTMLElement
+    const toLeft = within(card('Right shoulder')).getByRole('button', { name: 'Left' })
+    expect(toLeft).toHaveAttribute('aria-disabled', 'true')
+    expect(toLeft).toHaveAccessibleDescription('Left shoulder is already added')
+    expect(within(card('Right shoulder')).getByRole('button', { name: 'Both' })).toHaveAttribute('aria-disabled', 'true')
+    await user.click(toLeft)
+    expect(screen.getAllByRole('heading', { level: 3 }).map((heading) => heading.textContent)).toEqual(['Right shoulder', 'Left shoulder'])
+
+    await user.click(within(card('Right shoulder')).getByRole('radio', { name: '2 out of 10' }))
+    await user.click(within(card('Left shoulder')).getByRole('radio', { name: '8 out of 10' }))
     await user.click(screen.getByRole('button', { name: /^Save/ }))
 
-    const shown = within(screen.getByRole('status'))
-      .getAllByRole('listitem')
-      .map((item) => item.textContent)
     const stored = (useDemoStore.getState().observations.at(-1)?.entries ?? []).map(
       (entry) => `${areaLabel(entry.region, entry.side)}${entry.pain}/10`,
     )
+    expect(stored).toEqual(['Right shoulder2/10', 'Left shoulder8/10'])
+    const shown = within(screen.getByRole('status'))
+      .getAllByRole('listitem')
+      .map((item) => item.textContent)
     expect(shown).toEqual(stored)
   })
 

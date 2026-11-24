@@ -855,6 +855,12 @@ h3 {
   box-shadow: 0 1px 0 rgba(255, 255, 255, 0.1) inset;
 }
 
+.segmented button[aria-disabled='true'] {
+  opacity: 0.45;
+  text-decoration: line-through;
+  cursor: not-allowed;
+}
+
 /* ---------- Dialogs & sheets ---------- */
 
 .modal__overlay {

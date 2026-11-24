@@ -196,6 +196,11 @@
   justify-self: start;
 }
 
+.log__sides {
+  display: grid;
+  gap: var(--s-2);
+}
+
 .log__empty {
   color: var(--text-dim);
   font-size: 14.5px;

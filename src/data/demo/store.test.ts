@@ -1,7 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { areaSeries, bonusSummary } from '@/domain/care'
 import { createDemoState, DEMO_CLIENT_IDS, DEMO_THERAPIST_IDS, refreshPassedBookings } from './fixtures'
-import type { DemoAppointment, DemoState } from './model'
+import { reportInputs } from '@/features/reports/inputs'
+import type { DemoAppointment, DemoReport, DemoState } from './model'
 import { clientBonus, clientRecovery, preVisitUpdates, sessionPointsFor } from './selectors'
 import { DEMO_STORAGE_KEY, mergePersistedDemoState, useDemoStore } from './store'
 
@@ -159,6 +160,58 @@ describe('notes and reports', () => {
     expect(useDemoStore.getState().reports[0]).toMatchObject({
       status: 'consented',
       consent: { recipient: 'Family doctor', includesPhotos: false },
+    })
+  })
+
+  describe('a report sent before sent copies were kept', () => {
+    const day = 86_400_000
+    const report = (id: string, status: DemoReport['status']): DemoReport => ({
+      id,
+      clientId: mira,
+      preparedBy: wassana,
+      createdAt: new Date(Date.now() - day).toISOString(),
+      updatedAt: new Date(Date.now() - day).toISOString(),
+      status,
+      recipient: 'Family doctor',
+      purpose: 'Discuss persistent left shoulder pain',
+      dateFrom: new Date(Date.now() - 90 * day).toISOString(),
+      dateTo: new Date(Date.now() + 30 * day).toISOString(),
+      areas: ['shoulder:left'],
+      sections: ['bodyMap', 'painTrend'],
+      view: 'auto',
+      noteText: 'For the doctor',
+      recommendation: 'I recommend discussing the persistent left shoulder pain with your doctor.',
+      includePhotos: false,
+    })
+    const shoulderScores = (id: string) => {
+      const state = useDemoStore.getState()
+      const saved = state.reports.find((item) => item.id === id)!
+      return reportInputs(state, saved).content.areas.find((area) => area.area === 'shoulder:left')?.series.length
+    }
+    const logShoulder = () =>
+      useDemoStore.getState().logObservation({ clientId: mira, source: 'home', selections: [{ region: 'shoulder', side: 'left', pain: 3 }] })
+
+    it('is frozen on load when it awaits or has the client’s agreement, so a later log cannot change it', () => {
+      const saved = {
+        ...createDemoState(),
+        reports: [
+          report('awaiting', 'awaiting_consent'),
+          { ...report('agreed', 'consented'), consent: { consentedAt: new Date().toISOString(), recipient: 'Family doctor', purpose: 'Discuss persistent left shoulder pain', includesPhotos: false } },
+          report('draft', 'draft'),
+        ],
+      }
+      useDemoStore.setState({ ...mergePersistedDemoState({ ...saved, version: 2 }, useDemoStore.getState()), hydrated: true })
+      const before = ['awaiting', 'agreed', 'draft'].map(shoulderScores)
+      logShoulder()
+      expect(['awaiting', 'agreed', 'draft'].map(shoulderScores)).toEqual([before[0], before[1], before[2]! + 1])
+    })
+
+    it('is frozen when the client agrees to it', () => {
+      useDemoStore.setState({ reports: [report('awaiting', 'awaiting_consent')] })
+      useDemoStore.getState().consentToReport('awaiting', mira)
+      const agreed = shoulderScores('awaiting')
+      logShoulder()
+      expect({ status: useDemoStore.getState().reports[0]?.status, scores: shoulderScores('awaiting') }).toEqual({ status: 'consented', scores: agreed })
     })
   })
 

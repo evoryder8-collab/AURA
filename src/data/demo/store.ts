@@ -163,7 +163,7 @@ export function mergePersistedDemoState(persisted: unknown, current: DemoStore):
     return current
   }
   const identities = createDemoTherapists()
-  return {
+  const merged: DemoStore = {
     ...current,
     // A seeded booking whose time passed untouched takes today's slot; nothing else moves.
     ...refreshPassedBookings(state as DemoState, new Date()),
@@ -173,7 +173,17 @@ export function mergePersistedDemoState(persisted: unknown, current: DemoStore):
       return fresh ? { ...therapist, ...fresh, assignedClientIds: therapist.assignedClientIds } : therapist
     }),
   }
+  return {
+    ...merged,
+    reports: merged.reports.map((report) =>
+      report.status === 'awaiting_consent' || report.status === 'consented' ? frozen(merged, report) : report,
+    ),
+  }
 }
+
+/** A report sent to the client keeps the content it was sent with; one sent before copies were kept is frozen now. */
+const frozen = (state: DemoState, report: DemoReport): DemoReport =>
+  report.snapshot ? report : { ...report, snapshot: freezeReport(state, report) }
 
 export const useDemoStore = create<DemoStore>()(
   withUnsavedSet(persist(
@@ -542,7 +552,7 @@ export const useDemoStore = create<DemoStore>()(
             reports: state.reports.map((report) =>
               report.id === id && report.clientId === clientId && report.status === 'awaiting_consent'
                 ? {
-                    ...report,
+                    ...frozen(state, report),
                     status: 'consented',
                     consent: {
                       consentedAt: nowIso(),

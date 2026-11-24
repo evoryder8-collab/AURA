@@ -859,6 +859,8 @@ h3 {
 /* ---------- Page scaffolding ---------- */
 
 .page {
+  /* One flexible column that content can never stretch past the screen. */
+  grid-template-columns: minmax(0, 1fr);
   width: min(100%, 1180px);
   margin: 0 auto;
   /* top room clears the fixed test-build badge */

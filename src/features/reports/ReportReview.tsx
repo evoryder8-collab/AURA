@@ -59,7 +59,7 @@ export function ReportReview({ report, mode, onClose }: { report: DoctorReport; 
           </div>
           <div>
             <dt>Photographs</dt>
-            <dd>{report.includePhotos ? `Included (${plural(photoCount, 'photograph', 'photographs')})` : 'Not included'}</dd>
+            <dd>{report.includePhotos && photoCount ? `Included (${plural(photoCount, 'photograph', 'photographs')})` : 'Not included'}</dd>
           </div>
         </dl>
         <h3 className="report-subtitle">What it contains</h3>

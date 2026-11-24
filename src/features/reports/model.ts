@@ -475,7 +475,7 @@ export function buildReportView(inputs: ReportInputs): ReportView {
     : `Therapist observation — ${inputs.preparedBy.name}, ${fmtMed(report.updatedAt)}`
 
   const consent = report.consent
-    ? `${inputs.client.name} agreed on ${fmtLong(report.consent.consentedAt)} to share this report with ${recipientInSentence(report.consent.recipient, 'the')} for ${lowerFirst(report.consent.purpose)}. Photographs ${report.consent.includesPhotos ? 'are' : 'are not'} included.`
+    ? `${inputs.client.name} agreed on ${fmtLong(report.consent.consentedAt)} to share this report with ${recipientInSentence(report.consent.recipient, 'the')} for ${lowerFirst(report.consent.purpose)}. Photographs ${report.consent.includesPhotos && inputs.photos.length ? 'are' : 'are not'} included.`
     : null
 
   return {

@@ -79,6 +79,17 @@ describe('report view', () => {
     expect(included.photos).toHaveLength(1)
   })
 
+  it('says photographs are included only when the report actually holds some', () => {
+    const { state, report } = miraReport()
+    const consent = { consentedAt: '2026-11-21T10:00:00.000Z', recipient: report.recipient, purpose: report.purpose, includesPhotos: true }
+    const agreed = { ...report, status: 'consented' as const, includePhotos: true, sections: [...report.sections, 'photos' as const], consent }
+    state.photos.push({ id: 'p1', clientId: DEMO_CLIENT_IDS.mira, view: 'back', capturedAt: '2026-11-20T10:00:00.000Z', dataUrl: 'data:image/jpeg;base64,AA' })
+    // Photography off: the photo is withheld, so the sentence must not claim it is there.
+    expect(JSON.stringify(buildReportView(reportInputs(state, agreed)))).toContain('Photographs are not included.')
+    state.clients = state.clients.map((client) => (client.id === DEMO_CLIENT_IDS.mira ? { ...client, consents: { ...client.consents, photography: true } } : client))
+    expect(JSON.stringify(buildReportView(reportInputs(state, agreed)))).toContain('Photographs are included.')
+  })
+
   it('writes the trend in one plain sentence without claiming a cause', () => {
     const { state, report } = miraReport()
     const sentence = buildReportView(reportInputs(state, report)).areas[0]!.trend

@@ -119,7 +119,7 @@ Therapist routes (shell: side rail ≥1000px, bottom bar on phones):
 - `/therapist/clients/:clientId/report[/:reportId]` — doctor report builder
 - `/therapist/session/:appointmentId/finish`, `/therapist/calendar`, `/therapist/settings`
 
-Full-screen therapist routes: `/therapist/arrival/:appointmentId` (hand the device to the client) and `/therapist/session/:appointmentId` (Session Mode).
+Full-screen therapist routes: `/therapist/arrival/:appointmentId` (hand the device to the client) and `/therapist/session/:appointmentId` (Session Mode). Session Mode and its finish screen share one access rule (`canRunSession`): only the booking's therapist, who is credited with the visit's Bonus Care.
 
 Client routes (shell: bottom bar with a centre **Log how I feel** button):
 
@@ -135,7 +135,7 @@ Pure TypeScript, no React or Supabase:
 
 - `regions.ts` — body regions, anatomical sides (`left` is always the client's own left), surfaces (front, back, edge) and area keys such as `shoulder:left`. "Both" is stored as one entry per side.
 - `observations.ts` — dated observations (`observedAt` vs `recordedAt`, source: home, arrival, session, next-day follow-up), per-area series, what changed since the previous visit, the areas to review at arrival, and the pain points Session Mode shows. An arrival "Still accurate" is an `ArrivalConfirmation` pointing at the original observation, so it can never become a second chart point.
-- `session.ts` — the session clock derived only from timestamps (`90:00` down, then `+00:01` extra care), the finish summary (102 minutes on a 90-minute booking → 12 extra), the idempotent Bonus Care ledger (one credit per visit, id `bonus-<appointmentId>`), and table orientation helpers that keep anatomical sides correct through rotation and flips.
+- `session.ts` — the session clock derived only from timestamps (`90:00` down, then `+00:01` extra care), the finish summary counted in the clock minutes the finish screen shows (10:00–11:42 on a 90-minute booking → 102 actual, 12 extra), the idempotent Bonus Care ledger (one credit per visit, id `bonus-<appointmentId>`, never more than the time given past the booking and at most 240, like `session_records_bonus_check`), and table orientation helpers that keep anatomical sides correct through rotation and flips.
 - `report.ts` — what a doctor report may contain. It takes the report's chosen wording, never the notes collection, so private notes cannot leak; export requires consent matching recipient, purpose and photo inclusion.
 - `recovery.ts` — one comparable row per completed visit for the unchanged `prototype-v1` pattern engine.
 

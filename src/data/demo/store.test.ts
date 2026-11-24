@@ -274,6 +274,14 @@ describe('persistence', () => {
       })
     })
 
+    it('leaves a booking missed earlier today where it was, so Today and Visits show it as missed', () => {
+      const morning = new Date(2026, 10, 24, 8, 0)
+      const afternoon = new Date(2026, 10, 24, 16, 0)
+      const saved = createDemoState(morning)
+      expect(Date.parse(booking(saved).startsAt) + booking(saved).durationMinutes * 60_000).toBeLessThan(afternoon.getTime())
+      expect(booking(refreshPassedBookings(saved, afternoon))).toEqual(booking(saved))
+    })
+
     it.each([
       ['an arrival', (saved: DemoState) => ({ ...saved, appointments: saved.appointments.map((item) => (item.id === noaToday ? { ...item, arrival: { completedAt: item.startsAt } } : item)) })],
       ['a session', (saved: DemoState) => ({ ...saved, appointments: saved.appointments.map((item) => (item.id === noaToday ? { ...item, session: { startedAt: item.startsAt } } : item)) })],

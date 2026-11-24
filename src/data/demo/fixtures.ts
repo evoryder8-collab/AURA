@@ -446,7 +446,7 @@ export function createDemoState(now: Date = new Date()): DemoState {
 
 /**
  * The story's upcoming bookings are placed around the day the demo was first opened. On load, each one
- * whose booked time is over with nothing done for it (still confirmed, no arrival, no session, and no
+ * from an earlier practice day with nothing done for it (still confirmed, no arrival, no session, and no
  * log, confirmation, assessment, follow-up, credit or note pointing at it) takes its slot in today's
  * story, unless that slot breaks a booking rule against another visit for the same therapist or client.
  * Nothing else moves: history, clients, consents and notes stay exactly as saved.
@@ -462,7 +462,8 @@ export function refreshPassedBookings(saved: DemoState, now: Date): DemoState {
     !item.arrival &&
     !item.session &&
     !pointedAt.has(item.id) &&
-    Date.parse(item.startsAt) + item.durationMinutes * 60_000 <= now.getTime()
+    // Only a booking from an earlier day: one missed today stays where it was, so Today and Visits tell the truth.
+    zonedParts(item.startsAt, PRACTICE_TIME_ZONE).dayKey < zonedParts(now.getTime(), PRACTICE_TIME_ZONE).dayKey
   const today = createDemoState(now)
   let appointments = saved.appointments
   for (const booking of today.appointments.filter((item) => item.status === 'confirmed')) {

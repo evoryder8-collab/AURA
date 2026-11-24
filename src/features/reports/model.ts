@@ -376,7 +376,7 @@ function visitTable(inputs: ReportInputs): VisitTable {
     const cells = content.areas.flatMap((area) => {
       const arrival =
         area.series.find((point) => point.appointmentId === visit.id && point.source === 'arrival') ??
-        area.series.find((point) => point.confirmedAt.some((item) => item.appointmentId === visit.id))
+        area.history.find((point) => point.confirmedAt.some((item) => item.appointmentId === visit.id))
       const next = area.series.find((point) => point.appointmentId === visit.id && point.source === 'follow_up')
       if (arrival) arrivalValues.set(area.area, [...(arrivalValues.get(area.area) ?? []), arrival.pain])
       const isConfirmed = arrival !== undefined && arrival.appointmentId !== visit.id

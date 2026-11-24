@@ -44,6 +44,8 @@ export type ReportAreaSummary = {
   readonly latest: AreaPoint | undefined
   readonly first: AreaPoint | undefined
   readonly series: readonly AreaPoint[]
+  /** Every score up to the end of the period, so a visit inside it can show a score confirmed there that was logged before it. */
+  readonly history: readonly AreaPoint[]
   readonly peak: number | undefined
 }
 
@@ -96,6 +98,7 @@ export function buildReportContent(input: {
       latest: series.at(-1) ?? latest.get(area),
       first: series[0],
       series,
+      history: areaSeries(input.observations, input.confirmations, area, { to: report.dateTo }),
       peak: series.length ? Math.max(...series.map((point) => point.pain)) : undefined,
     }
   })

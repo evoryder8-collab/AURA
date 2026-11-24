@@ -7,7 +7,7 @@ import { Spinner } from '@/components/design-system/Spinner'
 import { Field, Input, Textarea } from '@/components/design-system/FormField'
 import { Modal } from '@/components/design-system/Modal'
 import { Segmented } from '@/components/ui/Segmented'
-import type { DemoClient } from '@/data/demo/model'
+import type { DemoClient, DemoReport } from '@/data/demo/model'
 import { useDemoStore, type ReportDraft } from '@/data/demo/store'
 import { therapistCanAccessClient } from '@/data/demo/team'
 import {
@@ -131,7 +131,7 @@ export function ReportBuilderPage() {
   return <Builder key={reportId ?? 'new'} client={client} therapistId={demoTherapistId} saved={saved} />
 }
 
-function Builder({ client, therapistId, saved }: { client: DemoClient; therapistId: string; saved: DoctorReport | undefined }) {
+function Builder({ client, therapistId, saved }: { client: DemoClient; therapistId: string; saved: DemoReport | undefined }) {
   const state = useDemoStore()
   const { saveReport, requestReportConsent, addNote } = state
   const navigate = useNavigate()
@@ -250,8 +250,9 @@ function Builder({ client, therapistId, saved }: { client: DemoClient; therapist
     updatedAt: dirty ? now.toISOString() : (saved?.updatedAt ?? now.toISOString()),
     status: 'draft',
   }
-  const preview = buildReportView(reportInputs(state, previewReport))
   const savedView = useMemo(() => (saved ? buildReportView(reportInputs(state, saved)) : null), [state, saved])
+  // Unchanged, a sent report previews the copy the client was sent, not today's records.
+  const preview = !dirty && savedView ? savedView : buildReportView(reportInputs(state, previewReport))
 
   const views = figureViews(reportDraft.areas, reportDraft.view)
   const hidden = hiddenAreas(reportDraft.areas, views)

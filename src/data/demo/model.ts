@@ -11,6 +11,7 @@ import type {
   StiffnessAssessment,
   TherapistNote,
 } from '@/domain/care'
+import type { ReportInputs } from '@/features/reports/model'
 
 export type AppointmentStatus =
   'requested' | 'pending' | 'confirmed' | 'completed' | 'cancelled' | 'declined'
@@ -97,6 +98,19 @@ export type DemoPhoto = {
   dataUrl: string
 }
 
+/**
+ * What a report showed when the client was asked to agree, kept so the report they agree to is
+ * the report that is shared. Photographs are kept by id only: deleting one, or turning
+ * photography off, still removes it.
+ */
+export type ReportSnapshot = Omit<ReportInputs, 'content' | 'photos'> & {
+  readonly content: Omit<ReportInputs['content'], 'report'>
+  readonly photoIds: readonly string[]
+}
+
+/** A report plus, from the moment it is sent to the client, the content it was sent with. */
+export type DemoReport = DoctorReport & { readonly snapshot?: ReportSnapshot }
+
 export type DemoState = {
   therapists: DemoTherapist[]
   clients: DemoClient[]
@@ -110,6 +124,6 @@ export type DemoState = {
   followUps: FollowUpResponse[]
   bonusCredits: BonusCredit[]
   notes: TherapistNote[]
-  reports: DoctorReport[]
+  reports: DemoReport[]
   photos: DemoPhoto[]
 }

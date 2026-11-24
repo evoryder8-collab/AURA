@@ -1,6 +1,6 @@
 import { buildReportContent, type DoctorReport } from '@/domain/care'
 import { hasActiveConsent } from '@/domain/rules'
-import type { DemoState } from '@/data/demo/model'
+import type { DemoReport, DemoState, ReportSnapshot } from '@/data/demo/model'
 import { demoConsentRecords } from '@/lib/security/demoConsent'
 import type { ReportInputs, ReportPhoto } from './model'
 
@@ -18,11 +18,36 @@ export function photosInPeriod(state: DemoState, clientId: string, from: string,
     .map((photo) => ({ id: photo.id, capturedAt: photo.capturedAt, view: photo.view, src: photo.dataUrl }))
 }
 
+const reportPhotos = (state: DemoState, report: DoctorReport) =>
+  report.includePhotos ? photosInPeriod(state, report.clientId, report.dateFrom, report.dateTo) : []
+
 /**
- * Collects one client's records for a report. Note bodies never pass through here: the report
- * carries its own `noteText`; only the chosen report note's author and date are read, for credit.
+ * Collects one client's records for a report. A report sent to the client reads the copy taken
+ * when it was sent, so later logs and note edits cannot change what the client agreed to.
+ * Note bodies never pass through here: the report carries its own `noteText`; only the chosen
+ * report note's author and date are read, for credit.
  */
-export function reportInputs(state: DemoState, report: DoctorReport): ReportInputs {
+export function reportInputs(state: DemoState, report: DemoReport): ReportInputs {
+  if (!report.snapshot) return liveInputs(state, report)
+  const { photoIds, ...frozen } = report.snapshot
+  return {
+    ...frozen,
+    content: { ...frozen.content, report },
+    photos: reportPhotos(state, report).filter((photo) => photoIds.includes(photo.id)),
+  }
+}
+
+/** The copy a report keeps from the moment it is sent to the client. */
+export function freezeReport(state: DemoState, report: DoctorReport): ReportSnapshot {
+  const {
+    content: { report: _live, ...content },
+    photos,
+    ...frozen
+  } = liveInputs(state, report)
+  return { ...frozen, content, photoIds: photos.map((photo) => photo.id) }
+}
+
+function liveInputs(state: DemoState, report: DoctorReport): ReportInputs {
   const { clientId } = report
   const mine = <T extends { clientId: string }>(items: readonly T[]) => items.filter((item) => item.clientId === clientId)
   const content = buildReportContent({
@@ -64,6 +89,6 @@ export function reportInputs(state: DemoState, report: DoctorReport): ReportInpu
           },
         }
       : {}),
-    photos: report.includePhotos ? photosInPeriod(state, clientId, report.dateFrom, report.dateTo) : [],
+    photos: reportPhotos(state, report),
   }
 }

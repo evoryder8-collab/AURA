@@ -31,7 +31,7 @@ The published demo runs on the local store in `src/data/demo/store.ts` (IndexedD
 | `followUps` | Next-day response −2…+2 | `follow_up_responses` |
 | `bonusCredits` | One confirmed Bonus Care credit per visit (`bonus-<appointmentId>`) | `session_records` with a unique appointment constraint |
 | `notes` | Therapist notes, `private` or written for a doctor's `report` | `session_private_notes` / `appointment_private_notes`, plus a report-note type |
-| `reports` | Doctor report draft, client consent for recipient + purpose + photos | `handoff_exports`, `handoff_export_approvals`, `consents` |
+| `reports` | Doctor report draft; from sending onwards, the content frozen for the client (photos by id only); client consent for recipient + purpose + photos | `handoff_exports`, `handoff_export_approvals`, `consents` |
 | `photos` | Downscaled JPEG kept only in this browser | `progress_photos` in private storage |
 
 ## Constrained values

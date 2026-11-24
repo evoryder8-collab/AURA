@@ -14,9 +14,10 @@ import {
   type RomMeasurement,
   type SessionResponse,
 } from '@/domain/care'
+import { freezeReport } from '@/features/reports/inputs'
 import { createDemoState, DEMO_THERAPIST_IDS } from './fixtures'
 import { mirrorStorage, newerRecord } from './mirror'
-import type { ConsentState, DemoAppointment, DemoState } from './model'
+import type { ConsentState, DemoAppointment, DemoReport, DemoState } from './model'
 
 const DB_NAME = 'aura-synthetic-demo'
 const STORE_NAME = 'demo-state'
@@ -454,14 +455,16 @@ export const useDemoStore = create<DemoStore>()(
         saveReport: (draft, id) => {
           const at = nowIso()
           const reportId = id ?? createId('report')
+          // Callers may pass a saved report back in; its agreement and sent copy must not survive the edit.
+          const { consent: _agreed, snapshot: _sent, ...fields }: ReportDraft & Pick<DemoReport, 'consent' | 'snapshot'> = draft
           set((state) => {
             const existing = state.reports.find((report) => report.id === reportId)
-            const next: DoctorReport = {
-              ...draft,
+            const next: DemoReport = {
+              ...fields,
               id: reportId,
               createdAt: existing?.createdAt ?? at,
               updatedAt: at,
-              // Any edit after consent needs the client's agreement again.
+              // Any edit after consent needs the client's agreement again, on content built afresh.
               status: 'draft',
             }
             return {
@@ -476,7 +479,10 @@ export const useDemoStore = create<DemoStore>()(
         requestReportConsent: (id) =>
           set((state) => ({
             reports: state.reports.map((report) =>
-              report.id === id && report.status === 'draft' ? { ...report, status: 'awaiting_consent' } : report,
+              // The client reviews, agrees to and exports exactly what is frozen here.
+              report.id === id && report.status === 'draft'
+                ? { ...report, status: 'awaiting_consent', snapshot: freezeReport(state, report) }
+                : report,
             ),
           })),
 

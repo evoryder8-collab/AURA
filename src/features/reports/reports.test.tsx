@@ -186,6 +186,28 @@ describe('client review', () => {
     expect(document.body.textContent).not.toContain('Mira')
   })
 
+  it('shows the client and the therapist the report as it was sent, not records added since', () => {
+    const later = 'Worse after carrying the shopping'
+    const id = awaitingReport()
+    useDemoStore.getState().logObservation({
+      clientId: MIRA,
+      source: 'home',
+      selections: [{ region: 'shoulder', side: 'left', pain: 9 }],
+      observedAt: new Date(Date.now() - 86_400_000).toISOString(),
+      note: later,
+    })
+    const client = renderAt(`/client/reports/${id}`, asMira)
+    expect(screen.getByRole('article', { name: 'The report as it will be shared' })).not.toHaveTextContent(later)
+    client.unmount()
+    const builder = renderAt(`/therapist/clients/${MIRA}/report/${id}`, asWassana)
+    expect(screen.getByRole('article', { name: 'Live preview of the report' })).not.toHaveTextContent(later)
+    builder.unmount()
+
+    useDemoStore.getState().saveReport({ ...useDemoStore.getState().reports.find((item) => item.id === id)!, recipient: 'Physiotherapist' }, id)
+    renderAt(`/therapist/clients/${MIRA}/report/${id}`, asWassana)
+    expect(screen.getByRole('article', { name: 'Live preview of the report' })).toHaveTextContent(later)
+  })
+
   it('lists the client’s reports with their status and hides drafts', () => {
     const id = awaitingReport()
     useDemoStore.getState().saveReport({ ...useDemoStore.getState().reports.find((item) => item.id === id)!, recipient: 'Physiotherapist' })

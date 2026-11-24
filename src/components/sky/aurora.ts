@@ -88,8 +88,9 @@ void main() {
   colour += vec3(0.45, 0.35, 1.0) * 0.1 * exp(-dot(p - o3, p - o3) * 4.0);
 
   colour *= mix(1.0, 0.5, uCalm);
-  float vignette = smoothstep(1.3, 0.25, length((uv - 0.5) * vec2(aspect * 0.85, 1.0)));
-  colour *= mix(0.55, 1.0, vignette);
+  // smoothstep needs edge0 < edge1 (reversed edges are undefined and give 0 on ANGLE/Metal).
+  float vignette = 1.0 - smoothstep(0.25, 1.3, length((uv - 0.5) * vec2(aspect * 0.85, 1.0)));
+  colour *= mix(0.45, 0.6, vignette);
   colour = 1.0 - exp(-colour * 1.15);
   colour += (hash(mod(gl_FragCoord.xy, 64.0) + fract(t)) - 0.5) * (3.0 / 255.0);
   gl_FragColor = vec4(colour, 1.0);

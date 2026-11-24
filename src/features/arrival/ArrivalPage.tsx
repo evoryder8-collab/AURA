@@ -20,6 +20,7 @@ import { clientObservations, getAppointment, getClient, getTherapist, previousVi
 import { useDemoStore } from '@/data/demo/store'
 import { therapistCanAccessClient } from '@/data/demo/team'
 import { useAuth } from '@/features/auth/auth-context'
+import { canRunSession } from '@/features/session/sessionAccess'
 import { BodyStage, type BodyMarker } from '@/features/body/BodyStage'
 import type { FigureFace } from '@/features/body/anchors'
 import { dayPhrase, fmtTime, relativeDay, relativeWhen } from '@/lib/formatting/time'
@@ -133,9 +134,14 @@ export function ArrivalPage() {
           <p className="lead">
             {therapist?.preferredName ?? 'Your therapist'} can see what you confirmed. Make yourself comfortable.
           </p>
-          {onPracticeDevice ? (
+          {onPracticeDevice && canRunSession(appointment, auth.demoTherapistId) ? (
             <Button size="lg" fullWidth onClick={() => navigate(`/therapist/session/${appointment.id}`)}>
               Open Session Mode
+            </Button>
+          ) : onPracticeDevice ? (
+            // A colleague can take arrival, but only the booking's therapist runs the session.
+            <Button size="lg" fullWidth onClick={() => navigate('/therapist/today')}>
+              Back to Today
             </Button>
           ) : (
             <Button size="lg" fullWidth onClick={() => navigate('/client/home')}>

@@ -44,6 +44,7 @@ describe('arrival intake', () => {
 
     expect(screen.queryByRole('alert')?.textContent ?? '').toBe('')
     expect(screen.getByRole('status')).toHaveTextContent('Thank you, Mira')
+    expect(screen.getByRole('button', { name: 'Open Session Mode' })).toBeInTheDocument()
     const state = useDemoStore.getState()
     const appointment = getAppointment(state, appointmentId)
     if (!appointment) throw new Error('missing appointment')
@@ -52,6 +53,22 @@ describe('arrival intake', () => {
       ['calf:right', 3, 'new'],
     ])
     expect(areaSeries(state.observations, state.confirmations, 'shoulder:left').filter((point) => point.pain === 7)).toHaveLength(1)
+  })
+
+  it('lets a colleague take arrival but sends only the booking therapist on to Session Mode', async () => {
+    const user = userEvent.setup()
+    // Pratana shares Mira's care, but this visit is booked with Wassana.
+    renderPage(<ArrivalPage />, {
+      path: '/therapist/arrival/:appointmentId',
+      url: `/therapist/arrival/${appointmentId}`,
+      auth: demoAuth('therapist', DEMO_THERAPIST_IDS.amara),
+    })
+    const card = screen.getByRole('heading', { name: 'Left shoulder' }).closest('article') as HTMLElement
+    await user.click(within(card).getByRole('button', { name: /Still accurate/ }))
+    await user.click(screen.getByRole('button', { name: 'I’m ready' }))
+    expect(screen.getByRole('status')).toHaveTextContent('Thank you, Mira')
+    expect(screen.queryByRole('button', { name: 'Open Session Mode' })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Back to Today' })).toBeInTheDocument()
   })
 
   it('asks for a decision on every recorded area before continuing', async () => {

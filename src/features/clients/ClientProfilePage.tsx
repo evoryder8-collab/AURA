@@ -352,9 +352,20 @@ function History({ clientId, state }: { clientId: string; state: DemoState }) {
                   </span>
                 ))}
               </div>
+              {visit.arrival?.note ? (
+                <p className="small">
+                  At arrival: <q>{visit.arrival.note}</q>
+                </p>
+              ) : null}
               {follow ? (
                 <p className="small">
                   Next day: <strong>{SESSION_RESPONSE_LABEL[`${follow.response}`]}</strong>
+                  {follow.note ? (
+                    <>
+                      {' · '}
+                      <q>{follow.note}</q>
+                    </>
+                  ) : null}
                 </p>
               ) : null}
             </div>

@@ -26,6 +26,37 @@ describe('body label layout', () => {
     expect(Math.abs((a?.label.y ?? 0) - (b?.label.y ?? 0))).toBeGreaterThanOrEqual(59.9)
   })
 
+  it('keeps a long measured label fully inside a narrow phone stage', () => {
+    // A 340px stage, as on a phone; "Right hand and wrist" measures 230px wide.
+    const narrow = { width: 340, height: 420, marginX: 66, marginY: 34 }
+    const input = {
+      markers: [{ id: 'hand', x: 60, y: 230 }],
+      center: { x: 170, y: 210 },
+      axis: { x: 0, y: -1 },
+      offset: 105,
+      gap: 64,
+      bounds: narrow,
+    }
+    const guessed = layoutLabels(input)[0]
+    expect((guessed?.label.x ?? 0) - 115).toBeLessThan(0) // the margin guess alone lets it hang off the left edge
+    const measured = layoutLabels({ ...input, sizes: { hand: { width: 230, height: 50 } } })[0]
+    expect((measured?.label.x ?? 0) - 115).toBeGreaterThanOrEqual(6)
+    expect((measured?.label.x ?? 0) + 115).toBeLessThanOrEqual(340 - 6)
+  })
+
+  it('centres a label wider than the stage instead of pushing it off one side', () => {
+    const placed = layoutLabels({
+      markers: [{ id: 'a', x: 20, y: 100 }],
+      center: { x: 100, y: 100 },
+      axis: { x: 0, y: -1 },
+      offset: 60,
+      gap: 40,
+      bounds: { width: 200, height: 200, marginX: 40, marginY: 20 },
+      sizes: { a: { width: 260, height: 40 } },
+    })
+    expect(placed[0]?.label.x).toBe(100)
+  })
+
   it('places labels above and below when the table runs left to right', () => {
     const placed = layoutLabels({
       markers: [{ id: 'a', x: 300, y: 260 }],

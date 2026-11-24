@@ -1,5 +1,5 @@
 import { clsx } from 'clsx'
-import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import type { AreaKey, TableRotation } from '@/domain/care'
 import { anchorFor, anchorVisible, type BodyAnchor, type FigureFace } from './anchors'
 import { layoutLabels, type PlacedLabel, type Point } from './layout'
@@ -123,6 +123,8 @@ export function BodyStage({
 
   // Without WebGL (or the model), project onto the print renders of the same model instead.
   const [fallbackImage, setFallbackImage] = useState<{ width: number; height: number; angle: number } | null>(null)
+  const markersLayerRef = useRef<HTMLDivElement>(null)
+  const [labelSizes, setLabelSizes] = useState<Record<string, { width: number; height: number }>>({})
   useEffect(() => {
     if (status !== 'unavailable') return
     const host = hostRef.current
@@ -183,12 +185,31 @@ export function BodyStage({
         marginX: compact ? 70 : variant === 'session' ? 140 : projected.width < 480 ? 66 : 115,
         marginY: compact ? 22 : variant === 'session' ? 44 : 34,
       },
+      sizes: labelSizes,
     })
     return layout.flatMap((item) => {
       const entry = items.find(({ marker }) => marker.area === item.id)
       return entry ? [{ ...item, data: entry.marker, visible: entry.point.visible }] : []
     })
-  }, [markers, projected, variant])
+  }, [labelSizes, markers, projected, variant])
+
+  // Labels differ in width ("Knee" vs "Right hand and wrist"); measure them so each stays inside the stage.
+  useLayoutEffect(() => {
+    const layer = markersLayerRef.current
+    if (!layer) return
+    const next: Record<string, { width: number; height: number }> = {}
+    layer.querySelectorAll<HTMLElement>('.body-label').forEach((element) => {
+      const area = element.dataset.area
+      if (area) next[area] = { width: element.offsetWidth, height: element.offsetHeight }
+    })
+    setLabelSizes((current) => {
+      const keys = Object.keys(next)
+      const same =
+        keys.length === Object.keys(current).length &&
+        keys.every((key) => current[key]?.width === next[key]?.width && current[key]?.height === next[key]?.height)
+      return same ? current : next
+    })
+  }, [placed])
 
   const sideLabels = useMemo(() => {
     if (!projected || !showSides) return null
@@ -244,7 +265,7 @@ export function BodyStage({
         </svg>
       ) : null}
 
-      <div className="body-stage__markers" aria-hidden="true">
+      <div ref={markersLayerRef} className="body-stage__markers" aria-hidden="true">
         {placed.map((item) => (
           <span
             key={`dot-${item.id}`}

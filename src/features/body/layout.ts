@@ -1,5 +1,8 @@
 export type Point = { readonly x: number; readonly y: number }
 
+/** Breathing room between a measured label and the stage edge, in px. */
+const EDGE = 6
+
 export type PlacedLabel = {
   readonly id: string
   readonly marker: Point
@@ -24,6 +27,8 @@ export function layoutLabels(input: {
   readonly gap: number
   /** `marginX` and `marginY` are half a label's width and height plus breathing room. */
   readonly bounds: { readonly width: number; readonly height: number; readonly marginX: number; readonly marginY: number }
+  /** Measured label sizes by id. A measured label is kept fully inside the stage by its own size, not the margin guess. */
+  readonly sizes?: Readonly<Record<string, { readonly width: number; readonly height: number }>>
 }): PlacedLabel[] {
   const { center, axis, offset, gap, bounds } = input
   const perp: Point = { x: -axis.y, y: axis.x }
@@ -72,12 +77,15 @@ export function layoutLabels(input: {
       const along = positions[index] ?? item.along
       const x = center.x + axis.x * along + perp.x * offset * side
       const y = center.y + axis.y * along + perp.y * offset * side
+      const size = input.sizes?.[item.marker.id]
+      const halfX = size ? Math.min(bounds.width / 2, size.width / 2 + EDGE) : bounds.marginX
+      const halfY = size ? Math.min(bounds.height / 2, size.height / 2 + EDGE) : bounds.marginY
       placed.push({
         id: item.marker.id,
         marker: { x: item.marker.x, y: item.marker.y },
         label: {
-          x: Math.min(bounds.width - bounds.marginX, Math.max(bounds.marginX, x)),
-          y: Math.min(bounds.height - bounds.marginY, Math.max(bounds.marginY, y)),
+          x: Math.min(bounds.width - halfX, Math.max(halfX, x)),
+          y: Math.min(bounds.height - halfY, Math.max(halfY, y)),
         },
         side,
       })

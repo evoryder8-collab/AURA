@@ -6,6 +6,7 @@ import {
   visitMeasures,
   type CareObservation,
 } from '@/domain/care'
+import { daysBetween } from '@/lib/formatting/time'
 import type { DemoAppointment, DemoState } from './model'
 
 const time = (iso: string) => new Date(iso).getTime()
@@ -32,15 +33,32 @@ export function therapistAppointments(state: Pick<DemoState, 'appointments'>, th
     .sort((a, b) => time(a.startsAt) - time(b.startsAt))
 }
 
-/** A visit still to happen, or one that has started and not yet been wrapped up. */
+/**
+ * The therapist's working list: a visit whose booked time is not over, or a session they started and
+ * have not finished, however late, so they can return to it. A finished session is never upcoming.
+ */
 export function isUpcoming(appointment: DemoAppointment, now: number) {
   if (!ACTIVE.has(appointment.status)) return false
-  if (appointment.session?.startedAt) return true
+  if (appointment.session) return !appointment.session.finishedAt
   return time(appointment.startsAt) + appointment.durationMinutes * 60_000 > now
 }
 
+/** A visit still ahead of the client: booked, its session not yet started, and its booked time not over. */
+export const isAhead = (appointment: DemoAppointment, now: number) => !appointment.session && isUpcoming(appointment, now)
+
+/** The client's next visit; a visit whose session has started is already under way or behind them. */
 export function nextAppointment(appointments: readonly DemoAppointment[], now: number) {
-  return appointments.find((appointment) => isUpcoming(appointment, now))
+  return appointments.find((appointment) => isAhead(appointment, now))
+}
+
+/** The next-day follow-up stays open on the visit day and the two practice days after it. */
+const FOLLOW_UP_DAYS = 2
+
+/** A finished visit from the last few practice days that the client has not answered yet. */
+export function followUpOpen(state: Pick<DemoState, 'followUps'>, appointment: DemoAppointment, now: number) {
+  if (!appointment.session?.finishedAt) return false
+  const days = daysBetween(appointment.startsAt, now)
+  return days >= 0 && days <= FOLLOW_UP_DAYS && !state.followUps.some((item) => item.appointmentId === appointment.id)
 }
 
 /** The client's last visit that happened before this one, with any therapist. */

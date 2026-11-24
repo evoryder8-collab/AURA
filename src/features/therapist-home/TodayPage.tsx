@@ -26,8 +26,10 @@ import { useAuth } from '@/features/auth/auth-context'
 import { BodyStage, type BodyMarker } from '@/features/body/BodyStage'
 import { BodyThumb } from '@/features/body/BodyThumb'
 import { anchorFor } from '@/features/body/anchors'
-import { dayPhrase, daysBetween, fmtDay, fmtTime, greeting, relativeDay, relativeWhen } from '@/lib/formatting/time'
+import { holdsTime } from '@/features/visits/slots'
+import { dayKey, dayPhrase, daysBetween, fmtDay, fmtLongDay, fmtTime, greeting, relativeDay, relativeWhen } from '@/lib/formatting/time'
 import { useMediaQuery } from '@/lib/useMediaQuery'
+import { useNow } from '@/lib/useNow'
 import './today.css'
 
 const SOURCE_SHORT: Record<CareObservation['source'], string> = {
@@ -50,18 +52,19 @@ export function TodayPage() {
   const therapistId = auth.demoTherapistId ?? ''
   const state = useDemoStore()
   const therapist = getTherapist(state, therapistId)
-  const now = Date.now()
+  const now = useNow()
   const appointments = useMemo(() => therapistAppointments(state, therapistId), [state, therapistId])
   const upcoming = appointments.filter((item) => isUpcoming(item, now))
   const next = upcoming[0]
-  const todayCount = upcoming.filter((item) => daysBetween(now, item.startsAt) === 0).length
+  // The same visits as today's Calendar column: every one still holding time, finished or not.
+  const todayCount = appointments.filter((item) => holdsTime(item) && dayKey(item.startsAt) === dayKey(now)).length
   const wrapUps = appointments.filter((item) => item.session?.finishedAt && item.status !== 'completed')
 
   return (
     <div className="page today">
       <header className="today__top rise">
         <div>
-          <p className="today__date">{new Intl.DateTimeFormat('en-GB', { weekday: 'long', day: 'numeric', month: 'long' }).format(now)}</p>
+          <p className="today__date">{fmtLongDay(now)}</p>
           <h1 className="title-lg">
             {greeting(now)}, <span className="gradient-text gradient-text--dawn">{therapist?.preferredName}</span>
           </h1>
@@ -137,7 +140,8 @@ function NextBrief({ appointment, state, now }: { appointment: DemoAppointment; 
   const previousTherapist = getTherapist(state, previous?.therapistId)
   const updates = preVisitUpdates(state, appointment, now)
   const observations = clientObservations(state, appointment.clientId)
-  const before = latestByArea(observations, previous?.session?.finishedAt ?? previous?.startsAt)
+  // With no earlier visit there is nothing to compare against, so every area reads as new.
+  const before = previous ? latestByArea(observations, previous.session?.finishedAt ?? previous.startsAt) : latestByArea([])
   const points = sessionPointsFor(state, appointment)
   const started = Boolean(appointment.session?.startedAt && !appointment.session.finishedAt)
   const markers: BodyMarker[] = points.map((point) => ({ area: point.area, pain: point.pain, label: areaLabel(point.region, point.side) }))

@@ -8,10 +8,10 @@ import { assetUrl } from '@/components/ui/assets'
 import { painColor } from '@/components/ui/pain'
 import { areaKeyLabel, areaSeries, latestByArea, recordedAreas, type AreaKey } from '@/domain/care'
 import type { DemoState } from '@/data/demo/model'
-import { clientAppointments, clientBonus, clientObservations, getClient, getTherapist, nextAppointment } from '@/data/demo/selectors'
+import { clientAppointments, clientBonus, clientObservations, followUpOpen, getClient, getTherapist, nextAppointment } from '@/data/demo/selectors'
 import { useDemoStore } from '@/data/demo/store'
 import { useAuth } from '@/features/auth/auth-context'
-import { daysBetween, fmtTime, greeting, minutesLabel, relativeDay, relativeWhen, whenPhrase } from '@/lib/formatting/time'
+import { daysBetween, fmtLongDay, fmtTime, greeting, minutesLabel, relativeDay, relativeWhen, whenPhrase } from '@/lib/formatting/time'
 import { bonusSentence, latestBonusCredit } from './bonusSentence'
 import './client-home.css'
 
@@ -34,13 +34,7 @@ export function ClientHomePage() {
   const bonusTherapist = getTherapist(state, bonusCredit?.therapistId)
   const pendingReport = state.reports.find((report) => report.clientId === clientId && report.status === 'awaiting_consent')
   const reportAuthor = getTherapist(state, pendingReport?.preparedBy)
-  const followUpDue = appointments
-    .filter((item) => item.status === 'completed' && item.session?.finishedAt)
-    .filter((item) => {
-      const days = daysBetween(item.session?.finishedAt ?? item.startsAt, now)
-      return days >= 0 && days <= 2
-    })
-    .find((item) => !state.followUps.some((follow) => follow.appointmentId === item.id))
+  const followUpDue = appointments.find((item) => followUpOpen(state, item, now))
   const followTherapist = getTherapist(state, followUpDue?.therapistId)
   const arrivalDue = upcoming && !upcoming.arrival && daysBetween(now, upcoming.startsAt) === 0 ? upcoming : undefined
   const sharedRecently = newest && new Date(newest.recordedAt).getTime() > now - 3 * 86_400_000
@@ -53,7 +47,7 @@ export function ClientHomePage() {
   return (
     <div className="page home">
       <header className="home__hello rise">
-        <p className="home__date">{new Intl.DateTimeFormat('en-GB', { weekday: 'long', day: 'numeric', month: 'long' }).format(now)}</p>
+        <p className="home__date">{fmtLongDay(now)}</p>
         <h1 className="title-lg">
           {greeting(now)}, <span className="gradient-text gradient-text--dawn">{client.preferredName}</span>
         </h1>

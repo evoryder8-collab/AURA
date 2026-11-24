@@ -77,6 +77,32 @@ describe('Visits', () => {
     expect(latest).not.toHaveTextContent('5 minutes extra care')
   })
 
+  it('keeps a visit that passed without a session under Past visits, marked as not recorded', () => {
+    vi.setSystemTime(new Date(TEST_NOW.getTime() + 2 * 86_400_000))
+    show()
+    const past = screen.getByRole('region', { name: 'Past visits' })
+    const missed = within(past).getAllByRole('listitem')[0]!
+    expect(missed).toHaveTextContent('Wassana Schlaepfer')
+    expect(missed).toHaveTextContent('Booked 60 min · Not recorded')
+    expect(screen.getByRole('heading', { name: 'Nothing booked yet' })).toBeInTheDocument()
+  })
+
+  it('lists a finished visit under Past visits before the therapist confirms extra care', () => {
+    const store = useDemoStore.getState()
+    const start = Date.parse(store.appointments.find((item) => item.id === 'appointment-mira-tomorrow')!.startsAt)
+    store.startSession('appointment-mira-tomorrow', new Date(start).toISOString())
+    store.finishSession('appointment-mira-tomorrow', new Date(start + 60 * 60_000).toISOString())
+    vi.setSystemTime(start + 90 * 60_000)
+    show()
+    const past = screen.getByRole('region', { name: 'Past visits' })
+    const latest = within(past).getAllByRole('listitem')[0]!
+    expect(latest).toHaveTextContent('Lasted 60 min')
+    expect(within(latest).getByRole('link', { name: /how are you feeling since/i })).toHaveAttribute(
+      'href',
+      '/client/follow-up/appointment-mira-tomorrow',
+    )
+  })
+
   it('asks how the client feels only for recent visits without a follow-up', () => {
     const twoDaysAgo = new Date(TEST_NOW)
     twoDaysAgo.setDate(twoDaysAgo.getDate() - 2)

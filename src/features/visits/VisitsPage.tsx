@@ -9,15 +9,13 @@ import { Spinner } from '@/components/design-system/Spinner'
 import { assetUrl } from '@/components/ui/assets'
 import { Portrait } from '@/components/ui/Portrait'
 import type { DemoAppointment, DemoTherapist } from '@/data/demo/model'
-import { clientAppointments, clientBonus, isUpcoming } from '@/data/demo/selectors'
+import { clientAppointments, clientBonus, followUpOpen, isAhead } from '@/data/demo/selectors'
 import { useDemoStore } from '@/data/demo/store'
 import { useAuth } from '@/features/auth/auth-context'
-import { dayKey, daysBetween, fmtDay, fmtTime, minutesLabel, relativeDay, whenPhrase } from '@/lib/formatting/time'
-import { serviceName } from './slots'
+import { dayKey, fmtDay, fmtTime, minutesLabel, relativeDay, whenPhrase } from '@/lib/formatting/time'
+import { useNow } from '@/lib/useNow'
+import { holdsTime, serviceName } from './slots'
 import './visits.css'
-
-/** A follow-up is offered for visits from the last few days that have no answer yet. */
-const FOLLOW_UP_DAYS = 3
 
 const visitWhen = (appointment: DemoAppointment, now: number) =>
   `${relativeDay(appointment.startsAt, now)} at ${fmtTime(appointment.startsAt)}`
@@ -30,7 +28,7 @@ export function VisitsPage() {
   const followUps = useDemoStore((state) => state.followUps)
   const bonusCredits = useDemoStore((state) => state.bonusCredits)
   const cancelAppointment = useDemoStore((state) => state.cancelAppointment)
-  const [now] = useState(Date.now)
+  const now = useNow()
   const [cancelling, setCancelling] = useState<DemoAppointment | null>(null)
   const [message, setMessage] = useState('')
 
@@ -45,11 +43,11 @@ export function VisitsPage() {
 
   const therapistOf = (appointment: DemoAppointment) => therapists.find((item) => item.id === appointment.therapistId)
   const mine = clientAppointments({ appointments }, demoClientId)
-  const [next, ...later] = mine.filter((appointment) => isUpcoming(appointment, now))
-  const past = mine.filter((appointment) => appointment.status === 'completed').reverse()
+  const [next, ...later] = mine.filter((appointment) => isAhead(appointment, now))
+  // Every visit that held time and is no longer ahead, recorded or not, so a missed or unfinished one never vanishes.
+  const past = mine.filter((appointment) => holdsTime(appointment) && !isAhead(appointment, now)).reverse()
   const credits = new Map(clientBonus({ bonusCredits }, demoClientId).credits.map((credit) => [credit.appointmentId, credit]))
-  const answered = new Set(followUps.filter((item) => item.clientId === demoClientId).map((item) => item.appointmentId))
-  const checkInToday = Boolean(next && dayKey(next.startsAt) === dayKey(now) && !next.arrival && !next.session)
+  const checkInToday = Boolean(next && dayKey(next.startsAt) === dayKey(now) && !next.arrival)
 
   const confirmCancel = () => {
     if (!cancelling) return
@@ -112,16 +110,14 @@ export function VisitsPage() {
                       <span className="nowrap">{appointment.durationMinutes} min</span>
                     </p>
                   </div>
-                  {appointment.session ? null : (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setCancelling(appointment)}
-                      aria-label={`Cancel visit on ${fmtDay(appointment.startsAt)} at ${fmtTime(appointment.startsAt)}`}
-                    >
-                      Cancel
-                    </Button>
-                  )}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setCancelling(appointment)}
+                    aria-label={`Cancel visit on ${fmtDay(appointment.startsAt)} at ${fmtTime(appointment.startsAt)}`}
+                  >
+                    Cancel
+                  </Button>
                 </li>
               )
             })}
@@ -138,9 +134,10 @@ export function VisitsPage() {
             {past.map((appointment) => {
               const therapist = therapistOf(appointment)
               const summary = appointment.session?.summary
+              // A started session without a summary is still being recorded, so it claims no length either way.
+              const length = summary ? `Lasted ${summary.actualMinutes} min` : appointment.session ? null : 'Not recorded'
               const extra = credits.get(appointment.id)?.minutes ?? 0
-              const followUpOpen =
-                !answered.has(appointment.id) && daysBetween(appointment.startsAt, now) <= FOLLOW_UP_DAYS
+              const followUp = followUpOpen({ followUps }, appointment, now)
               return (
                 <li key={appointment.id} className="visit-row visit-row--past">
                   <Portrait name={therapist?.displayName ?? 'Therapist'} portrait={therapist?.portrait} size="sm" />
@@ -151,17 +148,17 @@ export function VisitsPage() {
                     </p>
                     <p className="visit-row__meta">
                       <span className="nowrap">Booked {appointment.durationMinutes} min</span>
-                      {summary ? (
+                      {length ? (
                         <>
                           {' '}
-                          · <span className="nowrap">Lasted {summary.actualMinutes} min</span>
+                          · <span className="nowrap">{length}</span>
                         </>
                       ) : null}
                     </p>
-                    {extra > 0 || followUpOpen ? (
+                    {extra > 0 || followUp ? (
                       <div className="visit-row__extras">
                         {extra > 0 ? <Badge tone="gold">{minutesLabel(extra)} extra care</Badge> : null}
-                        {followUpOpen ? (
+                        {followUp ? (
                           <Link className="visit-row__follow" to={`/client/follow-up/${appointment.id}`}>
                             How are you feeling since? <ArrowRight size={16} aria-hidden="true" />
                           </Link>
@@ -236,18 +233,14 @@ function NextVisit({
               Check in for this visit
             </Link>
           ) : null}
-          {appointment.session ? (
-            <p className="visit-hero__note">Your visit is under way.</p>
-          ) : appointment.arrival ? (
+          {appointment.arrival ? (
             <p className="visit-hero__note">
               <Check size={16} aria-hidden="true" /> You're checked in
             </p>
           ) : null}
-          {appointment.session ? null : (
-            <Button variant="ghost" onClick={onCancel}>
-              Cancel visit
-            </Button>
-          )}
+          <Button variant="ghost" onClick={onCancel}>
+            Cancel visit
+          </Button>
         </div>
       </div>
       {therapist?.portrait ? (

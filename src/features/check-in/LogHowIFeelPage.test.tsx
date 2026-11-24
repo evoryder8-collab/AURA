@@ -55,6 +55,22 @@ describe('Log how I feel', () => {
     expect(screen.getByRole('alert')).toHaveTextContent('Choose a score for Left calf')
   })
 
+  it('frees a side again once the card that held it is removed', async () => {
+    useDemoStore.getState().logObservation({ clientId: mira, source: 'home', selections: [{ region: 'shoulder', side: 'right', pain: 3 }] })
+    const user = userEvent.setup()
+    open()
+    const recent = within(screen.getByRole('region', { name: 'Recently recorded' }))
+    await user.click(recent.getByRole('button', { name: /^Right shoulder/ }))
+    await user.click(recent.getByRole('button', { name: /^Left shoulder/ }))
+    const right = screen.getByRole('heading', { name: 'Right shoulder' }).closest('article') as HTMLElement
+    expect(within(right).getByRole('button', { name: 'Both' })).toHaveAccessibleDescription('Left shoulder is already added')
+    await user.click(screen.getByRole('button', { name: 'Remove Left shoulder' }))
+    const both = within(right).getByRole('button', { name: 'Both' })
+    expect(both).not.toHaveAttribute('aria-disabled')
+    await user.click(both)
+    expect(screen.getByRole('heading', { name: 'Shoulders (both sides)' })).toBeInTheDocument()
+  })
+
   it('records both sides as two entries', async () => {
     const user = userEvent.setup()
     open()

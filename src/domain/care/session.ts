@@ -51,14 +51,24 @@ export type FinishSummary = {
   readonly extraMinutes: number
 }
 
-/** A 102-minute session on a 90-minute booking gives 12 extra minutes. */
+/**
+ * A 102-minute session on a 90-minute booking gives 12 extra minutes. Minutes are counted
+ * between the clock minutes shown for the start and the finish (10:00–11:42 is 102), so the
+ * time range and the Actual figure on the finish screen always agree.
+ */
 export function finishSummary(startedAt: string, finishedAt: string, bookedMinutes: number): FinishSummary {
-  const elapsedMs = new Date(finishedAt).getTime() - new Date(startedAt).getTime()
-  if (!Number.isFinite(elapsedMs) || elapsedMs < 0) {
+  const start = new Date(startedAt).getTime()
+  const finish = new Date(finishedAt).getTime()
+  if (!Number.isFinite(finish - start) || finish < start) {
     throw new RangeError('A session cannot finish before it starts.')
   }
-  const actualMinutes = Math.round(elapsedMs / 60_000)
+  const actualMinutes = Math.floor(finish / 60_000) - Math.floor(start / 60_000)
   return { bookedMinutes, actualMinutes, extraMinutes: Math.max(0, actualMinutes - bookedMinutes) }
+}
+
+/** The most Bonus Care a visit can carry: the time actually given past the booking, at most 240. */
+export function maxBonusMinutes(summary: Pick<FinishSummary, 'bookedMinutes' | 'actualMinutes'>): number {
+  return Math.min(240, Math.max(0, summary.actualMinutes - summary.bookedMinutes))
 }
 
 export function bonusCreditId(appointmentId: string) {
@@ -73,11 +83,12 @@ export function confirmBonusCredit(
   credits: readonly BonusCredit[],
   credit: Omit<BonusCredit, 'id'>,
 ): BonusCredit[] {
-  if (!Number.isInteger(credit.minutes) || credit.minutes < 0 || credit.minutes > 240) {
-    throw new RangeError('Bonus Care minutes must be a whole number from 0 to 240.')
-  }
   const id = bonusCreditId(credit.appointmentId)
   if (credits.some((item) => item.id === id)) return [...credits]
+  const limit = maxBonusMinutes(credit)
+  if (!Number.isInteger(credit.minutes) || credit.minutes < 0 || credit.minutes > limit) {
+    throw new RangeError(`Bonus Care minutes must be a whole number from 0 to ${limit}, the time given past the booking.`)
+  }
   return [...credits, { ...credit, id }]
 }
 
@@ -109,7 +120,7 @@ export function bonusSummary(credits: readonly BonusCredit[], clientId: string):
   }
   return {
     lifetimeMinutes: own.reduce((sum, credit) => sum + credit.minutes, 0),
-    byTherapist: [...totals.values()].sort((a, b) => b.minutes - a.minutes),
+    byTherapist: [...totals.values()].filter((item) => item.minutes > 0).sort((a, b) => b.minutes - a.minutes),
     credits: own,
   }
 }

@@ -11,6 +11,7 @@ import {
   figureViews,
   finishSummary,
   hiddenAreas,
+  maxBonusMinutes,
   painEntriesFromSelections,
   parseAreaKey,
   reportIsExportable,
@@ -153,6 +154,11 @@ describe('session clock', () => {
     })
     expect(() => finishSummary(start, '2026-11-23T08:00:00.000Z', 90)).toThrow()
   })
+
+  it('counts the clock minutes the finish screen shows, so 10:00:50–11:42:10 is 102', () => {
+    expect(finishSummary('2026-11-23T10:00:50.000Z', '2026-11-23T11:42:10.000Z', 90).actualMinutes).toBe(102)
+    expect(finishSummary('2026-11-23T10:00:10.000Z', '2026-11-23T10:00:50.000Z', 90).actualMinutes).toBe(0)
+  })
 })
 
 describe('bonus care ledger', () => {
@@ -177,6 +183,20 @@ describe('bonus care ledger', () => {
       { therapistId: 'wassana', minutes: 10, visits: 1 },
     ])
     expect(() => confirmBonusCredit([], { ...base, appointmentId: 'x', therapistId: 'p', minutes: -1 })).toThrow()
+  })
+
+  it('never credits more than the time given past the booking, and never more than 240', () => {
+    expect(maxBonusMinutes({ bookedMinutes: 90, actualMinutes: 102 })).toBe(12)
+    expect(maxBonusMinutes({ bookedMinutes: 90, actualMinutes: 80 })).toBe(0)
+    expect(maxBonusMinutes({ bookedMinutes: 90, actualMinutes: 400 })).toBe(240)
+    expect(confirmBonusCredit([], { ...base, appointmentId: 'x', therapistId: 'p', minutes: 12 })).toHaveLength(1)
+    expect(() => confirmBonusCredit([], { ...base, appointmentId: 'x', therapistId: 'p', minutes: 13 })).toThrow(RangeError)
+    expect(() => confirmBonusCredit([], { ...base, actualMinutes: 90, appointmentId: 'x', therapistId: 'p', minutes: 1 })).toThrow(RangeError)
+  })
+
+  it('leaves therapists who gave no extra care out of the breakdown', () => {
+    const credits = confirmBonusCredit([], { ...base, actualMinutes: 90, appointmentId: 'x', therapistId: 'wassana', minutes: 0 })
+    expect(bonusSummary(credits, 'client-1')).toMatchObject({ lifetimeMinutes: 0, byTherapist: [] })
   })
 })
 

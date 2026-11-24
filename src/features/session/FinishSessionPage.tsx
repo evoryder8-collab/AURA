@@ -11,16 +11,19 @@ import {
   areaLabel,
   bonusCreditId,
   bonusSummary,
-  confirmBonusCredit,
+  maxBonusMinutes,
+  type BonusCredit,
   type NoteVisibility,
   type RomMethod,
   type RomMovement,
 } from '@/domain/care'
+import { suggestBonusCareMinutes } from '@/domain/rules'
 import { getAppointment, getClient, getTherapist, sessionPointsFor } from '@/data/demo/selectors'
 import { useDemoStore } from '@/data/demo/store'
 import { useAuth } from '@/features/auth/auth-context'
-import { bonusSentence } from '@/features/client-home/bonusSentence'
+import { bonusSentence, latestBonusCredit } from '@/features/client-home/bonusSentence'
 import { fmtTime, minutesLabel } from '@/lib/formatting/time'
+import { canRunSession } from './sessionAccess'
 import './session.css'
 import './finish.css'
 
@@ -34,7 +37,12 @@ export function FinishSessionPage() {
   const therapist = getTherapist(state, appointment?.therapistId)
   const summary = appointment?.session?.summary
   const confirmed = state.bonusCredits.find((credit) => credit.id === bonusCreditId(appointment?.id ?? ''))
-  const [minutes, setMinutes] = useState(summary?.extraMinutes ?? 0)
+  const limit = summary ? maxBonusMinutes(summary) : 0
+  // Seeded by the documented threshold rule: under 3 extra minutes suggests 0, and it can be raised.
+  const [chosen, setMinutes] = useState(() =>
+    summary ? suggestBonusCareMinutes(summary.actualMinutes, summary.bookedMinutes).suggestedConfirmationMinutes : 0,
+  )
+  const minutes = Math.min(chosen, limit)
   const [stiffness, setStiffness] = useState<Record<string, number | null>>({})
   const [rom, setRom] = useState<{ movement: RomMovement; side: 'left' | 'right'; degrees: string; method: RomMethod }>({
     movement: 'neck_rotation',
@@ -46,7 +54,7 @@ export function FinishSessionPage() {
   const [visibility, setVisibility] = useState<NoteVisibility>('private')
   const [saved, setSaved] = useState<string[]>([])
 
-  if (!appointment || appointment.therapistId !== auth.demoTherapistId) {
+  if (!canRunSession(appointment, auth.demoTherapistId)) {
     return (
       <div className="page">
         <p className="empty">This session isn’t available to you.</p>
@@ -56,23 +64,22 @@ export function FinishSessionPage() {
   if (!summary) return <Navigate to={`/therapist/session/${appointment.id}`} replace />
 
   const points = sessionPointsFor(state, appointment)
-  const preview = (() => {
-    if (!therapist || !client) return ''
-    const credit = confirmed ?? {
-      id: bonusCreditId(appointment.id),
-      appointmentId: appointment.id,
-      clientId: client.id,
-      therapistId: therapist.id,
-      minutes,
-      bookedMinutes: summary.bookedMinutes,
-      actualMinutes: summary.actualMinutes,
-      visitDate: appointment.session?.startedAt ?? appointment.startsAt,
-      confirmedAt: new Date().toISOString(),
-    }
-    if (credit.minutes <= 0) return `${therapist.preferredName} kept to the booked time today.`
-    const ledger = confirmed ? state.bonusCredits : confirmBonusCredit(state.bonusCredits, credit)
-    return bonusSentence(credit, bonusSummary(ledger, client.id), therapist)
-  })()
+  // The client's home sentence, built by the same calls from the ledger as it will be once confirmed.
+  const draft: BonusCredit = {
+    id: bonusCreditId(appointment.id),
+    appointmentId: appointment.id,
+    clientId: appointment.clientId,
+    therapistId: appointment.therapistId,
+    minutes,
+    bookedMinutes: summary.bookedMinutes,
+    actualMinutes: summary.actualMinutes,
+    visitDate: appointment.session?.startedAt ?? appointment.startsAt,
+    confirmedAt: new Date().toISOString(),
+  }
+  const ledger = bonusSummary(confirmed ? state.bonusCredits : [...state.bonusCredits, draft], appointment.clientId)
+  const shown = latestBonusCredit(ledger)
+  const shownTherapist = getTherapist(state, shown?.therapistId)
+  const preview = shown && shownTherapist ? bonusSentence(shown, ledger, shownTherapist, Date.now()) : ''
 
   const saveMeasures = () => {
     const done: string[] = []
@@ -140,7 +147,7 @@ export function FinishSessionPage() {
           <>
             <p className="muted">Confirm the extra time you gave, or adjust it.</p>
             <div className="finish__stepper">
-              <button type="button" className="icon-button" aria-label="One minute less" onClick={() => setMinutes((value) => Math.max(0, value - 1))}>
+              <button type="button" className="icon-button" aria-label="One minute less" onClick={() => setMinutes(Math.max(0, minutes - 1))}>
                 <Minus size={20} aria-hidden="true" />
               </button>
               <label>
@@ -151,11 +158,11 @@ export function FinishSessionPage() {
                   value={minutes}
                   onChange={(event) => {
                     const value = Number(event.target.value.replace(/\D/g, ''))
-                    setMinutes(Number.isFinite(value) ? Math.min(240, value) : 0)
+                    setMinutes(Number.isFinite(value) ? Math.min(limit, value) : 0)
                   }}
                 />
               </label>
-              <button type="button" className="icon-button" aria-label="One minute more" onClick={() => setMinutes((value) => Math.min(240, value + 1))}>
+              <button type="button" className="icon-button" aria-label="One minute more" onClick={() => setMinutes(Math.min(limit, minutes + 1))}>
                 <Plus size={20} aria-hidden="true" />
               </button>
             </div>
@@ -170,10 +177,12 @@ export function FinishSessionPage() {
             </Button>
           </>
         )}
-        <div className="finish__preview">
-          <span className="eyebrow">{confirmed ? `${client?.preferredName} sees` : `${client?.preferredName} will see`}</span>
-          <p>{preview}</p>
-        </div>
+        {preview ? (
+          <div className="finish__preview">
+            <span className="eyebrow">{confirmed ? `${client?.preferredName} sees` : `${client?.preferredName} will see`}</span>
+            <p>{preview}</p>
+          </div>
+        ) : null}
       </section>
 
       <section className="card finish__measures" aria-labelledby="measures-title">

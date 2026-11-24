@@ -17,6 +17,7 @@ import {
   latestByArea,
   parseAreaKey,
   recordedAreas,
+  type AnatomicalSide,
   type ChosenSide,
   type RegionId,
 } from '@/domain/care'
@@ -81,19 +82,34 @@ export function LogHowIFeelPage() {
   const [note, setNote] = useState('')
   const [goalScore, setGoalScore] = useState<number | null>(null)
   const [error, setError] = useState('')
-  const [saved, setSaved] = useState(false)
+  const [savedId, setSavedId] = useState<string | null>(null)
+  const saved = savedId ? state.observations.find((item) => item.id === savedId) : undefined
 
   const selectedAreas = new Set(selections.flatMap((item) => expandSide(item.region, item.side).map((side) => areaKey(item.region, side))))
 
-  const addArea = (region: RegionId, side: ChosenSide, pain: number | null = null) => {
+  // One card per area: a side already on a card is never added again, only rescored.
+  const addArea = (region: RegionId, side: AnatomicalSide, pain: number | null = null) => {
     setError('')
     setSelections((current) => {
-      const existing = current.find((item) => item.region === region && (item.side === side || item.side === 'both'))
-      if (existing) {
-        return pain === null ? current : current.map((item) => (item === existing ? { ...item, pain } : item))
-      }
-      return [...current, { id: nextId(), region, side, pain }]
+      const existing = current.find((item) => item.region === region && expandSide(region, item.side).includes(side))
+      if (!existing) return [...current, { id: nextId(), region, side, pain }]
+      if (pain === null) return current
+      if (existing.side !== 'both') return current.map((item) => (item === existing ? { ...item, pain } : item))
+      // Rescoring one side of a "Both" card splits it, so the other side keeps its own score.
+      const split = expandSide(region, 'both').map((each) =>
+        each === side ? { ...existing, side: each, pain } : { ...existing, id: nextId(), side: each },
+      )
+      return current.flatMap((item) => (item === existing ? split : [item]))
     })
+  }
+
+  /** Why a side cannot be chosen for this card: another card of the region already covers it. */
+  const sideTakenReason = (card: Selection, side: ChosenSide) => {
+    const taken = selections
+      .filter((other) => other.id !== card.id && other.region === card.region)
+      .flatMap((other) => expandSide(other.region, other.side))
+    const clash = expandSide(card.region, side).find((each) => taken.includes(each))
+    return clash ? `${areaLabel(card.region, clash)} is already added` : undefined
   }
 
   const update = (id: string, patch: Partial<Selection>) =>
@@ -125,7 +141,7 @@ export function LogHowIFeelPage() {
     }
     const observedAt = observedAtFor(when, new Date())
     const trimmed = note.trim()
-    state.logObservation({
+    const id = state.logObservation({
       clientId,
       source: 'home',
       selections: selections.map((item) => ({ region: item.region, side: item.side, pain: item.pain ?? 0 })),
@@ -133,7 +149,7 @@ export function LogHowIFeelPage() {
       ...(trimmed ? { note: trimmed } : {}),
       ...(goal && goalScore !== null ? { goalScore: { goalId: goal.id, score: goalScore } } : {}),
     })
-    setSaved(true)
+    setSavedId(id)
   }
 
   if (saved) {
@@ -150,10 +166,10 @@ export function LogHowIFeelPage() {
               : 'It will be there for your therapist at your next visit.'}
           </p>
           <ul className="log__saved-list">
-            {markers.map((marker) => (
-              <li key={marker.area}>
-                <span>{marker.label}</span>
-                <PainChip score={marker.pain} />
+            {saved.entries.map((entry) => (
+              <li key={areaKey(entry.region, entry.side)}>
+                <span>{areaLabel(entry.region, entry.side)}</span>
+                <PainChip score={entry.pain} />
               </li>
             ))}
           </ul>
@@ -190,7 +206,7 @@ export function LogHowIFeelPage() {
           label={`Body seen from the ${face}. Tap an area to add it`}
           onPick={(anchor) => {
             const region = getRegion(anchor.region)
-            const side: ChosenSide = region.sides.includes(anchor.side) ? anchor.side : (region.sides[0] ?? 'centre')
+            const side: AnatomicalSide = region.sides.includes(anchor.side) ? anchor.side : (region.sides[0] ?? 'centre')
             addArea(anchor.region, side)
           }}
         />
@@ -259,7 +275,7 @@ export function LogHowIFeelPage() {
                   <legend>{GROUP_LABEL[group]}</legend>
                   <div>
                     {BODY_REGIONS.filter((region) => region.group === group).map((region) => {
-                      const side: ChosenSide = region.sides.includes('centre') ? 'centre' : 'left'
+                      const side: AnatomicalSide = region.sides.includes('centre') ? 'centre' : 'left'
                       const chosen = selections.some((item) => item.region === region.id)
                       return (
                         <button
@@ -283,6 +299,12 @@ export function LogHowIFeelPage() {
           <section className="log__areas" aria-label="Areas and scores">
             {selections.map((item) => {
               const label = areaLabelFor(item)
+              const sides = choosableSides(item.region).map((side) => ({
+                value: side,
+                label: SIDE_LABEL[side],
+                unavailable: sideTakenReason(item, side),
+              }))
+              const takenNotes = [...new Set(sides.flatMap((side) => (side.unavailable ? [side.unavailable] : [])))]
               const previous = expandSide(item.region, item.side)
                 .map((side) => latest.get(areaKey(item.region, side)))
                 .find(Boolean)
@@ -303,13 +325,15 @@ export function LogHowIFeelPage() {
                       <X size={18} aria-hidden="true" />
                     </button>
                   </header>
-                  {choosableSides(item.region).length > 1 ? (
-                    <Segmented
-                      label={`Side for ${getRegion(item.region).label}`}
-                      value={item.side}
-                      onChange={(side) => update(item.id, { side })}
-                      options={choosableSides(item.region).map((side) => ({ value: side, label: SIDE_LABEL[side] }))}
-                    />
+                  {sides.length > 1 ? (
+                    <div className="log__sides">
+                      <Segmented label={`Side for ${getRegion(item.region).label}`} value={item.side} onChange={(side) => update(item.id, { side })} options={sides} />
+                      {takenNotes.length ? (
+                        <p className="small muted" aria-hidden="true">
+                          {takenNotes.join('. ')}.
+                        </p>
+                      ) : null}
+                    </div>
                   ) : null}
                   <ScoreScale label={`Pain in ${label}, 0 to 10`} value={item.pain} onChange={(pain) => update(item.id, { pain })} />
                 </article>

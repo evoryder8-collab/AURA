@@ -1,8 +1,7 @@
+import { env } from '@/config/env'
+
 /** Timestamps are stored in UTC and shown in the practice's time zone. */
-export const PRACTICE_TIME_ZONE: string =
-  (import.meta.env.VITE_PRACTICE_TIMEZONE as string | undefined) ||
-  Intl.DateTimeFormat().resolvedOptions().timeZone ||
-  'UTC'
+export const PRACTICE_TIME_ZONE: string = env.practiceTimeZone
 
 const formatters = new Map<string, Intl.DateTimeFormat>()
 function formatter(options: Intl.DateTimeFormatOptions) {
@@ -22,6 +21,10 @@ export const fmtTime = (value: string | number | Date) =>
 
 export const fmtDay = (value: string | number | Date) =>
   formatter({ weekday: 'short', day: 'numeric', month: 'short' }).format(toDate(value)).replace(',', '')
+
+/** "Tuesday 24 November" */
+export const fmtLongDay = (value: string | number | Date) =>
+  formatter({ weekday: 'long', day: 'numeric', month: 'long' }).format(toDate(value))
 
 export const fmtDate = (value: string | number | Date) =>
   formatter({ day: 'numeric', month: 'long', year: 'numeric' }).format(toDate(value))

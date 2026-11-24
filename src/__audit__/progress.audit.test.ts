@@ -1,5 +1,5 @@
 /**
- * Progress data and charts audit. Every `it` named "BUG" fails on the current code; every
+ * Progress data and charts regressions. Every `it` named "regression" guards a bug found in the November 2026 audit; every
  * `it` named "holds" passes and records what was checked. Time-zone cases run only under the
  * TZ named in the test title, e.g.
  *   TZ=America/New_York npx vitest run src/__audit__/progress.audit.test.ts --testTimeout=30000
@@ -83,7 +83,7 @@ function fact(panel: HTMLElement, term: string) {
 describe('Gaps: chart legend, chart and PDF agree on GAP_DAYS', () => {
   useFixedNow()
 
-  it('BUG: the pain chart legend promises "5+ days" while gaps are only drawn after GAP_DAYS (8)', () => {
+  it('regression: the pain chart legend promises "5+ days" while gaps are only drawn after GAP_DAYS (8)', () => {
     render(createElement(ProgressExplorer, { clientId: DEMO_CLIENT_IDS.mira, audience: 'client' }))
     const legend = screen.getByRole('list', { name: 'Key' })
     const gapKey = normal(within(legend).getByText(/No entries for/).textContent)
@@ -93,7 +93,7 @@ describe('Gaps: chart legend, chart and PDF agree on GAP_DAYS', () => {
     expect(gapKey).toContain(String(GAP_DAYS))
   })
 
-  it('BUG: two entries 8 days 6 hours apart are a gap on screen but joined by a line in the PDF', () => {
+  it('regression: two entries 8 days 6 hours apart are a gap on screen but joined by a line in the PDF', () => {
     const first = Date.parse('2026-11-02T09:00:00Z')
     const second = first + 8 * DAY_MS + 6 * HOUR
     const window: TimeWindow = { from: first, to: second, startsAtFirstEntry: false }
@@ -121,7 +121,7 @@ describe('Gaps: chart legend, chart and PDF agree on GAP_DAYS', () => {
     expect(pdf.segments.length).toBe(screenRuns)
   })
 
-  it('BUG: the client home "Last six weeks" sparkline draws one line across a 10-day stretch the progress chart marks "No entries" (Noa)', () => {
+  it('regression: the client home "Last six weeks" sparkline draws one line across a 10-day stretch the progress chart marks "No entries" (Noa)', () => {
     const { container } = renderPage(createElement(ClientHomePage), {
       path: '/client/home',
       url: '/client/home',
@@ -146,7 +146,7 @@ describe('Gaps: chart legend, chart and PDF agree on GAP_DAYS', () => {
 describe('Recovery Index panel', () => {
   useFixedNow()
 
-  it('BUG: "Pain, first to last visit" reads −10 points although pain rose from 5/10 to 6/10 (Mira, therapist)', () => {
+  it('regression: "Pain, first to last visit" reads −10 points although pain rose from 5/10 to 6/10 (Mira, therapist)', () => {
     render(createElement(ProgressExplorer, { clientId: DEMO_CLIENT_IDS.mira, audience: 'therapist' }))
     const panel = screen.getByRole('region', { name: 'Recovery Index' })
     const rows = within(within(panel).getByRole('table')).getAllByRole('row').slice(1)
@@ -155,7 +155,7 @@ describe('Recovery Index panel', () => {
     expect(fact(panel, 'Pain, first to last visit')).not.toMatch(/^−/)
   })
 
-  it('BUG: with "last 30 days" the summary spans the window but "Index, first to last visit" is still all-time (Mira, therapist)', () => {
+  it('regression: with "last 30 days" the summary spans the window but "Index, first to last visit" is still all-time (Mira, therapist)', () => {
     render(createElement(ProgressExplorer, { clientId: DEMO_CLIENT_IDS.mira, audience: 'therapist' }))
     fireEvent.change(screen.getByRole('combobox', { name: 'Time range' }), { target: { value: 'days30' } })
     const panel = screen.getByRole('region', { name: 'Recovery Index' })
@@ -165,7 +165,7 @@ describe('Recovery Index panel', () => {
     expect({ summary, shown }).toEqual({ summary, shown: Math.round(((to as number) - (from as number)) * 10) / 10 })
   })
 
-  it('BUG: a pain-free arrival (0/10) is dropped from the Recovery Index instead of counting as pain 0', () => {
+  it('regression: a pain-free arrival (0/10) is dropped from the Recovery Index instead of counting as pain 0', () => {
     const day = (n: number) => Date.parse('2026-11-01T10:00:00Z') + n * DAY_MS
     const measures = visitMeasures({
       visits: [
@@ -184,7 +184,7 @@ describe('Recovery Index panel', () => {
     expect(measures.map((item) => item.pain)).toEqual([6, 0])
   })
 
-  it('BUG (latent, no UI yet adds a second goal): goal ease at each visit jumps between different goals', () => {
+  it('regression (latent): goal ease at each visit jumps between different goals', () => {
     const day = (n: number) => Date.parse('2026-11-01T10:00:00Z') + n * DAY_MS
     const score = (id: string, goalId: string, n: number, value: number): GoalScore => ({
       id,
@@ -210,7 +210,7 @@ describe('Recovery Index panel', () => {
 describe('Arrival confirmations and "latest"', () => {
   useFixedNow()
 
-  it('BUG: an area confirmed "still accurate" at the previous visit is treated as settled at the next one', () => {
+  it('regression: an area confirmed "still accurate" at the previous visit is treated as settled at the next one', () => {
     const entry = observation('h', Date.parse('2026-11-01T18:00:00Z'), 6)
     const confirmation: ArrivalConfirmation = {
       id: 'c1',
@@ -231,7 +231,7 @@ describe('Arrival confirmations and "latest"', () => {
     expect(points.map((point) => point.area)).toEqual(['shoulder:left'])
   })
 
-  it('BUG: the therapist overview "Latest by area · last 30 days" hides an area the client confirmed 9 days ago', () => {
+  it('regression: the therapist overview "Latest by area · last 30 days" hides an area the client confirmed 9 days ago', () => {
     const state = useDemoStore.getState()
     const noaVisit = state.appointments.find((item) => item.id === 'appointment-noa-v2')
     if (!noaVisit?.arrival) throw new Error('fixture changed: Noa has no second visit')
@@ -268,7 +268,7 @@ describe('Arrival confirmations and "latest"', () => {
     expect(within(latest).queryByText('Left side of neck')).toBeInTheDocument()
   })
 
-  it('BUG: "last 30 days" says there are no entries although the client confirmed the score at a visit inside the window', () => {
+  it('regression: "last 30 days" says there are no entries although the client confirmed the score at a visit inside the window', () => {
     const entry = observation('h', NOW - 40 * DAY_MS, 6)
     const visits = [visit('v1', NOW - 20 * DAY_MS)]
     const confirmations: ArrivalConfirmation[] = [
@@ -293,7 +293,7 @@ describe('Arrival confirmations and "latest"', () => {
 })
 
 describe('Range windows and time zones', () => {
-  it('BUG [any device TZ with DST, e.g. Europe/Zurich or America/New_York]: "last 30/90 days" starts on a different day depending on the hour', () => {
+  it('regression [any device TZ with DST, e.g. Europe/Zurich or America/New_York]: "last 30/90 days" starts on a different day depending on the hour', () => {
     const differing: Record<string, string[]> = { days30: [], days90: [] }
     for (let day = new Date(2026, 0, 1); day.getFullYear() === 2026; day.setDate(day.getDate() + 1)) {
       const at = (hour: number, minute: number) => new Date(day.getFullYear(), day.getMonth(), day.getDate(), hour, minute).getTime()
@@ -307,7 +307,7 @@ describe('Range windows and time zones', () => {
   })
 
   it.runIf(PRACTICE_TIME_ZONE !== DEVICE_TZ)(
-    `BUG [TZ=${DEVICE_TZ}, practice ${PRACTICE_TIME_ZONE}]: the visits range starts at device midnight, dropping an entry from the morning of the sixth-last visit`,
+    `regression [TZ=${DEVICE_TZ}, practice ${PRACTICE_TIME_ZONE}]: the visits range starts at device midnight, dropping an entry from the morning of the sixth-last visit`,
     () => {
       const visits = [10, 12, 14, 16, 18, 20].map((date) => visit(`v${date}`, Date.parse(`2026-11-${date}T10:00:00Z`)))
       const morning = Date.parse('2026-11-10T07:30:00Z')

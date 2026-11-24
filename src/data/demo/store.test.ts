@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { areaSeries, bonusSummary } from '@/domain/care'
 import { createDemoState, DEMO_CLIENT_IDS, DEMO_THERAPIST_IDS, refreshPassedBookings } from './fixtures'
 import { reportInputs } from '@/features/reports/inputs'
+import { announceSave } from '@/test/otherTab'
 import type { DemoAppointment, DemoReport, DemoState } from './model'
 import { clientBonus, clientRecovery, preVisitUpdates, sessionPointsFor } from './selectors'
 import { DEMO_STORAGE_KEY, mergePersistedDemoState, useDemoStore } from './store'
@@ -369,7 +370,9 @@ describe('persistence', () => {
     await vi.waitFor(() => expect(otherTab.getState().hydrated).toBe(true))
     const setItem = vi.spyOn(Storage.prototype, 'setItem')
     const id = useDemoStore.getState().addNote({ clientId: mira, therapistId: pratana, visibility: 'private', body: 'Prefers a warmer room.' })
-    expect(otherTab.getState().notes.some((note) => note.id === id)).toBe(true)
+    announceSave()
+    await vi.waitFor(() => expect(otherTab.getState().notes.some((note) => note.id === id)).toBe(true))
+    await vi.waitFor(() => expect([useDemoStore, otherTab].every((store) => store.persist.hasHydrated())).toBe(true))
     expect(setItem.mock.calls.filter(([key]) => key === `${DEMO_STORAGE_KEY}:mirror`)).toHaveLength(1)
     setItem.mockRestore()
   })

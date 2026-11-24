@@ -11,6 +11,7 @@ import { DEMO_STORAGE_KEY, mergePersistedDemoState, useDemoStore } from '@/data/
 import { ArrivalPage } from '@/features/arrival/ArrivalPage'
 import { LogHowIFeelPage } from '@/features/check-in/LogHowIFeelPage'
 import { dayKey } from '@/lib/formatting/time'
+import { announceSave } from '@/test/otherTab'
 import { demoAuth, renderPage, resetDemoStore } from '@/test/renderWithDemo'
 
 const mira = DEMO_CLIENT_IDS.mira
@@ -52,6 +53,8 @@ describe('audit: persistence', () => {
       source: 'home',
       selections: [{ region: 'shoulder', side: 'left', pain: 7 }],
     })
+    announceSave()
+    await vi.waitFor(() => expect(therapistTab.getState().observations.some((item) => item.id === entryId)).toBe(true))
     vi.setSystemTime(NOW.getTime() + 120_000)
     therapistTab.getState().cancelAppointment('appointment-sage-later')
 

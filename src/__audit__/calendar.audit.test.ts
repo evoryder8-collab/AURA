@@ -11,6 +11,7 @@ import { VisitsPage } from '@/features/visits/VisitsPage'
 import { availableStarts, clockTime, startProblem, zonedParts, zonedTimeToUtc } from '@/features/visits/slots'
 import { renderAs, seedDemo, TEST_NOW } from '@/features/visits/testing'
 import { PRACTICE_TIME_ZONE, relativeDay } from '@/lib/formatting/time'
+import { announceSave } from '@/test/otherTab'
 
 const MIN = 60_000
 const DAY = 86_400_000
@@ -170,6 +171,9 @@ describe('calendar audit', () => {
     vi.resetModules()
     const clientTab = (await import('@/data/demo/store')).useDemoStore
     await vi.waitFor(() => expect(clientTab.getState().hydrated).toBe(true))
+    // The client tab's first load saved; the browser tells the therapist's tab.
+    announceSave()
+    await vi.waitFor(() => expect(useDemoStore.persist.hasHydrated()).toBe(true))
 
     const slot = new Date(zonedTimeToUtc('2026-11-24', 14 * 60, PRACTICE_TIME_ZONE)).toISOString()
     const therapistBookingId = useDemoStore.getState().addAppointment({
@@ -182,6 +186,8 @@ describe('calendar audit', () => {
       intakeStatus: 'complete',
       room: 'Garden room',
     })
+    announceSave()
+    await vi.waitFor(() => expect(clientTab.getState().appointments.some((item) => item.id === therapistBookingId)).toBe(true))
 
     const clientView = clientTab.getState().appointments.filter(
       (item) => item.therapistId === pratana.therapistId || item.clientId === DEMO_CLIENT_IDS.noa,

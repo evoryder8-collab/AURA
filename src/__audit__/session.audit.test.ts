@@ -13,6 +13,7 @@ import { FinishSessionPage } from '@/features/session/FinishSessionPage'
 import { SessionModePage } from '@/features/session/SessionModePage'
 import { VisitsPage } from '@/features/visits/VisitsPage'
 import { fmtTime, minutesLabel } from '@/lib/formatting/time'
+import { announceSave } from '@/test/otherTab'
 import { demoAuth, renderPage, resetDemoStore } from '@/test/renderWithDemo'
 
 /** Tuesday 24 Nov 2026, 12:00 on the test machine's clock (the practice time zone in tests). */
@@ -236,6 +237,8 @@ describe('FINDINGS: session timing, Bonus Care and follow-ups', () => {
 
     tabA.getState().finishSession(id, plus(start, 102).toISOString())
     tabA.getState().confirmBonus(id, 12)
+    announceSave()
+    await vi.waitFor(() => expect(tabB.getState().bonusCredits.some((item) => item.id === bonusCreditId(id))).toBe(true))
     tabB.getState().finishSession(id, plus(start, 105).toISOString())
 
     vi.resetModules()

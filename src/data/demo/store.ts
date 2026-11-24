@@ -1,5 +1,5 @@
 import { openDB } from 'idb'
-import { create, type StateCreator, type StoreApi } from 'zustand'
+import { create } from 'zustand'
 import { createJSONStorage, persist, type StateStorage } from 'zustand/middleware'
 import {
   areaKey,
@@ -16,7 +16,7 @@ import {
 } from '@/domain/care'
 import { freezeReport } from '@/features/reports/inputs'
 import { createDemoState, createDemoTherapists, DEMO_THERAPIST_IDS, refreshPassedBookings } from './fixtures'
-import { listedPhotos, mirrorKey, mirrorStorage, newerRecord, type MirrorState } from './mirror'
+import { mirrorKey, mirrorStorage, newerRecord } from './mirror'
 import type { ConsentState, DemoAppointment, DemoReport, DemoState } from './model'
 
 const DB_NAME = 'aura-synthetic-demo'
@@ -122,39 +122,15 @@ type Persisted = Partial<DemoState> & { version?: number; savedAt?: number }
 
 /**
  * `savedAt` of the newest record this tab has written or loaded. Every write goes past it, so the
- * last write of a multi-step action always wins over the first, and another tab's record is
- * taken in only when it is newer.
+ * last write of a multi-step action always wins over the first, and a write after taking in
+ * another tab's record wins over that record.
  */
 let latestSavedAt = 0
 const nextSavedAt = () => (latestSavedAt = Math.max(Date.now(), latestSavedAt + 1))
 
-/** The store's own setter, which persist does not wrap: state that came from storage is not saved back. */
-let setUnsaved: StoreApi<DemoStore>['setState'] = () => undefined
-
-const withUnsavedSet = <S extends StateCreator<DemoStore, [], [['zustand/persist', unknown]]>>(creator: S): S =>
-  ((setState, getState, api) => {
-    setUnsaved = setState
-    return creator(setState, getState, api)
-  }) as S
-
 function loadRecord(persisted: unknown, current: DemoStore): DemoStore {
   latestSavedAt = Math.max(latestSavedAt, (persisted as Persisted | undefined)?.savedAt ?? 0)
   return mergePersistedDemoState(persisted, current)
-}
-
-/**
- * Takes in a record another open tab saved, without saving it back: tabs would otherwise echo
- * each other forever. Photos come from this tab, limited to the ids the record lists; a photo
- * another tab added is loaded from IndexedDB.
- */
-function adoptNewerRecord() {
-  const current = useDemoStore.getState()
-  const record: MirrorState | null = current.hydrated ? mirrorStorage.newerThan(DEMO_STORAGE_KEY, latestSavedAt) : null
-  if (!record) return
-  const { photoIds: _ids, ...rest } = record
-  const photos = listedPhotos(current.photos, record)
-  setUnsaved(loadRecord({ ...rest, photos }, current), true)
-  if ((record.photoIds?.length ?? 0) > photos.length) void useDemoStore.persist.rehydrate()
 }
 
 export function mergePersistedDemoState(persisted: unknown, current: DemoStore): DemoStore {
@@ -186,7 +162,7 @@ const frozen = (state: DemoState, report: DemoReport): DemoReport =>
   report.snapshot ? report : { ...report, snapshot: freezeReport(state, report) }
 
 export const useDemoStore = create<DemoStore>()(
-  withUnsavedSet(persist(
+  persist(
     (set, get) => {
       const patchAppointment = (id: string, patch: (appointment: DemoAppointment) => DemoAppointment) =>
         set((state) => ({ appointments: state.appointments.map((item) => (item.id === id ? patch(item) : item)) }))
@@ -195,7 +171,7 @@ export const useDemoStore = create<DemoStore>()(
       return {
         ...createDemoState(),
         hydrated: false,
-        // Only the first load saves; reloading another tab's photo from storage has nothing new to save.
+        // Only the first load saves; loading another tab's save again has nothing new to save.
         setHydrated: (hydrated) => (get().hydrated === hydrated ? undefined : set({ hydrated })),
         resetDemo: () => set({ ...createDemoState() }),
 
@@ -615,11 +591,12 @@ export const useDemoStore = create<DemoStore>()(
       merge: loadRecord,
       onRehydrateStorage: () => (state) => state?.setHydrated(true),
     },
-  )),
+  ),
 )
 
+// Another tab saved. Loading writes through persist's own setter and saves nothing back, so tabs never echo.
 if (typeof window !== 'undefined') {
   window.addEventListener('storage', (event) => {
-    if (event.key === mirrorKey(DEMO_STORAGE_KEY)) adoptNewerRecord()
+    if (event.key === mirrorKey(DEMO_STORAGE_KEY)) void useDemoStore.persist.rehydrate()
   })
 }

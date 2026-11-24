@@ -5,7 +5,7 @@
  * the mirror lists their ids so a photo removed since the last IndexedDB write stays removed.
  */
 type Photo = { id: string }
-export type MirrorState = { savedAt?: number; photos?: Photo[]; photoIds?: string[] } & Record<string, unknown>
+type MirrorState = { savedAt?: number; photos?: Photo[]; photoIds?: string[] } & Record<string, unknown>
 type Persisted = { state?: MirrorState }
 
 const parse = (value: string | null): Persisted | null => {
@@ -28,7 +28,7 @@ export function toMirror(value: string): string {
 }
 
 /** The photos a mirrored record still lists; a mirror from before ids were kept lists them all. */
-export function listedPhotos<T extends Photo>(photos: readonly T[], state: MirrorState): T[] {
+function listedPhotos<T extends Photo>(photos: readonly T[], state: MirrorState): T[] {
   const ids = state.photoIds
   return ids ? photos.filter((photo) => ids.includes(photo.id)) : [...photos]
 }
@@ -51,18 +51,9 @@ export const mirrorStorage = {
       return null
     }
   },
-  /** The mirrored record's state when it was saved after `savedAt`, by another tab. */
-  newerThan(name: string, savedAt: number): MirrorState | null {
-    const state = parse(mirrorStorage.read(name))?.state
-    return state && (state.savedAt ?? 0) > savedAt ? state : null
-  },
   write(name: string, value: string) {
-    const key = mirrorKey(name)
     try {
-      const mirrored = toMirror(value)
-      localStorage.setItem(key, mirrored)
-      // The browser tells other tabs; this tells every other store in this page (tests open several).
-      window.dispatchEvent(new StorageEvent('storage', { key, newValue: mirrored }))
+      localStorage.setItem(mirrorKey(name), toMirror(value))
     } catch {
       // Storage full or blocked: IndexedDB still holds the record.
     }

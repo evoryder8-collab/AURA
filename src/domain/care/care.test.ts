@@ -19,6 +19,7 @@ import {
   rotateTable,
   sessionClock,
   sessionPainPoints,
+  splitAtGaps,
   updatesBetween,
   visitMeasures,
   type ArrivalConfirmation,
@@ -133,6 +134,14 @@ describe('arrival confirmation', () => {
     })
     expect(points).toHaveLength(1)
     expect(points[0]).toMatchObject({ status: 'unconfirmed', observedAt: homeShoulder.observedAt })
+  })
+})
+
+describe('gaps in a series', () => {
+  it('starts a new run after more than eight days without an entry, and never at exactly eight', () => {
+    const day = 86_400_000
+    const days = [0, 8, 17, 18, 40]
+    expect(splitAtGaps(days, (at) => at * day)).toEqual([[0, 8], [17, 18], [40]])
   })
 })
 

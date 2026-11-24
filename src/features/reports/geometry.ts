@@ -1,4 +1,4 @@
-import { isGap, type AreaKey } from '@/domain/care'
+import { splitAtGaps, type AreaKey } from '@/domain/care'
 import { addDays, practiceMidnight } from '@/lib/dates/practice'
 import {
   fmtDayMonth,
@@ -42,12 +42,7 @@ export function chartLayout(chart: ReportChart, from: string, to: string, width:
   const y = (value: number) => plot.y0 - (value / chart.yMax) * (plot.y0 - plot.y1)
   const points = chart.points.map((point) => ({ ...point, x: x(time(point.at)), y: y(point.value) }))
 
-  const segments: PlottedPoint[][] = []
-  points.forEach((point, index) => {
-    const previous = points[index - 1]
-    if (!previous || isGap(time(previous.at), time(point.at))) segments.push([point])
-    else segments.at(-1)?.push(point)
-  })
+  const segments = splitAtGaps(points, (point) => time(point.at))
 
   const spanDays = (t1 - t0) / DAY
   const maxTicks = Math.max(2, Math.floor((plot.x1 - plot.x0) / 40))

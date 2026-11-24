@@ -6,7 +6,7 @@ import { PainChip } from '@/components/ui/PainChip'
 import { Portrait } from '@/components/ui/Portrait'
 import { assetUrl } from '@/components/ui/assets'
 import { painColor } from '@/components/ui/pain'
-import { areaKeyLabel, areaSeries, isGap, latestByArea, recordedAreas, type AreaKey } from '@/domain/care'
+import { areaKeyLabel, areaSeries, latestByArea, recordedAreas, splitAtGaps, type AreaKey } from '@/domain/care'
 import type { DemoState } from '@/data/demo/model'
 import { clientAppointments, clientBonus, clientObservations, followUpOpen, getClient, getTherapist, nextAppointment } from '@/data/demo/selectors'
 import { useDemoStore } from '@/data/demo/store'
@@ -232,12 +232,7 @@ function TrendCard({ area, state, clientId, now }: { area: AreaKey; state: DemoS
     pain: point.pain,
   }))
   // Never bridge a stretch the progress chart marks "No entries": each run starts its own line.
-  const runs: Array<typeof points> = []
-  points.forEach((point, index) => {
-    const previous = points[index - 1]
-    if (!previous || isGap(previous.at, point.at)) runs.push([point])
-    else runs.at(-1)?.push(point)
-  })
+  const runs = splitAtGaps(points, (point) => point.at)
   // A lone entry between two gaps is a zero-length stroke, drawn as a dot by the round cap.
   const path = runs
     .map((run) => run.map((point, index) => `${index ? 'L' : 'M'}${point.x.toFixed(1)},${point.y.toFixed(1)}`).join(' ') + (run.length === 1 ? ' h0' : ''))

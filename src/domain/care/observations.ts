@@ -23,6 +23,17 @@ export const GAP_DAYS = 8
 /** The one gap rule every chart, sparkline and report sentence uses: more than GAP_DAYS × 24 hours apart. */
 export const isGap = (from: number, to: number) => to - from > GAP_DAYS * 86_400_000
 
+/** A time-ordered series cut into runs a line may join: each gap starts a new run, so no line bridges one. */
+export function splitAtGaps<T>(points: readonly T[], at: (point: T) => number): T[][] {
+  const runs: T[][] = []
+  points.forEach((point, index) => {
+    const previous = points[index - 1]
+    if (previous === undefined || isGap(at(previous), at(point))) runs.push([point])
+    else runs.at(-1)?.push(point)
+  })
+  return runs
+}
+
 export type PainSelection = { readonly region: RegionId; readonly side: ChosenSide; readonly pain: number }
 
 export function assertPainScore(value: number): number {

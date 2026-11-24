@@ -5,6 +5,7 @@ import { createDemoState, DEMO_CLIENT_IDS, DEMO_THERAPIST_IDS } from '@/data/dem
 import { useDemoStore } from '@/data/demo/store'
 import { reportIsExportable } from '@/domain/care'
 import { AuthContext, type AuthState } from '@/features/auth/auth-context'
+import { useFreshAuthStore } from '@/features/consent/freshAuth'
 import { ClientReportPage } from './ClientReportPage'
 import { ClientReportsList } from './ClientReportsList'
 import { ReportBuilderPage } from './ReportBuilderPage'
@@ -70,6 +71,7 @@ function awaitingReport(includePhotos = false) {
 
 beforeEach(() => {
   useDemoStore.setState({ ...createDemoState(), hydrated: true })
+  useFreshAuthStore.setState({ confirmedAt: {} })
   vi.stubGlobal('fetch', vi.fn(async () => new Response(null, { status: 404 })))
 })
 
@@ -85,15 +87,29 @@ describe('report builder', () => {
     expect(document.body.textContent).not.toContain('Prefers the room warmer')
   })
 
-  it('keeps photographs off by default and warns that they need their own agreement', async () => {
+  it('offers photographs only with photography on and a fresh confirmation, off by default, with their own agreement', async () => {
     const user = userEvent.setup()
     useDemoStore.getState().addPhoto({ clientId: MIRA, view: 'back', dataUrl: 'data:image/jpeg;base64,AA' })
+    const view = renderAt(`/therapist/clients/${MIRA}/report`, asWassana)
+    const photos = () => screen.getByRole('checkbox', { name: /include photographs/i })
+    expect(photos()).toBeDisabled()
+    expect(photos()).toHaveAccessibleDescription('Mira has photography turned off, so no photographs can be included.')
+
+    view.unmount()
+    useDemoStore.getState().updateConsent(MIRA, 'photography', true)
     renderAt(`/therapist/clients/${MIRA}/report`, asWassana)
-    const photos = screen.getByRole('checkbox', { name: /include photographs/i })
-    expect(photos).not.toBeChecked()
+    expect(photos()).toBeDisabled()
+    expect(photos()).toHaveAccessibleDescription(/1 in this period\. Confirm it’s you/)
+    await user.click(screen.getByRole('button', { name: 'Confirm it’s you' }))
+    await user.type(screen.getByRole('textbox', { name: /type demo to confirm/i }), 'DEMO')
+    await user.keyboard('{Enter}')
+
+    expect(photos()).toBeEnabled()
+    expect(photos()).not.toBeChecked()
     expect(screen.queryByText(/must agree to share photographs specifically/)).not.toBeInTheDocument()
-    await user.click(photos)
+    await user.click(photos())
     expect(screen.getByRole('alert')).toHaveTextContent(/must agree to share photographs specifically/)
+    expect(screen.getByRole('img', { name: /back view · taken/i })).toBeInTheDocument()
   })
 
   it('cannot export before the client agrees', async () => {
@@ -168,6 +184,28 @@ describe('client review', () => {
     renderAt(`/client/reports/${id}`, auth({ role: 'client', demoClientId: DEMO_CLIENT_IDS.noa }))
     expect(screen.getByRole('status')).toHaveTextContent(/this report isn’t available/i)
     expect(document.body.textContent).not.toContain('Mira')
+  })
+
+  it('shows the client and the therapist the report as it was sent, not records added since', () => {
+    const later = 'Worse after carrying the shopping'
+    const id = awaitingReport()
+    useDemoStore.getState().logObservation({
+      clientId: MIRA,
+      source: 'home',
+      selections: [{ region: 'shoulder', side: 'left', pain: 9 }],
+      observedAt: new Date(Date.now() - 86_400_000).toISOString(),
+      note: later,
+    })
+    const client = renderAt(`/client/reports/${id}`, asMira)
+    expect(screen.getByRole('article', { name: 'The report as it will be shared' })).not.toHaveTextContent(later)
+    client.unmount()
+    const builder = renderAt(`/therapist/clients/${MIRA}/report/${id}`, asWassana)
+    expect(screen.getByRole('article', { name: 'Live preview of the report' })).not.toHaveTextContent(later)
+    builder.unmount()
+
+    useDemoStore.getState().saveReport({ ...useDemoStore.getState().reports.find((item) => item.id === id)!, recipient: 'Physiotherapist' }, id)
+    renderAt(`/therapist/clients/${MIRA}/report/${id}`, asWassana)
+    expect(screen.getByRole('article', { name: 'Live preview of the report' })).toHaveTextContent(later)
   })
 
   it('lists the client’s reports with their status and hides drafts', () => {

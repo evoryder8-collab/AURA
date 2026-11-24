@@ -507,7 +507,8 @@ function Builder({ client, therapistId, saved }: { client: DemoClient; therapist
           </div>
         </form>
 
-        <section className="report-preview-pane" aria-labelledby={`${id}-preview`}>
+        {/* Focusable: on wide screens the preview scrolls on its own, and keyboard users must be able to scroll it. */}
+        <section className="report-preview-pane" aria-labelledby={`${id}-preview`} tabIndex={0}>
           <div className="report-preview-head">
             <h2 className="title-md" id={`${id}-preview`}>
               Preview

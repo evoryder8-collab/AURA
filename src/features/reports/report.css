@@ -496,8 +496,9 @@
   border-color: #e7d6b6;
 }
 
+/* Darker than the panel accents: 11px labels need 4.5:1 on their tinted panels. */
 .paper__panel--gold .paper__eyebrow {
-  color: var(--p-gold);
+  color: #7d5418;
 }
 
 .paper__panel--aqua {
@@ -506,7 +507,7 @@
 }
 
 .paper__panel--aqua .paper__eyebrow {
-  color: var(--p-aqua);
+  color: #1b675d;
 }
 
 .paper__lead {

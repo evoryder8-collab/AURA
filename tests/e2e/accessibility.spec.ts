@@ -42,6 +42,8 @@ test('@a11y therapist screens have no serious axe violations', async ({ page }) 
   ]) {
     await page.goto(`/AURA/#${hash}`)
     await page.waitForLoadState('networkidle')
+    // The report preview loads lazily; check it once it is on screen, not before.
+    if (hash.endsWith('/report')) await expect(page.getByRole('article', { name: 'Live preview of the report' })).toBeVisible({ timeout: 15_000 })
     await expectNoSeriousViolations(page, hash)
   }
 })
